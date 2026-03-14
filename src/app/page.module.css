@@ -1,0 +1,17 @@
+/* page.module.css */
+.pageBody {
+  margin: 0; /* Elimina márgenes predeterminados */
+  padding: 0;
+  box-sizing: border-box;
+}
+
+
+.page {
+  padding: 0 20px;
+}
+
+.footer {
+  background-color: #f1f1f1;
+  margin-top: 50px;
+}
+

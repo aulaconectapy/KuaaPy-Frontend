@@ -1,0 +1,77 @@
+[33mcommit d8e7ff82a0ccd40cbd7bf50aa3b2fccf3c389f77[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmaster[m[33m, [m[1;31morigin/master[m[33m, [m[1;31morigin/HEAD[m[33m)[m
+Author: Andres Vargas <av6135@gmail.com>
+Date:   Mon Jan 20 17:43:29 2025 -0300
+
+    intentando ponerle favicon
+
+[33mcommit f76d263b10b87b20df05cdb71a4fdadbead1073c[m
+Author: Andres Vargas <av6135@gmail.com>
+Date:   Mon Jan 20 17:27:23 2025 -0300
+
+    Cree formulario tanto para crear estudiante como para editar
+
+[33mcommit c9214a481dbc95bb7a4c8fedd764c4f740f1dde6[m
+Author: Andres Vargas <av6135@gmail.com>
+Date:   Mon Jan 20 17:00:32 2025 -0300
+
+    Cree formulario tanto para crear estudiante como para editar
+
+[33mcommit 7c25e0e9d347934ee72b3f7a23e86e5eaeae994d[m
+Author: Andres Vargas <av6135@gmail.com>
+Date:   Mon Jan 20 16:55:25 2025 -0300
+
+    Cree formulario tanto para crear estudiante como para editar
+
+[33mcommit 95c363b6a4655bf8599aa867509faeb4b8ec1bb0[m
+Author: Andres Vargas <av6135@gmail.com>
+Date:   Mon Jan 20 16:30:03 2025 -0300
+
+    Cree formulario tanto para crear estudiante como para editar, también para instituciones
+
+[33mcommit 7a48d52291b11fbd21675d21fee8882f230dc61b[m
+Author: Andres Vargas <av6135@gmail.com>
+Date:   Mon Jan 20 16:07:53 2025 -0300
+
+    Cree formulario tanto para crear estudiante como para editar
+
+[33mcommit 0bf52fa4c63781fbf7c962e4880b7b1e0fface26[m
+Author: Andres Vargas <av6135@gmail.com>
+Date:   Fri Jan 17 13:57:34 2025 -0300
+
+    Accedí incorrectamente a la variable de entorno, intenté acceder con react, pero debería ser con next public
+
+[33mcommit 47eef0fd4268773e0680555a1b867575a844a507[m
+Author: Andres Vargas <av6135@gmail.com>
+Date:   Fri Jan 17 12:06:57 2025 -0300
+
+    Accedí incorrectamente a la variable de entorno, intenté acceder con react, pero debería ser con next public
+
+[33mcommit 4aedc29db8d0b907e06bee7333bf1341592ca290[m
+Author: Andres Vargas <av6135@gmail.com>
+Date:   Fri Jan 17 11:55:12 2025 -0300
+
+    Agregando dotenv
+
+[33mcommit 040f55a78428b568aaf4b4707601aa4649a4adca[m
+Author: Andres Vargas <av6135@gmail.com>
+Date:   Fri Jan 17 11:20:26 2025 -0300
+
+    Agregando dotenv
+
+[33mcommit 5dc48cd54c116b9b1a5d2d30042cc53eead64d3b[m
+Author: Andres Vargas <av6135@gmail.com>
+Date:   Thu Jan 16 18:24:55 2025 -0300
+
+    Agregándole para crear usuario e instituciones
+
+[33mcommit 98d099ba18b68c9e1ae9037ca5f7829a275c1206[m
+Author: Andres Vargas <av6135@gmail.com>
+Date:   Wed Jan 15 12:32:34 2025 -0300
+
+    Primer commit
+
+[33mcommit 7260e8b83f87de710e61ce7faecc4cd10dffb04d[m
+Author: Andres Vargas <av6135@gmail.com>
+Date:   Wed Jan 15 12:00:00 2025 -0300
+
+    Initial commit from Create Next App

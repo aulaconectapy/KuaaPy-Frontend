@@ -1,0 +1,43 @@
+/* Asegura que html y body ocupen toda la altura y no tengan márgenes */
+html, body {
+  height: 100%;
+  margin: 100; /* Anula cualquier margen predeterminado */
+  padding: 100; /* Anula cualquier padding predeterminado */
+  overflow-x: hidden; /* Evita desplazamiento horizontal */
+}
+
+/* El resto de tu estilo */
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0a0a0a;
+    --foreground: #ededed;
+  }
+}
+
+body {
+  color: var(--foreground);
+  background: var(--background);
+  font-family: Arial, Helvetica, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+@media (prefers-color-scheme: dark) {
+  html {
+    color-scheme: dark;
+  }
+}
