@@ -267,11 +267,6 @@ const FormRegister = () => {
             </Box>
           </Paper>
 
-          <Box sx={{ mt: 4, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1, opacity: 0.5 }}>
-             <Typography variant="caption" sx={{ fontWeight: 600 }}>
-               AulaConectaPy v2.0 • Desarrollado por Ezequiel Vargas
-             </Typography>
-          </Box>
         </Box>
       </Fade>
 

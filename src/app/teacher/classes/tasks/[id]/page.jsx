@@ -6,22 +6,9 @@ import { getTaskById, getStudentTasksByGrade } from "@/services/api";
 import { useAuth } from "@/context/AuthContext";
 
 import {
-  Box,
-  Typography,
-  CircularProgress,
-  Paper,
-  Stack,
-  Chip,
-  Accordion,
-  AccordionSummary,
-  AccordionDetails,
-  IconButton,
-  Container,
-  Avatar,
-  Grid,
-  LinearProgress,
-  Tooltip,
-  Button
+  Box, Typography, CircularProgress, Paper, Stack, Chip,
+  Accordion, AccordionSummary, AccordionDetails, IconButton,
+  Container, Avatar, Grid, LinearProgress, Tooltip, Button, Divider
 } from "@mui/material";
 
 import {
@@ -29,26 +16,52 @@ import {
   Edit as EditIcon,
   CheckCircle as CheckCircleIcon,
   Person as PersonIcon,
-  ArrowBack as ArrowBackIcon
+  ArrowBack as ArrowBackIcon,
+  Analytics as AnalyticsIcon,
+  EmojiEvents as TrophyIcon
 } from '@mui/icons-material';
 
-export default function TaskSubmissionsPage() {
+const COLORS = {
+  primary: "#7D0F15",
+  primaryLight: "#a31a20",
+  bgLight: "#F8FAFC",
+  border: "#E2E8F0",
+  success: "#059669",
+  pending: "#D97706"
+};
 
+export default function TaskSubmissionsPage() {
   const { id } = useParams();
   const router = useRouter();
-  const { user } = useAuth();
+  const { user, loading: loadingAuth } = useAuth();
 
   const [submissions, setSubmissions] = useState([]);
   const [taskInfo, setTaskInfo] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [isAuthorized, setIsAuthorized] = useState(false);
 
-  // 🎓 Roles
-  const isTeacher = user?.role === "docente";
-  const canGrade = isTeacher;
+  // 🛡️ PROTECCIÓN DE RUTA
+  useEffect(() => {
+    if (!loadingAuth) {
+      if (!user) {
+        router.push("/login");
+        return;
+      }
+      const role = user.role?.toLowerCase();
+      const allowedRoles = ["director/a", "secretario/a", "secretaria", "docente", "administrador"];
+      if (!allowedRoles.includes(role)) {
+        router.push("/dashboard");
+      } else {
+        setIsAuthorized(true);
+      }
+    }
+  }, [user, loadingAuth, router]);
 
-  // 📚 Cargar datos
+  const canGrade = user?.role?.toLowerCase() === "docente";
+
   useEffect(() => {
     const fetchData = async () => {
+      if (!id || !isAuthorized) return;
       try {
         const taskData = await getTaskById(id);
         setTaskInfo(taskData);
@@ -62,10 +75,14 @@ export default function TaskSubmissionsPage() {
         setLoading(false);
       }
     };
-    if (id) fetchData();
-  }, [id]);
+    fetchData();
+  }, [id, isAuthorized]);
 
-  // 📊 Estadísticas
+  // Cálculo de puntaje total de la tarea (suma de indicadores)
+  const totalMaxScore = useMemo(() => {
+    return taskInfo?.indicators?.reduce((acc, curr) => acc + (curr.points || 0), 0) || 0;
+  }, [taskInfo]);
+
   const stats = useMemo(() => {
     const total = submissions.length;
     const corregidos = submissions.filter(s => s.status === "corregido").length;
@@ -74,149 +91,204 @@ export default function TaskSubmissionsPage() {
     return { total, corregidos, promedio, progreso };
   }, [submissions]);
 
-  if (loading) {
+  if (loadingAuth || !isAuthorized) {
     return (
-      <Box sx={{ display: "flex", justifyContent: "center", alignItems: 'center', height: '80vh' }}>
-        <CircularProgress thickness={5} sx={{ color: '#1A365D' }} />
+      <Box sx={{ display: "flex", justifyContent: "center", alignItems: 'center', height: '90vh', bgcolor: COLORS.bgLight }}>
+        <CircularProgress thickness={5} sx={{ color: COLORS.primary }} />
       </Box>
     );
   }
 
   return (
-    <Container maxWidth="lg" sx={{ py: 6 }}>
+    <Box sx={{ bgcolor: COLORS.bgLight, minHeight: '100vh', py: 4 }}>
+      <Container maxWidth="lg">
+        
+        <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 4 }}>
+          <Button 
+            startIcon={<ArrowBackIcon />} 
+            onClick={() => router.back()}
+            sx={{ color: '#64748B', fontWeight: 700, textTransform: 'none' }}
+          >
+            Volver a Tareas
+          </Button>
+        </Stack>
 
-      {/* VOLVER */}
-      <Button
-        startIcon={<ArrowBackIcon />}
-        onClick={() => router.back()}
-        sx={{ mb: 3, color: '#64748B', fontWeight: 700, textTransform: 'none' }}
-      >
-        Volver a Tareas
-      </Button>
-
-      {/* DASHBOARD */}
-      <Paper elevation={0} sx={{ p: { xs: 3, md: 5 }, mb: 4, borderRadius: 8, bgcolor: '#1A365D', color: 'white' }}>
-        <Grid container spacing={4} alignItems="center">
-          <Grid item xs={12} md={7}>
-            <Stack direction="row" spacing={1} sx={{ mb: 2 }}>
-              <Chip label={taskInfo?.subject} size="small" sx={{ bgcolor: 'rgba(255,255,255,0.15)', color: 'white', fontWeight: 800 }} />
-              <Chip label={`${taskInfo?.grade} Grado`} size="small" sx={{ bgcolor: 'rgba(255,255,255,0.15)', color: 'white', fontWeight: 800 }} />
-            </Stack>
-
-            <Typography variant="h3" sx={{ fontWeight: 950, mb: 1 }}>
-              {taskInfo?.topic || "Panel de Entregas"}
-            </Typography>
-            <Typography sx={{ opacity: 0.8 }}>
-              Revisión y seguimiento de actividades.
-            </Typography>
-          </Grid>
-
-          <Grid item xs={12} md={5}>
-            <Stack spacing={2} sx={{ bgcolor: 'rgba(255,255,255,0.05)', p: 3, borderRadius: 6 }}>
-              <Box>
-                <Stack direction="row" justifyContent="space-between" sx={{ mb: 1 }}>
-                  <Typography variant="body2">Progreso</Typography>
-                  <Typography variant="body2" sx={{ fontWeight: 900 }}>{Math.round(stats.progreso)}%</Typography>
-                </Stack>
-                <LinearProgress variant="determinate" value={stats.progreso} sx={{ height: 8, borderRadius: 4, bgcolor: 'rgba(255,255,255,0.1)' }} />
-              </Box>
-
-              <Grid container spacing={2}>
-                <Grid item xs={6}>
-                  <Typography variant="caption">PROMEDIO</Typography>
-                  <Typography variant="h5" sx={{ fontWeight: 900 }}>{stats.promedio}</Typography>
+        {loading ? (
+           <Box sx={{ textAlign: 'center', py: 10 }}><CircularProgress sx={{ color: COLORS.primary }} /></Box>
+        ) : (
+          <>
+            <Paper 
+              elevation={0} 
+              sx={{ 
+                p: { xs: 3, md: 5 }, mb: 5, borderRadius: 6, 
+                background: `linear-gradient(135deg, ${COLORS.primary} 0%, ${COLORS.primaryLight} 100%)`, 
+                color: 'white', boxShadow: '0 10px 25px -5px rgba(125, 15, 21, 0.3)'
+              }}
+            >
+              <Grid container spacing={4} alignItems="center">
+                <Grid item xs={12} md={7}>
+                  <Stack direction="row" spacing={1} sx={{ mb: 2 }}>
+                    <Chip label={taskInfo?.subject} size="small" sx={{ bgcolor: 'rgba(255,255,255,0.2)', color: 'white', fontWeight: 800 }} />
+                    <Chip label={`${taskInfo?.grade} Grado`} size="small" sx={{ bgcolor: 'rgba(255,255,255,0.2)', color: 'white', fontWeight: 800 }} />
+                  </Stack>
+                  <Typography variant="h3" sx={{ fontWeight: 900, mb: 1, letterSpacing: '-1.5px' }}>
+                    {taskInfo?.topic || "Revisión de Tarea"}
+                  </Typography>
+                  <Typography sx={{ opacity: 0.9 }}>Seguimiento y gestión de indicadores de logro.</Typography>
                 </Grid>
-                <Grid item xs={6}>
-                  <Typography variant="caption">REVISADOS</Typography>
-                  <Typography variant="h5" sx={{ fontWeight: 900 }}>{stats.corregidos}/{stats.total}</Typography>
+
+                <Grid item xs={12} md={5}>
+                  <Box sx={{ bgcolor: 'rgba(0,0,0,0.15)', p: 3, borderRadius: 5, backdropFilter: 'blur(10px)' }}>
+                    <Stack spacing={2}>
+                      <Box>
+                        <Stack direction="row" justifyContent="space-between" sx={{ mb: 1 }}>
+                          <Typography variant="caption" sx={{ fontWeight: 700 }}>REVISIÓN</Typography>
+                          <Typography variant="caption" sx={{ fontWeight: 900 }}>{Math.round(stats.progreso)}%</Typography>
+                        </Stack>
+                        <LinearProgress variant="determinate" value={stats.progreso} sx={{ height: 8, borderRadius: 4, bgcolor: 'rgba(255,255,255,0.1)', '& .MuiLinearProgress-bar': { bgcolor: 'white' } }} />
+                      </Box>
+                      <Grid container spacing={2}>
+                        <Grid item xs={6}>
+                          <Typography variant="caption" sx={{ opacity: 0.8, display: 'block' }}>PROMEDIO</Typography>
+                          <Typography variant="h5" sx={{ fontWeight: 900 }}>{stats.promedio}</Typography>
+                        </Grid>
+                        <Grid item xs={6}>
+                          <Typography variant="caption" sx={{ opacity: 0.8, display: 'block' }}>TOTAL PUNTOS</Typography>
+                          <Typography variant="h5" sx={{ fontWeight: 900 }}>{totalMaxScore}</Typography>
+                        </Grid>
+                      </Grid>
+                    </Stack>
+                  </Box>
                 </Grid>
               </Grid>
+            </Paper>
+
+            <Box sx={{ mb: 3, display: 'flex', alignItems: 'center', gap: 1.5 }}>
+              <AnalyticsIcon sx={{ color: COLORS.primary }} />
+              <Typography variant="h5" sx={{ fontWeight: 900, color: '#1E293B' }}>Listado de Entregas</Typography>
+            </Box>
+
+            <Stack spacing={2}>
+              {submissions.length === 0 ? (
+                <Paper sx={{ p: 8, textAlign: 'center', borderRadius: 6, border: `2px dashed ${COLORS.border}`, bgcolor: 'transparent' }}>
+                  <Typography variant="h6" color="text.secondary">No hay alumnos registrados.</Typography>
+                </Paper>
+              ) : (
+                submissions.map((sub) => {
+                  const isCorregido = sub.status === "corregido";
+                  return (
+                    <Accordion 
+                      key={sub._id} 
+                      elevation={0} 
+                      sx={{ 
+                        borderRadius: '20px !important', border: `1px solid ${COLORS.border}`, 
+                        '&:hover': { borderColor: COLORS.primary }, '&:before': { display: 'none' }, mb: 1 
+                      }}
+                    >
+                      <AccordionSummary component="div" expandIcon={<ExpandMoreIcon sx={{ color: COLORS.primary }} />}>
+                        <Grid container alignItems="center" spacing={2}>
+                          <Grid item>
+                            <Avatar sx={{ bgcolor: isCorregido ? `${COLORS.success}15` : `${COLORS.pending}15`, color: isCorregido ? COLORS.success : COLORS.pending }}>
+                              <PersonIcon />
+                            </Avatar>
+                          </Grid>
+                          <Grid item xs>
+                            <Typography sx={{ fontWeight: 800 }}>{sub.student.firstName} {sub.student.lastName}</Typography>
+                            <Stack direction="row" spacing={1} alignItems="center">
+                              <Chip 
+                                label={isCorregido ? "CORREGIDO" : "PENDIENTE"} 
+                                size="small" 
+                                color={isCorregido ? "success" : "warning"} 
+                                sx={{ height: 20, fontSize: '0.65rem', fontWeight: 900 }} 
+                              />
+                              {/* AQUÍ ESTÁ EL CAMBIO: MOSTRAR X de Y PUNTOS */}
+                              <Typography variant="caption" sx={{ fontWeight: 700, color: isCorregido ? COLORS.success : '#64748B' }}>
+                                {sub.score || 0} / {totalMaxScore} pts obtenidos
+                              </Typography>
+                            </Stack>
+                          </Grid>
+                          
+                          {canGrade && (
+                            <Grid item>
+                              <Box onClick={(e) => e.stopPropagation()}>
+                                <Tooltip title={isCorregido ? "Editar Nota" : "Calificar"}>
+                                  <IconButton
+                                    onClick={() => router.push(`/teacher/classes/students/${sub._id}`)}
+                                    sx={{ bgcolor: COLORS.primary, color: 'white', '&:hover': { bgcolor: COLORS.primaryLight } }}
+                                  >
+                                    {isCorregido ? <CheckCircleIcon fontSize="small" /> : <EditIcon fontSize="small" />}
+                                  </IconButton>
+                                </Tooltip>
+                              </Box>
+                            </Grid>
+                          )}
+                        </Grid>
+                      </AccordionSummary>
+                      
+                      <AccordionDetails sx={{ bgcolor: '#F8FAFC', p: 4, borderTop: `1px solid ${COLORS.border}` }}>
+                        <Grid container spacing={3}>
+                          <Grid item xs={12} md={6}>
+                            <Typography variant="subtitle2" sx={{ fontWeight: 800, mb: 2, color: COLORS.primary }}>
+                              Puntaje por Indicadores:
+                            </Typography>
+                            <Stack spacing={2}>
+                              {sub.indicatorScores?.length > 0 ? (
+                                sub.indicatorScores.map((indScore, idx) => {
+                                  const indicatorData = taskInfo?.indicators?.find(
+                                    (i) => (i._id === indScore.indicatorId?._id || i._id === indScore.indicatorId)
+                                  );
+
+                                  return (
+                                    <Box key={idx}>
+                                      <Stack direction="row" justifyContent="space-between" sx={{ mb: 0.5 }}>
+                                        <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                                          {indicatorData?.description || indicatorData?.name || indScore.indicatorId?.name || "Indicador"}
+                                        </Typography>
+                                        <Typography variant="body2" sx={{ fontWeight: 800 }}>
+                                          {indScore.points} / {indicatorData?.points || 1} pts
+                                        </Typography>
+                                      </Stack>
+                                      <LinearProgress
+                                        variant="determinate"
+                                        value={(indScore.points / (indicatorData?.points || 1)) * 100}
+                                        sx={{ 
+                                          height: 6, borderRadius: 3, bgcolor: '#E2E8F0',
+                                          '& .MuiLinearProgress-bar': { bgcolor: COLORS.primary }
+                                        }}
+                                      />
+                                    </Box>
+                                  );
+                                })
+                              ) : (
+                                <Typography variant="body2" color="text.secondary">No hay indicadores evaluados.</Typography>
+                              )}
+                            </Stack>
+                          </Grid>
+
+                          <Grid item xs={12} md={6}>
+                            <Box sx={{ p: 2, bgcolor: 'white', borderRadius: 4, border: `1px solid ${COLORS.border}`, height: '100%' }}>
+                              <Typography variant="subtitle2" sx={{ fontWeight: 800, mb: 1 }}>Puntaje Final:</Typography>
+                              <Stack direction="row" alignItems="baseline" spacing={1}>
+                                <Typography variant="h4" sx={{ fontWeight: 900, color: COLORS.primary }}>{sub.score ?? 0}</Typography>
+                                <Typography variant="h6" sx={{ color: '#64748B', fontWeight: 600 }}>/ {totalMaxScore} pts</Typography>
+                              </Stack>
+                              <Divider sx={{ my: 2 }} />
+                              <Typography variant="subtitle2" sx={{ fontWeight: 800, mb: 1 }}>Comentarios:</Typography>
+                              <Typography variant="body2" sx={{ fontStyle: sub.comments ? 'normal' : 'italic' }}>
+                                {sub.comments || "Sin observaciones todavía."}
+                              </Typography>
+                            </Box>
+                          </Grid>
+                        </Grid>
+                      </AccordionDetails>
+                    </Accordion>
+                  );
+                })
+              )}
             </Stack>
-          </Grid>
-        </Grid>
-      </Paper>
-
-      {/* LISTA DE ENTREGAS */}
-      <Stack spacing={2}>
-        <Typography variant="h5" sx={{ fontWeight: 900, color: '#1E293B' }}>
-          Lista de Entregas
-        </Typography>
-
-        {submissions.length === 0 ? (
-          <Paper sx={{ p: 10, textAlign: 'center', borderRadius: 8 }}>
-            <Typography variant="h6" color="text.secondary">
-              No hay alumnos registrados en esta tarea.
-            </Typography>
-          </Paper>
-        ) : (
-          submissions.map((sub) => {
-            const isCorregido = sub.status === "corregido";
-
-            return (
-              <Accordion key={sub._id} elevation={0} sx={{ borderRadius: '24px !important', border: '1px solid #E2E8F0', '&:before': { display: 'none' }, mb: 2 }}>
-                
-                <AccordionSummary expandIcon={<ExpandMoreIcon />} component="div">
-                  <Stack direction="row" spacing={3} alignItems="center" sx={{ width: '100%' }}>
-                    <Avatar sx={{ bgcolor: isCorregido ? '#38A169' : '#ED8936' }}>
-                      <PersonIcon />
-                    </Avatar>
-
-                    <Box sx={{ flexGrow: 1 }}>
-                      <Typography sx={{ fontWeight: 800 }}>
-                        {sub.student.firstName} {sub.student.lastName}
-                      </Typography>
-                      <Chip label={isCorregido ? "CORREGIDO" : "PENDIENTE"} size="small" />
-                    </Box>
-
-                    {canGrade && (
-                      <Box onClick={(e) => e.stopPropagation()}>
-                        <Tooltip title={isCorregido ? "Editar Nota" : "Calificar"}>
-                          <IconButton
-                            onClick={() => router.push(`/teacher/classes/students/${sub._id}`)}
-                            sx={{ bgcolor: '#1A365D', color: 'white' }}
-                          >
-                            {isCorregido ? <CheckCircleIcon fontSize="small" /> : <EditIcon fontSize="small" />}
-                          </IconButton>
-                        </Tooltip>
-                      </Box>
-                    )}
-                  </Stack>
-                </AccordionSummary>
-
-                {/* ⚡ Detalles de la tarea */}
-                <AccordionDetails sx={{ bgcolor: '#F8FAFC', p: 4 }}>
-                  <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1 }}>Puntaje Total:</Typography>
-                  <Typography variant="body2" sx={{ mb: 2 }}>{sub.score ?? "Sin puntaje asignado"}</Typography>
-
-                  <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1 }}>Puntaje por Indicadores:</Typography>
-                  {sub.indicatorScores?.length > 0 ? (
-                    sub.indicatorScores.map((ind, idx) => {
-                      console.log("Indicador recibido:", ind); // 👈 Para revisar cómo llega cada indicador
-                      return (
-                        <Box key={idx} sx={{ mb: 1 }}>
-                          <Typography variant="body2" sx={{ mb: 0.5 }}>
-                            {ind.indicatorId?.name || "Indicador desconocido"} : {ind.points} pts
-                          </Typography>
-                          <LinearProgress
-                            variant="determinate"
-                            value={(ind.points / 1) * 100} // Ajustar según máximo
-                            sx={{ height: 8, borderRadius: 4 }}
-                          />
-                        </Box>
-                      );
-                    })
-                  ) : (
-                    <Typography variant="body2">No hay indicadores asignados</Typography>
-                  )}
-
-                  <Typography variant="subtitle2" sx={{ fontWeight: 700, mt: 2 }}>Comentarios:</Typography>
-                  <Typography variant="body2">{sub.comments || "Sin observaciones todavía."}</Typography>
-                </AccordionDetails>
-              </Accordion>
-            );
-          })
+          </>
         )}
-      </Stack>
-    </Container>
+      </Container>
+    </Box>
   );
 }

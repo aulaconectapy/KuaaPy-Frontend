@@ -10,7 +10,8 @@ import {
   FormControlLabel,
   Switch,
   CircularProgress,
-  Typography
+  Typography,
+  Box
 } from '@mui/material';
 
 import {
@@ -192,7 +193,8 @@ const UserForm = ({ userId, onSuccess }) => {
   };
 
   return (
-    <form onSubmit={handleSubmit}>
+<Box sx={{ width: '100%' }}>
+       <form onSubmit={handleSubmit}>
       {error && <Typography color="error" sx={{ mb: 2 }}>{error}</Typography>}
 
       <Grid container spacing={2}>
@@ -353,6 +355,7 @@ const UserForm = ({ userId, onSuccess }) => {
 
       </Grid>
     </form>
+    </Box>
   );
 };
 

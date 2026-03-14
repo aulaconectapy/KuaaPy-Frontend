@@ -11,7 +11,6 @@ const NewStudentPage = () => {
 
   return (
     <div>
-      <h1>Crear Estudiante</h1>
       <StudentForm onSuccess={handleSuccess} />
     </div>
   );

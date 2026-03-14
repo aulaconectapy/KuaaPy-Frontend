@@ -13,7 +13,7 @@ import {
   School, People,
   AdminPanelSettings, MenuBook,
   Settings, Class, Badge,
-  AccountCircle, Edit, Email
+  AccountCircle, Edit, Email, Close
 } from '@mui/icons-material';
 
 import StudentProfileForm from "@/components/StudentProfileForm";
@@ -41,17 +41,16 @@ const Dashboard = ({ docentesList }) => {
     primaryDark: "#4A080C",
     secondary: "#D4AF37", // Dorado
     textMain: "#1E293B",
-    textSecondary: "#64748B"
+    textSecondary: "#64748B",
+    bgLight: "#F8FAFC"
   };
 
-  // Lógica de redirección original
   useEffect(() => {
     if (!loading && initialized && !user) {
       router.replace('/auth/login');
     }
   }, [loading, initialized, user, router]);
 
-  // Lógica de carga de reportes original (Mantenida intacta)
   useEffect(() => {
     if (!initialized || !user) return;
 
@@ -94,7 +93,6 @@ const Dashboard = ({ docentesList }) => {
 
   if (!user) return null;
 
-  // Componente DashCard con la lógica de click original + Estética nueva
   const DashCard = ({ title, desc, icon: Icon, color, href, onClick }) => {
     const handleClick = () => {
       if (href) router.push(href);
@@ -165,7 +163,6 @@ const Dashboard = ({ docentesList }) => {
                 boxShadow: '0 12px 24px rgba(125, 15, 21, 0.2)'
               }}
             >
-              {/* BOTÓN EDITAR */}
               <Box
                 onClick={() => setProfileOpen(true)}
                 sx={{
@@ -222,7 +219,6 @@ const Dashboard = ({ docentesList }) => {
               </Stack>
             </Paper>
 
-            {/* INFORMACIÓN ACADÉMICA (Original) */}
             <Paper elevation={0} sx={{ p: 3, borderRadius: 5, border: '1px solid #e0e6ed' }}>
               <Typography variant="subtitle2" fontWeight={700} color="text.secondary">
                 INFORMACIÓN ACADÉMICA
@@ -262,7 +258,6 @@ const Dashboard = ({ docentesList }) => {
           </Box>
 
           <Grid container spacing={3}>
-            {/* MI PERFIL - Disponible para todos */}
             <DashCard
               title="Mi Perfil"
               desc="Editar mis datos"
@@ -271,7 +266,6 @@ const Dashboard = ({ docentesList }) => {
               onClick={() => setProfileOpen(true)}
             />
 
-            {/* LÓGICA DE TARJETAS POR ROL (Recuperada de tu código original) */}
             {user.role === 'estudiante' && (
               <>
                 <DashCard
@@ -362,15 +356,31 @@ const Dashboard = ({ docentesList }) => {
         </Grid>
       </Grid>
 
-      {/* DIÁLOGO DE FORMULARIOS (Recuperado de tu código original) */}
+      {/* DIÁLOGO DE FORMULARIOS ACTUALIZADO */}
       <Dialog
         open={profileOpen}
         onClose={() => setProfileOpen(false)}
         maxWidth="md"
         fullWidth
-        fullScreen={isMobile} // Mejora estética en celular
+        fullScreen={isMobile}
+        PaperProps={{
+          sx: { borderRadius: isMobile ? 0 : 4 }
+        }}
       >
-        <Box sx={{ p: isMobile ? 1 : 0 }}>
+        {/* Cabecera del Diálogo */}
+        <Box sx={{ p: 1, display: 'flex', justifyContent: 'space-between', alignItems: 'center', bgcolor: COLORS.bgLight }}>
+          <Typography variant="h5" fontWeight={800} color={COLORS.primary}>
+            Mi Perfil
+          </Typography>
+          <IconButton onClick={() => setProfileOpen(false)}>
+            <Close />
+          </IconButton>
+        </Box>
+
+        <Divider />
+
+        {/* Contenedor del Formulario con el espacio superior solicitado */}
+        <Box sx={{ mt: 5, mb: 5, px: 0, overflowY: 'auto', padding: 3 }}>
           {user.role === 'estudiante'
             ? <StudentProfileForm />
             : <UserForm userId={user._id} onSuccess={() => setProfileOpen(false)} />

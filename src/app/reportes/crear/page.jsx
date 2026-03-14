@@ -6,23 +6,32 @@ import { createDisciplineReport, getStudentsByGradeAndInstitution } from '@/serv
 import { useRouter } from 'next/navigation';
 
 import {
-  Container,
-  Typography,
-  TextField,
-  MenuItem,
-  Button,
-  Box,
-  Grid,
-  CircularProgress
+  Container, Typography, TextField, MenuItem, Button, 
+  Box, Grid, CircularProgress, Paper, Divider, Stack, InputAdornment
 } from '@mui/material';
 
-export default function CreateReportPage() {
+import {
+  Person as PersonIcon,
+  Gavel as GavelIcon,
+  Description as DescIcon,
+  Save as SaveIcon,
+  ArrowBack as BackIcon
+} from '@mui/icons-material';
 
+const COLORS = {
+  primary: "#7D0F15",
+  primaryLight: "#a31a20",
+  bgLight: "#F8FAFC",
+  border: "#E2E8F0"
+};
+
+export default function CreateReportPage() {
   const { user } = useAuth();
   const router = useRouter();
 
   const [students, setStudents] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [form, setForm] = useState({
     student: '',
@@ -33,16 +42,12 @@ export default function CreateReportPage() {
     observation: ''
   });
 
-  // ============================
-  // CARGAR ESTUDIANTES
-  // ============================
-
   useEffect(() => {
     const loadStudents = async () => {
       try {
         const data = await getStudentsByGradeAndInstitution(
-          user.grades[0],       // primer grado del docente
-          user.institution._id  // id de la institución
+          user.grades[0],
+          user.institution._id
         );
         setStudents(data);
       } catch (error) {
@@ -51,185 +56,206 @@ export default function CreateReportPage() {
         setLoading(false);
       }
     };
-
     if (user) loadStudents();
   }, [user]);
 
-  // ============================
-  // CAMBIAR INPUT
-  // ============================
-
   const handleChange = (e) => {
-    setForm({
-      ...form,
-      [e.target.name]: e.target.value
-    });
+    setForm({ ...form, [e.target.name]: e.target.value });
   };
-
-  // ============================
-  // ENVIAR FORMULARIO
-  // ============================
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setIsSubmitting(true);
 
     try {
-      // Buscar el estudiante seleccionado
       const selectedStudent = students.find(s => s._id === form.student);
+      if (!selectedStudent) return;
 
-      if (!selectedStudent) {
-        console.error("Estudiante no encontrado");
-        return;
-      }
-
-      // Construir el objeto completo para enviar al backend
       const reportData = {
         ...form,
-        teacher: user._id,                  // docente logueado
-        institution: user.institution._id,  // institución del docente
-        grade: selectedStudent.grade || user.grades[0], // grado del estudiante
-        studentUser: selectedStudent.user   // opcional: id del usuario del estudiante
+        teacher: user._id,
+        institution: user.institution._id,
+        grade: selectedStudent.grade || user.grades[0],
+        studentUser: selectedStudent.user
       };
 
-      console.log("Datos que se enviarán:", reportData);
-
       await createDisciplineReport(reportData);
-
       router.push('/reportes');
-
     } catch (error) {
       console.error('❌ ERROR CREANDO REPORTE:', error);
+      setIsSubmitting(false);
     }
   };
 
-  // ============================
-  // LOADING
-  // ============================
-
   if (loading) {
     return (
-      <Box display="flex" justifyContent="center" mt={5}>
-        <CircularProgress />
+      <Box display="flex" justifyContent="center" alignItems="center" height="70vh">
+        <CircularProgress sx={{ color: COLORS.primary }} />
       </Box>
     );
   }
 
-  // ============================
-  // RENDER
-  // ============================
-
   return (
-    <Container maxWidth="md">
-      <Typography variant="h4" mb={3}>
-        Crear Reporte Disciplinario
-      </Typography>
+    <Box sx={{ bgcolor: COLORS.bgLight, minHeight: '100vh', py: 5 }}>
+      <Container maxWidth="md">
+        
+        {/* BOTÓN VOLVER */}
+        <Button 
+          startIcon={<BackIcon />} 
+          onClick={() => router.back()}
+          sx={{ mb: 3, color: 'text.secondary', fontWeight: 700 }}
+        >
+          Volver a la lista
+        </Button>
 
-      <Box component="form" onSubmit={handleSubmit}>
-        <Grid container spacing={3}>
+        <Paper elevation={0} sx={{ p: 4, borderRadius: 5, border: `1px solid ${COLORS.border}` }}>
+          
+          <Stack direction="row" spacing={2} alignItems="center" mb={3}>
+            <Box sx={{ bgcolor: `${COLORS.primary}10`, p: 1.5, borderRadius: 3, color: COLORS.primary }}>
+              <GavelIcon fontSize="large" />
+            </Box>
+            <Box>
+              <Typography variant="h5" sx={{ fontWeight: 900, color: '#1E293B' }}>
+                Nuevo Reporte Disciplinario
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                Complete el formulario para registrar la incidencia.
+              </Typography>
+            </Box>
+          </Stack>
 
-          {/* ESTUDIANTE */}
-          <Grid item xs={12}>
-            <TextField
-              select
-              label="Seleccionar estudiante"
-              name="student"
-              value={form.student}
-              onChange={handleChange}
-              fullWidth
-              required
-            >
-              {students.map((student) => (
-                <MenuItem key={student._id} value={student._id}>
-                  {student.firstName} {student.lastName}
-                </MenuItem>
-              ))}
-            </TextField>
-          </Grid>
+          <Divider sx={{ mb: 4 }} />
 
-          {/* GRAVEDAD */}
-          <Grid item xs={12} md={6}>
-            <TextField
-              select
-              label="Gravedad"
-              name="severity"
-              value={form.severity}
-              onChange={handleChange}
-              fullWidth
-            >
-              <MenuItem value="Leve">Leve</MenuItem>
-              <MenuItem value="Moderado">Moderado</MenuItem>
-              <MenuItem value="Grave">Grave</MenuItem>
-            </TextField>
-          </Grid>
+          <Box component="form" onSubmit={handleSubmit}>
+            <Grid container spacing={3}>
+              
+              {/* SECCIÓN: ESTUDIANTE */}
+              <Grid item xs={12}>
+                <Typography variant="caption" sx={{ fontWeight: 800, color: COLORS.primary, mb: 1, display: 'block', textTransform: 'uppercase' }}>
+                  Información del Alumno
+                </Typography>
+                <TextField
+                  select
+                  label="Seleccionar Estudiante"
+                  name="student"
+                  value={form.student}
+                  onChange={handleChange}
+                  fullWidth
+                  required
+                  sx={{ '& .MuiOutlinedInput-root': { borderRadius: 3 } }}
+                >
+                  {students.map((student) => (
+                    <MenuItem key={student._id} value={student._id}>
+                      {student.firstName} {student.lastName}
+                    </MenuItem>
+                  ))}
+                </TextField>
+              </Grid>
 
-          {/* TIPO DE FALTA */}
-          <Grid item xs={12} md={6}>
-            <TextField
-              select
-              label="Tipo de falta"
-              name="faultType"
-              value={form.faultType}
-              onChange={handleChange}
-              fullWidth
-              required
-            >
-              <MenuItem value="Falta de respeto al compañero">Falta de respeto al compañero</MenuItem>
-              <MenuItem value="Falta de respeto al docente">Falta de respeto al docente</MenuItem>
-              <MenuItem value="Pelea">Pelea</MenuItem>
-              <MenuItem value="Interrupción de clase">Interrupción de clase</MenuItem>
-              <MenuItem value="Tarea no realizada">Tarea no realizada</MenuItem>
-              <MenuItem value="Uso indebido de materiales">Uso indebido de materiales</MenuItem>
-              <MenuItem value="Habla mucho en clases">Habla mucho en clases</MenuItem>
-              <MenuItem value="Grita en la clase">Grita en la clase</MenuItem>
-              <MenuItem value="Otro">Otro</MenuItem>
-            </TextField>
-          </Grid>
+              {/* SECCIÓN: DETALLES */}
+              <Grid item xs={12} md={6}>
+                <TextField
+                  select
+                  label="Nivel de Gravedad"
+                  name="severity"
+                  value={form.severity}
+                  onChange={handleChange}
+                  fullWidth
+                  sx={{ '& .MuiOutlinedInput-root': { borderRadius: 3 } }}
+                >
+                  <MenuItem value="Leve">🟢 Leve</MenuItem>
+                  <MenuItem value="Moderado">🟡 Moderado</MenuItem>
+                  <MenuItem value="Grave">🔴 Grave</MenuItem>
+                </TextField>
+              </Grid>
 
-          {/* DESCRIPCIÓN */}
-          <Grid item xs={12}>
-            <TextField
-              label="Descripción del incidente"
-              name="description"
-              value={form.description}
-              onChange={handleChange}
-              fullWidth
-              multiline
-              rows={4}
-              required
-            />
-          </Grid>
+              <Grid item xs={12} md={6}>
+                <TextField
+                  select
+                  label="Tipo de Falta"
+                  name="faultType"
+                  value={form.faultType}
+                  onChange={handleChange}
+                  fullWidth
+                  required
+                  sx={{ '& .MuiOutlinedInput-root': { borderRadius: 3 } }}
+                >
+                  {[
+                    "Falta de respeto al compañero", "Falta de respeto al docente",
+                    "Pelea", "Interrupción de clase", "Tarea no realizada",
+                    "Uso indebido de materiales", "Habla mucho en clases",
+                    "Grita en la clase", "Otro"
+                  ].map(option => (
+                    <MenuItem key={option} value={option}>{option}</MenuItem>
+                  ))}
+                </TextField>
+              </Grid>
 
-          {/* ACCIÓN TOMADA */}
-          <Grid item xs={12}>
-            <TextField
-              label="Acción tomada"
-              name="actionTaken"
-              value={form.actionTaken}
-              onChange={handleChange}
-              fullWidth
-            />
-          </Grid>
+              <Grid item xs={12}>
+                <TextField
+                  label="Descripción Detallada del Incidente"
+                  name="description"
+                  value={form.description}
+                  onChange={handleChange}
+                  fullWidth
+                  multiline
+                  rows={3}
+                  required
+                  placeholder="Explique lo sucedido con objetividad..."
+                  sx={{ '& .MuiOutlinedInput-root': { borderRadius: 3 } }}
+                />
+              </Grid>
 
-          {/* OBSERVACIÓN */}
-          <Grid item xs={12}>
-            <TextField
-              label="Observación"
-              name="observation"
-              value={form.observation}
-              onChange={handleChange}
-              fullWidth
-            />
-          </Grid>
+              <Grid item xs={12} md={6}>
+                <TextField
+                  label="Acción Tomada"
+                  name="actionTaken"
+                  value={form.actionTaken}
+                  onChange={handleChange}
+                  fullWidth
+                  placeholder="Ej: Llamada de atención, retiro de material..."
+                  sx={{ '& .MuiOutlinedInput-root': { borderRadius: 3 } }}
+                />
+              </Grid>
 
-          {/* BOTÓN */}
-          <Grid item xs={12}>
-            <Button type="submit" variant="contained" size="large" fullWidth>
-              Guardar Reporte
-            </Button>
-          </Grid>
+              <Grid item xs={12} md={6}>
+                <TextField
+                  label="Observación Adicional"
+                  name="observation"
+                  value={form.observation}
+                  onChange={handleChange}
+                  fullWidth
+                  sx={{ '& .MuiOutlinedInput-root': { borderRadius: 3 } }}
+                />
+              </Grid>
 
-        </Grid>
-      </Box>
-    </Container>
+              {/* BOTONES DE ACCIÓN */}
+              <Grid item xs={12}>
+                <Box sx={{ mt: 2 }}>
+                  <Button 
+                    type="submit" 
+                    variant="contained" 
+                    size="large" 
+                    fullWidth
+                    disabled={isSubmitting}
+                    startIcon={isSubmitting ? <CircularProgress size={20} color="inherit" /> : <SaveIcon />}
+                    sx={{ 
+                      bgcolor: COLORS.primary, 
+                      borderRadius: 3, 
+                      py: 1.5, 
+                      fontWeight: 800,
+                      '&:hover': { bgcolor: COLORS.primaryLight }
+                    }}
+                  >
+                    {isSubmitting ? 'Guardando...' : 'Registrar Reporte Oficial'}
+                  </Button>
+                </Box>
+              </Grid>
+
+            </Grid>
+          </Box>
+        </Paper>
+      </Container>
+    </Box>
   );
 }

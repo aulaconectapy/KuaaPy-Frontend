@@ -293,7 +293,7 @@ export default function CorrectStudentTaskPage() {
                   <Typography variant="caption" sx={{ fontWeight: 800 }}>SISTEMA AULA CONECTA</Typography>
                 </Stack>
                 <Typography variant="body2" sx={{ mt: 1, opacity: 0.9, fontSize: '0.75rem' }}>
-                  La calificación se guardará en el registro oficial del alumno Ezequiel Vargas.
+                  Los registro se guardará en el sistema de la Institución.
                 </Typography>
               </Paper>
             </Stack>

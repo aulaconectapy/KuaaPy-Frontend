@@ -4,7 +4,7 @@ import React, { useEffect, useState } from "react";
 import { 
   Box, Typography, Button, Avatar, Skeleton, Container, 
   IconButton, AppBar, Toolbar, useMediaQuery, Badge,
-  Snackbar, Alert, Menu, MenuItem, ListItemText, ListItemSecondaryAction
+  Snackbar, Alert, Menu, MenuItem, ListItemText
 } from "@mui/material";
 import { Logout, Notifications as NotificationsIcon } from "@mui/icons-material";
 import Image from "next/image";
@@ -14,20 +14,20 @@ import { useAuth } from "@/context/AuthContext";
 import { getMyDisciplineReports, getMyNotifications, markAsRead } from "@/services/api";
 import socket from "@/services/socket";
 
-// NUEVA PALETA BASADA EN EL LOGO C.P.M.A.
+// PALETA INSTITUCIONAL C.P.M.A.
 const theme = createTheme({
   palette: {
     primary: { 
-      main: "#7D0F15", // Granate Institucional
+      main: "#7D0F15", // Granate
       light: "#A61D24", 
       dark: "#4A080C",
       contrastText: "#FFFFFF" 
     },
     secondary: { 
-      main: "#D4AF37", // Dorado/Ocre para detalles (combinación clásica)
+      main: "#D4AF37", // Dorado
     },
     background: { 
-      default: "#F9F7F2", // Blanco roto/Crema suave para un look más "papel/académico"
+      default: "#F9F7F2", 
       paper: "#FFFFFF" 
     },
     text: { 
@@ -43,7 +43,7 @@ const theme = createTheme({
     h6: { fontWeight: 700 }
   },
   shape: {
-    borderRadius: 8 // Bordes un poco más suaves
+    borderRadius: 8
   }
 });
 
@@ -135,7 +135,7 @@ export default function Layout({ children }) {
 
   return (
     <ThemeProvider theme={theme}>
-      <Box sx={{ display: "flex", flexDirection: "column", height: "100vh", backgroundColor: "background.default" }}>
+      <Box sx={{ display: "flex", flexDirection: "column", minHeight: "100vh", backgroundColor: "background.default" }}>
 
         {/* HEADER INSTITUCIONAL */}
         <AppBar position="sticky" elevation={1} sx={{ bgcolor: "white", borderBottom: `3px solid ${theme.palette.primary.main}`, zIndex: 1100 }}>
@@ -183,7 +183,6 @@ export default function Layout({ children }) {
                     </Typography>
                   </Box>
 
-                  {/* CAMPANAS CON COLORES AJUSTADOS */}
                   <IconButton onClick={user.role === 'director/a' ? handleMenuOpen : () => router.push("/reportes/mis-reportes")} size="small">
                     <Badge badgeContent={user.role === 'director/a' ? unreadCount : pendingReports} color="primary">
                       <NotificationsIcon sx={{ color: "primary.main" }} />
@@ -239,9 +238,78 @@ export default function Layout({ children }) {
         </AppBar>
 
         {/* CONTENIDO PRINCIPAL */}
-        <Box component="main" sx={{ flexGrow: 1, overflowY: "auto", p: { xs: 2, sm: 3, md: 4 } }}>
+        <Box component="main" sx={{ flexGrow: 1, p: { xs: 2, sm: 3, md: 4 } }}>
           <Container maxWidth="lg" disableGutters={isMobile}>
             {children}
+          </Container>
+        </Box>
+
+        {/* --- SECCIÓN: FOOTER --- */}
+        <Box 
+          component="footer" 
+          sx={{ 
+            py: 4, 
+            px: 2, 
+            backgroundColor: "white", 
+            borderTop: `3px solid ${theme.palette.primary.main}`, 
+            mt: 'auto'
+          }}
+        >
+          <Container maxWidth="lg">
+            <Box sx={{ 
+              display: 'flex', 
+              flexDirection: 'column', 
+              alignItems: 'center',
+              gap: 2 
+            }}>
+              {/* Redes Sociales */}
+              <Box sx={{ display: 'flex', gap: 2 }}>
+                <IconButton 
+                  component="a" 
+                  href="https://www.facebook.com/cpma.mariaauxiliadora" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  sx={{ color: "primary.main", "&:hover": { color: "secondary.main" } }}
+                >
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M22 12c0-5.52-4.48-10-10-10S2 6.48 2 12c0 4.84 3.44 8.87 8 9.8V15H8v-3h2V9.5C10 7.57 11.57 6 13.5 6H16v3h-2c-.55 0-1 .45-1 1V12h3l-.5 3H13v6.8c4.56-.93 8-4.96 8-9.8z"/>
+                  </svg>
+                </IconButton>
+                <IconButton 
+                  component="a" 
+                  href="https://www.instagram.com/cpma.itapua/" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  sx={{ color: "primary.main", "&:hover": { color: "secondary.main" } }}
+                >
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M7.8 2h8.4C19.4 2 22 4.6 22 7.8v8.4a5.8 5.8 0 0 1-5.8 5.8H7.8C4.6 22 2 19.4 2 16.2V7.8A5.8 5.8 0 0 1 7.8 2m-.2 2A3.6 3.6 0 0 0 4 7.6v8.8C4 18.39 5.61 20 7.6 20h8.8a3.6 3.6 0 0 0 3.6-3.6V7.6C20 5.61 18.39 4 16.4 4H7.6m9.65 1.5a1.25 1.25 0 0 1 1.25 1.25A1.25 1.25 0 0 1 17.25 8 1.25 1.25 0 0 1 16 6.75a1.25 1.25 0 0 1 1.25-1.25M12 7a5 5 0 0 1 5 5 5 5 0 0 1-5 5 5 5 0 0 1-5-5 5 5 0 0 1 5-5m0 2a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0 3-3 3 3 0 0 0-3-3z"/>
+                  </svg>
+                </IconButton>
+              </Box>
+
+              <Typography variant="body2" color="text.primary" sx={{ fontWeight: 700, textAlign: 'center' }}>
+                COLEGIO PRIVADO MARÍA AUXILIADORA
+              </Typography>
+
+              <Typography variant="caption" color="text.secondary" sx={{ textAlign: 'center' }}>
+                © {new Date().getFullYear()} - Todos los derechos reservados
+              </Typography>
+
+              <Typography 
+                variant="caption" 
+                sx={{ 
+                  mt: 1, 
+                  color: 'text.secondary', 
+                  fontStyle: 'italic',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 0.5
+                }}
+              >
+                Desarrollado por <span style={{ fontWeight: 800, color: theme.palette.primary.main }}>Ezequiel Vargas</span>
+              </Typography>
+            </Box>
           </Container>
         </Box>
 
