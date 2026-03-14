@@ -203,7 +203,7 @@ const FormLogin = () => {
 
               <Box mt={4}>
                 <Typography variant="body2" sx={{ color: 'text.secondary', fontWeight: 500 }}>
-                  ¿Problemas con su acceso?
+                  ¿Problemas con su acceso? 
                 </Typography>
 <Link
   component="button"
