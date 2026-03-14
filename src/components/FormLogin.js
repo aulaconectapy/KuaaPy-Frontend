@@ -211,7 +211,7 @@ const FormLogin = () => {
   onClick={() => {
     const phone = "595986346921"; 
     const message = encodeURIComponent(
-      "Hola, estoy escribiendo porque tengo un problema de inicio de sesión en el sistema del CPMA María Auxiliadora."
+      "Hola, estoy escribiendo porque tengo un problema de inicio de sesión en el sistema del CPMA María Auxiliadora. Me podrías ayudar por favor?"
     );
     window.open(`https://wa.me/${phone}?text=${message}`, '_blank');
   }}
