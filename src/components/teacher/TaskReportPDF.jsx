@@ -40,7 +40,7 @@ export const generateTaskPDF = async (taskInfo, submissions, user) => {
   
   doc.setFontSize(10);
   doc.setTextColor(50, 50, 50);
-  doc.text(`Institución: Escuela Agrícola de Villarrica`, 42, 25);
+  doc.text(`Institución: ${user?.institution?.name || 'N/A'}`, 42, 25);
   doc.text(`Docente: ${user?.firstName || ''} ${user?.lastName || ''}`, 42, 30);
 
   // Datos a la derecha
