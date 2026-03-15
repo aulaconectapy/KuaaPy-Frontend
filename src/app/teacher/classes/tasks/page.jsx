@@ -13,10 +13,13 @@ import {
   Visibility as VisibilityIcon, VisibilityOff as VisibilityOffIcon,
   Assignment as AssignmentIcon, Event as EventIcon, 
   ChevronRight as ChevronRightIcon, Search as SearchIcon,
-  FilterList as FilterIcon, School as SchoolIcon
+  FilterList as FilterIcon, School as SchoolIcon,
+  PictureAsPdf as PdfIcon
 } from "@mui/icons-material";
 
-import { getTasks, deleteTask, updateTask } from "@/services/api";
+// IMPORTANTE: Asegúrate de que la ruta sea correcta según tu proyecto
+import { getTasks, deleteTask, updateTask, getStudentTasksByGrade } from "@/services/api";
+import { generateTaskPDF } from "@/components/teacher/TaskReportPDF"; 
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 
@@ -29,11 +32,11 @@ export default function TasksPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [filterSubject, setFilterSubject] = useState("");
   const [filterGrade, setFilterGrade] = useState("");
+  const [generatingPdfId, setGeneratingPdfId] = useState(null);
   const [snackbar, setSnackbar] = useState({ open: false, message: "", severity: "success" });
 
-  // --- IDENTIDAD INSTITUCIONAL ---
   const COLORS = {
-    primary: "#7D0F15", // Granate CPMA
+    primary: "#7D0F15",
     primaryLight: "#a31a20",
     bgLight: "#F8FAFC",
     border: "#E2E8F0"
@@ -63,6 +66,31 @@ export default function TasksPage() {
     };
     fetchTasks();
   }, []);
+
+  // --- FUNCIÓN PARA GENERAR PDF DESDE LA LISTA ---
+  const handleDownloadPDF = async (task) => {
+    setGeneratingPdfId(task._id);
+    try {
+      // 1. Obtenemos las entregas (submissions) de ese grado
+      const studentTasks = await getStudentTasksByGrade(task.grade);
+      // 2. Filtramos solo las que pertenecen a esta tarea
+      const filteredSubmissions = studentTasks.filter(st => st.task._id === task._id || st.task === task._id);
+      
+      if (filteredSubmissions.length === 0) {
+        setSnackbar({ open: true, message: "No hay alumnos registrados en este grado para generar el PDF", severity: "warning" });
+        return;
+      }
+
+      // 3. Generamos el PDF usando nuestra utilidad
+      await generateTaskPDF(task, filteredSubmissions, user);
+      setSnackbar({ open: true, message: "PDF generado correctamente", severity: "success" });
+    } catch (error) {
+      console.error("Error generating PDF:", error);
+      setSnackbar({ open: true, message: "Error al generar el PDF", severity: "error" });
+    } finally {
+      setGeneratingPdfId(null);
+    }
+  };
 
   const handleDelete = async (taskId) => {
     if (!confirm("¿Seguro que deseas eliminar esta tarea?")) return;
@@ -124,42 +152,17 @@ export default function TasksPage() {
   return (
     <Box sx={{ bgcolor: COLORS.bgLight, minHeight: '100vh', py: 5 }}>
       <Container maxWidth="lg">
-        {/* HEADER SECTION */}
         <Stack direction={{ xs: 'column', sm: 'row' }} justifyContent="space-between" alignItems={{ xs: 'flex-start', sm: 'center' }} spacing={3} sx={{ mb: 5 }}>
           <Box>
             <Typography variant="h3" sx={{ fontWeight: 900, color: COLORS.primary, letterSpacing: '-1.5px', mb: 1 }}>
               Académico
             </Typography>
-            
             <Stack spacing={1.5}>
               <Stack direction="row" spacing={1} alignItems="center">
                 <SchoolIcon sx={{ color: COLORS.primary, fontSize: 18 }} />
                 <Typography variant="subtitle1" sx={{ color: '#1E293B', fontWeight: 700, lineHeight: 1 }}>
                   {user?.institution?.name || "C.P. María Auxiliadora"}
                 </Typography>
-              </Stack>
-              
-              <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap" useFlexGap>
-                <Typography variant="caption" sx={{ color: '#64748B', fontWeight: 800, textTransform: 'uppercase', mr: 1 }}>
-                  {isAdmin ? "Acceso:" : "Mis Grados:"}
-                </Typography>
-                {isAdmin ? (
-                  <Chip label="Administración Global" size="small" sx={{ bgcolor: '#F1F5F9', fontWeight: 700, color: COLORS.primary }} />
-                ) : (
-                  user?.grades?.map((grade) => (
-                    <Chip 
-                      key={grade} 
-                      label={grade} 
-                      size="small" 
-                      sx={{ 
-                        bgcolor: `${COLORS.primary}10`, 
-                        color: COLORS.primary, 
-                        fontWeight: 700,
-                        border: `1px solid ${COLORS.primary}20`
-                      }} 
-                    />
-                  ))
-                )}
               </Stack>
             </Stack>
           </Box>
@@ -170,62 +173,42 @@ export default function TasksPage() {
               size="large"
               startIcon={<AddIcon />}
               onClick={() => router.push("/teacher/classes/create")}
-              sx={{ 
-                bgcolor: COLORS.primary, borderRadius: 4, px: 4, py: 1.5, 
-                textTransform: 'none', fontWeight: 800, 
-                boxShadow: `0 10px 20px ${COLORS.primary}30`,
-                '&:hover': { bgcolor: COLORS.primaryLight, transform: 'translateY(-2px)' },
-                transition: 'all 0.2s'
-              }}
+              sx={{ bgcolor: COLORS.primary, borderRadius: 4, px: 4, py: 1.5, textTransform: 'none', fontWeight: 800 }}
             >
               Nueva Tarea
             </Button>
           )}
         </Stack>
 
-        {/* FILTERS CARD */}
-        <Paper elevation={0} sx={{ p: 3, mb: 5, borderRadius: 6, border: `1px solid ${COLORS.border}`, boxShadow: '0 4px 6px -1px rgba(0,0,0,0.02)' }}>
+        {/* FILTROS */}
+        <Paper elevation={0} sx={{ p: 3, mb: 5, borderRadius: 6, border: `1px solid ${COLORS.border}` }}>
           <Grid container spacing={2} alignItems="center">
             <Grid item xs={12} md={5}>
               <TextField
                 fullWidth
-                placeholder="Buscar por tema o título..."
+                placeholder="Buscar por tema..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <SearchIcon sx={{ color: COLORS.primary }} />
-                    </InputAdornment>
-                  ),
-                  sx: { borderRadius: 4, bgcolor: '#fff' }
+                  startAdornment: <InputAdornment position="start"><SearchIcon sx={{ color: COLORS.primary }} /></InputAdornment>,
+                  sx: { borderRadius: 4 }
                 }}
               />
             </Grid>
             <Grid item xs={12} sm={6} md={3.5}>
               <FormControl fullWidth>
                 <InputLabel>Asignatura</InputLabel>
-                <Select 
-                  value={filterSubject} 
-                  onChange={(e) => setFilterSubject(e.target.value)} 
-                  label="Asignatura"
-                  sx={{ borderRadius: 4, bgcolor: '#fff' }}
-                >
-                  <MenuItem value="">Todas las materias</MenuItem>
+                <Select value={filterSubject} onChange={(e) => setFilterSubject(e.target.value)} label="Asignatura" sx={{ borderRadius: 4 }}>
+                  <MenuItem value="">Todas</MenuItem>
                   {uniqueSubjects.map(subj => <MenuItem key={subj} value={subj}>{subj}</MenuItem>)}
                 </Select>
               </FormControl>
             </Grid>
             <Grid item xs={12} sm={6} md={3.5}>
               <FormControl fullWidth>
-                <InputLabel>Grado/Curso</InputLabel>
-                <Select 
-                  value={filterGrade} 
-                  onChange={(e) => setFilterGrade(e.target.value)} 
-                  label="Grado/Curso"
-                  sx={{ borderRadius: 4, bgcolor: '#fff' }}
-                >
-                  <MenuItem value="">Todos los grados</MenuItem>
+                <InputLabel>Grado</InputLabel>
+                <Select value={filterGrade} onChange={(e) => setFilterGrade(e.target.value)} label="Grado" sx={{ borderRadius: 4 }}>
+                  <MenuItem value="">Todos</MenuItem>
                   {uniqueGrades.map(grade => <MenuItem key={grade} value={grade}>{grade}</MenuItem>)}
                 </Select>
               </FormControl>
@@ -233,128 +216,86 @@ export default function TasksPage() {
           </Grid>
         </Paper>
 
-        {/* TASKS LIST */}
+        {/* LISTADO */}
         <Stack spacing={2.5}>
-          <Typography variant="overline" sx={{ color: '#64748B', fontWeight: 800, ml: 1, letterSpacing: 1 }}>
-            {filteredTasks.length} Tareas encontradas
-          </Typography>
-
-          {filteredTasks.length === 0 ? (
-            <Paper sx={{ py: 10, textAlign: 'center', borderRadius: 6, border: `2px dashed ${COLORS.border}`, bgcolor: 'transparent' }}>
-              <FilterIcon sx={{ fontSize: 60, color: '#CBD5E1', mb: 2 }} />
-              <Typography variant="h6" color="text.secondary" sx={{ fontWeight: 600 }}>
-                No hay tareas con estos filtros
-              </Typography>
-              <Button onClick={() => { setSearchTerm(""); setFilterSubject(""); setFilterGrade(""); }} sx={{ mt: 1, color: COLORS.primary, fontWeight: 700 }}>
-                Limpiar filtros
-              </Button>
-            </Paper>
-          ) : (
-            filteredTasks.map(task => (
-              <Fade in key={task._id}>
-                <Paper 
-                  elevation={0}
-                  sx={{ 
-                    p: 3, borderRadius: 6, border: `1px solid ${COLORS.border}`,
-                    transition: 'all 0.3s ease',
-                    '&:hover': { 
-                      borderColor: COLORS.primary, 
-                      transform: 'translateY(-4px)',
-                      boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.05)' 
-                    }
-                  }}
-                >
-                  <Grid container spacing={3} alignItems="center">
-                    <Grid item xs={12} md={6}>
-                      <Stack direction="row" spacing={2.5} alignItems="center">
-                        <Avatar sx={{ 
-                          width: 60, height: 60, 
-                          bgcolor: task.status === 'publicada' ? `${COLORS.primary}10` : '#F1F5F9',
-                          color: task.status === 'publicada' ? COLORS.primary : '#64748B',
-                          borderRadius: 4,
-                          border: `1px solid ${task.status === 'publicada' ? `${COLORS.primary}20` : COLORS.border}`
-                        }}>
-                          <AssignmentIcon />
-                        </Avatar>
-                        <Box>
-                          <Typography variant="h6" sx={{ fontWeight: 800, color: '#1E293B', mb: 0.5, lineHeight: 1.2 }}>
-                            {task.topic}
-                          </Typography>
-                          <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
-                            <Chip label={task.subject} size="small" sx={{ bgcolor: COLORS.primary, color: '#fff', fontWeight: 700, fontSize: '0.7rem' }} />
-                            <Chip label={task.grade} size="small" variant="outlined" sx={{ fontWeight: 700, fontSize: '0.7rem', color: '#64748B' }} />
-                            <Chip 
-                              label={task.status === "publicada" ? "Publicado" : "Borrador"} 
-                              size="small" 
-                              sx={{ 
-                                fontSize: '0.65rem', fontWeight: 900,
-                                bgcolor: task.status === "publicada" ? "#DCFCE7" : "#FEF3C7",
-                                color: task.status === "publicada" ? "#166534" : "#92400E"
-                              }} 
-                            />
-                          </Stack>
-                        </Box>
-                      </Stack>
-                    </Grid>
-
-                    <Grid item xs={12} sm={6} md={2.5}>
-                      <Stack spacing={0.5}>
-                        <Typography variant="caption" sx={{ color: '#94A3B8', fontWeight: 800, textTransform: 'uppercase', letterSpacing: 0.5 }}>
-                          Vencimiento
-                        </Typography>
-                        <Stack direction="row" spacing={1} alignItems="center">
-                          <EventIcon sx={{ color: COLORS.primary, fontSize: 18 }} />
-                          <Typography variant="body2" sx={{ fontWeight: 700, color: '#334155' }}>
-                            {new Date(task.dueDate).toLocaleDateString('es-PY', { day: 'numeric', month: 'short', year: 'numeric' })}
-                          </Typography>
+          {filteredTasks.map(task => (
+            <Fade in key={task._id}>
+              <Paper 
+                elevation={0}
+                sx={{ p: 3, borderRadius: 6, border: `1px solid ${COLORS.border}`, transition: '0.3s', '&:hover': { borderColor: COLORS.primary } }}
+              >
+                <Grid container spacing={3} alignItems="center">
+                  <Grid item xs={12} md={6}>
+                    <Stack direction="row" spacing={2.5} alignItems="center">
+                      <Avatar sx={{ width: 60, height: 60, bgcolor: `${COLORS.primary}10`, color: COLORS.primary, borderRadius: 4 }}>
+                        <AssignmentIcon />
+                      </Avatar>
+                      <Box>
+                        <Typography variant="h6" sx={{ fontWeight: 800, color: '#1E293B' }}>{task.topic}</Typography>
+                        <Stack direction="row" spacing={1}>
+                          <Chip label={task.subject} size="small" sx={{ bgcolor: COLORS.primary, color: '#fff', fontWeight: 700 }} />
+                          <Chip label={task.grade} size="small" variant="outlined" />
                         </Stack>
-                      </Stack>
-                    </Grid>
-
-                    <Grid item xs={12} sm={6} md={3.5}>
-                      <Stack direction="row" spacing={1} justifyContent={{ xs: 'flex-start', md: 'flex-end' }}>
-                        {isTeacher && (
-                          <>
-                            <Tooltip title="Editar">
-                              <IconButton onClick={() => router.push(`/teacher/classes/tasks/edit/${task._id}`)} sx={{ color: '#64748B', '&:hover': { color: COLORS.primary, bgcolor: `${COLORS.primary}10` } }}>
-                                <EditIcon fontSize="small" />
-                              </IconButton>
-                            </Tooltip>
-                            <Tooltip title={task.status === "publicada" ? "Ocultar" : "Publicar"}>
-                              <IconButton onClick={() => handleTogglePublish(task)} sx={{ color: task.status === 'publicada' ? '#0EA5E9' : '#64748B' }}>
-                                {task.status === "publicada" ? <VisibilityIcon fontSize="small" /> : <VisibilityOffIcon fontSize="small" />}
-                              </IconButton>
-                            </Tooltip>
-                            <Tooltip title="Eliminar">
-                              <IconButton onClick={() => handleDelete(task._id)} sx={{ color: '#EF4444', '&:hover': { bgcolor: '#FEE2E2' } }}>
-                                <DeleteIcon fontSize="small" />
-                              </IconButton>
-                            </Tooltip>
-                          </>
-                        )}
-                        <Button
-                          variant="contained"
-                          endIcon={<ChevronRightIcon />}
-                          onClick={() => router.push(`/teacher/classes/tasks/${task._id}`)}
-                          sx={{ 
-                            bgcolor: '#F1F5F9', color: COLORS.primary, boxShadow: 'none',
-                            textTransform: 'none', fontWeight: 800, borderRadius: 3,
-                            '&:hover': { bgcolor: COLORS.primary, color: '#fff', boxShadow: `0 8px 15px ${COLORS.primary}30` }
-                          }}
-                        >
-                          {isTeacher ? "Corregir" : "Ver más"}
-                        </Button>
-                      </Stack>
-                    </Grid>
+                      </Box>
+                    </Stack>
                   </Grid>
-                </Paper>
-              </Fade>
-            ))
-          )}
+
+                  <Grid item xs={12} sm={6} md={2.5}>
+                    <Stack direction="row" spacing={1} alignItems="center">
+                      <EventIcon sx={{ color: COLORS.primary, fontSize: 18 }} />
+                      <Typography variant="body2" sx={{ fontWeight: 700 }}>
+                        {new Date(task.dueDate).toLocaleDateString()}
+                      </Typography>
+                    </Stack>
+                  </Grid>
+
+                  <Grid item xs={12} sm={6} md={3.5}>
+                    <Stack direction="row" spacing={1} justifyContent="flex-end">
+                      {isTeacher && (
+                        <>
+                          {/* BOTÓN PDF AGREGADO */}
+                          <Tooltip title="Descargar Planilla PDF">
+                            <IconButton 
+                              onClick={() => handleDownloadPDF(task)} 
+                              disabled={generatingPdfId === task._id}
+                              sx={{ color: '#059669', '&:hover': { bgcolor: '#DCFCE7' } }}
+                            >
+                              {generatingPdfId === task._id ? <CircularProgress size={20} color="inherit" /> : <PdfIcon fontSize="small" />}
+                            </IconButton>
+                          </Tooltip>
+
+                          <Tooltip title="Editar">
+                            <IconButton onClick={() => router.push(`/teacher/classes/tasks/edit/${task._id}`)} sx={{ color: '#64748B' }}>
+                              <EditIcon fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
+                          
+                          <Tooltip title="Eliminar">
+                            <IconButton onClick={() => handleDelete(task._id)} sx={{ color: '#EF4444' }}>
+                              <DeleteIcon fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
+                        </>
+                      )}
+                      
+                      <Button
+                        variant="contained"
+                        endIcon={<ChevronRightIcon />}
+                        onClick={() => router.push(`/teacher/classes/tasks/${task._id}`)}
+                        sx={{ bgcolor: '#F1F5F9', color: COLORS.primary, textTransform: 'none', fontWeight: 800, borderRadius: 3 }}
+                      >
+                        Corregir
+                      </Button>
+                    </Stack>
+                  </Grid>
+                </Grid>
+              </Paper>
+            </Fade>
+          ))}
         </Stack>
 
         <Snackbar open={snackbar.open} autoHideDuration={4000} onClose={() => setSnackbar({ ...snackbar, open: false })}>
-          <Alert severity={snackbar.severity} variant="filled" sx={{ width: '100%', borderRadius: 4, fontWeight: 700, bgcolor: snackbar.severity === 'success' ? COLORS.primary : '#EF4444' }}>
+          <Alert severity={snackbar.severity} variant="filled" sx={{ width: '100%', borderRadius: 4 }}>
             {snackbar.message}
           </Alert>
         </Snackbar>

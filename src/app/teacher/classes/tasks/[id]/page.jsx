@@ -4,6 +4,8 @@ import { useEffect, useState, useMemo } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { getTaskById, getStudentTasksByGrade } from "@/services/api";
 import { useAuth } from "@/context/AuthContext";
+// IMPORTANTE: Asegúrate de que la ruta al archivo PDF sea correcta
+import { generateTaskPDF } from "@/components/teacher/TaskReportPDF"; 
 
 import {
   Box, Typography, CircularProgress, Paper, Stack, Chip,
@@ -18,7 +20,7 @@ import {
   Person as PersonIcon,
   ArrowBack as ArrowBackIcon,
   Analytics as AnalyticsIcon,
-  EmojiEvents as TrophyIcon
+  PictureAsPdf as PdfIcon 
 } from '@mui/icons-material';
 
 const COLORS = {
@@ -78,7 +80,6 @@ export default function TaskSubmissionsPage() {
     fetchData();
   }, [id, isAuthorized]);
 
-  // Cálculo de puntaje total de la tarea (suma de indicadores)
   const totalMaxScore = useMemo(() => {
     return taskInfo?.indicators?.reduce((acc, curr) => acc + (curr.points || 0), 0) || 0;
   }, [taskInfo]);
@@ -163,9 +164,29 @@ export default function TaskSubmissionsPage() {
               </Grid>
             </Paper>
 
-            <Box sx={{ mb: 3, display: 'flex', alignItems: 'center', gap: 1.5 }}>
-              <AnalyticsIcon sx={{ color: COLORS.primary }} />
-              <Typography variant="h5" sx={{ fontWeight: 900, color: '#1E293B' }}>Listado de Entregas</Typography>
+            <Box sx={{ mb: 3, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                <AnalyticsIcon sx={{ color: COLORS.primary }} />
+                <Typography variant="h5" sx={{ fontWeight: 900, color: '#1E293B' }}>Listado de Entregas</Typography>
+              </Box>
+
+              {/* BOTÓN DE DESCARGA PDF */}
+              <Button
+                variant="contained"
+                startIcon={<PdfIcon />}
+                onClick={async () => await generateTaskPDF(taskInfo, submissions, user)}
+                sx={{ 
+                  bgcolor: COLORS.primary, 
+                  borderRadius: 3,
+                  px: 3,
+                  fontWeight: 700,
+                  textTransform: 'none',
+                  '&:hover': { bgcolor: COLORS.primaryLight },
+                  boxShadow: '0 4px 12px rgba(125, 15, 21, 0.2)'
+                }}
+              >
+                Descargar Planilla
+              </Button>
             </Box>
 
             <Stack spacing={2}>
@@ -201,7 +222,6 @@ export default function TaskSubmissionsPage() {
                                 color={isCorregido ? "success" : "warning"} 
                                 sx={{ height: 20, fontSize: '0.65rem', fontWeight: 900 }} 
                               />
-                              {/* AQUÍ ESTÁ EL CAMBIO: MOSTRAR X de Y PUNTOS */}
                               <Typography variant="caption" sx={{ fontWeight: 700, color: isCorregido ? COLORS.success : '#64748B' }}>
                                 {sub.score || 0} / {totalMaxScore} pts obtenidos
                               </Typography>
