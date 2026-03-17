@@ -69,7 +69,8 @@ const Dashboard = ({ docentesList }) => {
             return;
           }
           data = await getReportsByGrade(grade);
-        } else if (['administrador', 'director/a'].includes(role)) {
+        } else if (['administrador', 'director/a', 'secretario/a'].includes(role)) {
+          // Ahora secretario/a también carga todos los reportes
           data = await getAllDisciplineReports();
         }
         setReports(data);
@@ -144,6 +145,8 @@ const Dashboard = ({ docentesList }) => {
       </Grid>
     );
   };
+
+  const currentRole = user.role?.toLowerCase();
 
   return (
     <Container maxWidth="lg" sx={{ py: isMobile ? 3 : 6 }}>
@@ -266,7 +269,7 @@ const Dashboard = ({ docentesList }) => {
               onClick={() => setProfileOpen(true)}
             />
 
-            {user.role === 'estudiante' && (
+            {currentRole === 'estudiante' && (
               <>
                 <DashCard
                   title="Mis Tareas"
@@ -285,7 +288,7 @@ const Dashboard = ({ docentesList }) => {
               </>
             )}
 
-            {user.role === 'docente' && (
+            {currentRole === 'docente' && (
               <>
                 <DashCard
                   title="Gestión de Clases"
@@ -311,9 +314,11 @@ const Dashboard = ({ docentesList }) => {
               </>
             )}
 
-            {['administrador', 'director/a'].includes(user.role?.toLowerCase()) && (
+            {/* SECCIÓN PARA ADMINISTRADOR, DIRECTOR Y SECRETARIO */}
+            {['administrador', 'director/a', 'secretario/a'].includes(currentRole) && (
               <>
-                {user.role?.toLowerCase() === 'director/a' && (
+                {/* Director y Secretario ven el progreso académico */}
+                {['director/a', 'secretario/a'].includes(currentRole) && (
                   <DashCard
                     title="Progreso de Estudiantes"
                     desc="Ver avance académico y tareas"
@@ -379,7 +384,7 @@ const Dashboard = ({ docentesList }) => {
 
         <Divider />
 
-        {/* Contenedor del Formulario con el espacio superior solicitado */}
+        {/* Contenedor del Formulario */}
         <Box sx={{ mt: 5, mb: 5, px: 0, overflowY: 'auto', padding: 3 }}>
           {user.role === 'estudiante'
             ? <StudentProfileForm />

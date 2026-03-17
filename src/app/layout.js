@@ -2,8 +2,8 @@ import { AuthProvider } from '../context/AuthContext';
 import Layout from '../components/layout/Layout'; // ruta relativa correcta
 
 export const metadata = {
-  title: 'AulaConectaPy',
-  description: 'Aplicación educativa',
+  title: 'CPMA',
+  description: 'Campus virtual Colegio Privado María Auxiliadora',
 };
 
 export default function RootLayout({ children }) {
