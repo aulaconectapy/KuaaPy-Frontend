@@ -1,313 +1,303 @@
 'use client';
 
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { getTaskById, getStudentTasksByGrade } from "@/services/api";
+import { getTaskById, getStudentTasksByGrade, updateStudentTask } from "@/services/api";
 import { useAuth } from "@/context/AuthContext";
-// IMPORTANTE: Asegúrate de que la ruta al archivo PDF sea correcta
 import { generateTaskPDF } from "@/components/teacher/TaskReportPDF"; 
 
 import {
-  Box, Typography, CircularProgress, Paper, Stack, Chip,
-  Accordion, AccordionSummary, AccordionDetails, IconButton,
-  Container, Avatar, Grid, LinearProgress, Tooltip, Button, Divider
+  Box, Typography, CircularProgress, Paper, Stack, Button, Container, 
+  Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
+  Chip, IconButton, TextField, Grid, ToggleButton, ToggleButtonGroup
 } from "@mui/material";
 
 import {
-  ExpandMore as ExpandMoreIcon,
-  Edit as EditIcon,
-  CheckCircle as CheckCircleIcon,
-  Person as PersonIcon,
   ArrowBack as ArrowBackIcon,
-  Analytics as AnalyticsIcon,
-  PictureAsPdf as PdfIcon 
+  CheckCircle as CheckIcon,
+  RadioButtonUnchecked as UncheckedIcon,
+  School as SchoolIcon,
+  Book as BookIcon,
+  Assignment as TaskIcon,
+  CloudDone as SavedIcon,
+  Sync as SyncIcon,
+  PictureAsPdf as PdfIcon
 } from '@mui/icons-material';
 
 const COLORS = {
   primary: "#7D0F15",
-  primaryLight: "#a31a20",
-  bgLight: "#F8FAFC",
-  border: "#E2E8F0",
   success: "#059669",
-  pending: "#D97706"
+  error: "#DC2626",
+  bgLight: "#F8FAFC",
+  border: "#E2E8F0"
 };
 
 export default function TaskSubmissionsPage() {
   const { id } = useParams();
   const router = useRouter();
-  const { user, loading: loadingAuth } = useAuth();
-
+  const { user } = useAuth();
+  
   const [submissions, setSubmissions] = useState([]);
   const [taskInfo, setTaskInfo] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [isAuthorized, setIsAuthorized] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [hasChanges, setHasChanges] = useState(false);
+  const [lastSaved, setLastSaved] = useState(null);
+  const [selectedMoment, setSelectedMoment] = useState(3);
+  
+  // NUEVO: Rastro de IDs modificados para no guardar a todos
+  const [modifiedIds, setModifiedIds] = useState(new Set());
 
-  // 🛡️ PROTECCIÓN DE RUTA
-  useEffect(() => {
-    if (!loadingAuth) {
-      if (!user) {
-        router.push("/login");
-        return;
-      }
-      const role = user.role?.toLowerCase();
-      const allowedRoles = ["director/a", "secretario/a", "secretaria", "docente", "administrador"];
-      if (!allowedRoles.includes(role)) {
-        router.push("/dashboard");
-      } else {
-        setIsAuthorized(true);
-      }
-    }
-  }, [user, loadingAuth, router]);
-
-  const canGrade = user?.role?.toLowerCase() === "docente";
+  const isRubrica = taskInfo?.instrumentType === 'rubrica';
 
   useEffect(() => {
     const fetchData = async () => {
-      if (!id || !isAuthorized) return;
       try {
         const taskData = await getTaskById(id);
         setTaskInfo(taskData);
-
         const studentTasks = await getStudentTasksByGrade(taskData.grade);
-        const filtered = studentTasks.filter(st => st.task._id === id);
+        const filtered = studentTasks.filter(st => (st.task?._id || st.task) === id);
         setSubmissions(filtered);
       } catch (error) {
-        console.error("Error al cargar entregas:", error);
+        console.error("Error:", error);
       } finally {
         setLoading(false);
       }
     };
-    fetchData();
-  }, [id, isAuthorized]);
+    if (id) fetchData();
+  }, [id]);
 
-  const totalMaxScore = useMemo(() => {
-    return taskInfo?.indicators?.reduce((acc, curr) => acc + (curr.points || 0), 0) || 0;
-  }, [taskInfo]);
+  const calculateInstantScore = (scores) => {
+    if (!scores) return 0;
+    return scores
+      .filter(s => isRubrica ? true : s.moment === selectedMoment)
+      .reduce((acc, curr) => acc + (Number(curr.points) || 0), 0);
+  };
 
-  const stats = useMemo(() => {
-    const total = submissions.length;
-    const corregidos = submissions.filter(s => s.status === "corregido").length;
-    const promedio = total > 0 ? (submissions.reduce((acc, curr) => acc + (curr.score || 0), 0) / total).toFixed(1) : 0;
-    const progreso = total > 0 ? (corregidos / total) * 100 : 0;
-    return { total, corregidos, promedio, progreso };
-  }, [submissions]);
+  const handleCellChange = (submissionId, criterionId, points) => {
+    setHasChanges(true);
+    // Registrar ID modificado
+    setModifiedIds(prev => new Set(prev).add(submissionId));
+    
+    setSubmissions(prev => prev.map(sub => {
+      if (sub._id !== submissionId) return sub;
+      
+      const currentScores = isRubrica ? (sub.rubricScores || sub.indicatorScores || []) : (sub.indicatorScores || []);
+      
+      const newScores = [...currentScores].filter(s => {
+        const idMatch = (s.indicatorId?._id || s.indicatorId || s._id?.$oid || s._id) === criterionId;
+        return isRubrica ? !idMatch : !(idMatch && s.moment === selectedMoment);
+      });
 
-  if (loadingAuth || !isAuthorized) {
-    return (
-      <Box sx={{ display: "flex", justifyContent: "center", alignItems: 'center', height: '90vh', bgcolor: COLORS.bgLight }}>
-        <CircularProgress thickness={5} sx={{ color: COLORS.primary }} />
-      </Box>
-    );
-  }
+      newScores.push({ 
+        indicatorId: criterionId, 
+        points, 
+        moment: isRubrica ? 1 : selectedMoment 
+      });
+
+      return { 
+        ...sub, 
+        indicatorScores: newScores, // Temporalmente en indicatorScores para la lógica de UI
+        rubricScores: isRubrica ? newScores : sub.rubricScores,
+        score: calculateInstantScore(newScores)
+      };
+    }));
+  };
+
+  const handleCommentChange = (submissionId, text) => {
+    setHasChanges(true);
+    setModifiedIds(prev => new Set(prev).add(submissionId));
+    setSubmissions(prev => prev.map(sub => 
+      sub._id === submissionId ? { ...sub, comments: text } : sub
+    ));
+  };
+
+  const handleSaveAll = useCallback(async () => {
+    if (!hasChanges || saving || modifiedIds.size === 0) return;
+    setSaving(true);
+    try {
+      // FILTRAR: Solo enviar los alumnos modificados
+      const toUpdate = submissions.filter(sub => modifiedIds.has(sub._id));
+
+      const promises = toUpdate.map(sub => {
+        const updateData = {
+          comments: sub.comments,
+          score: sub.score,
+          status: "corregido"
+        };
+
+        // Enviar al campo correcto según el esquema de tu DB
+        if (isRubrica) {
+          updateData.rubricScores = sub.indicatorScores || sub.rubricScores;
+        } else {
+          updateData.indicatorScores = sub.indicatorScores;
+        }
+
+        return updateStudentTask(sub._id, updateData);
+      });
+
+      await Promise.all(promises);
+      setHasChanges(false);
+      setModifiedIds(new Set()); // Limpiar lista de modificados
+      setLastSaved(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
+    } catch (error) {
+      console.error("Error al guardar:", error);
+    } finally {
+      setSaving(false);
+    }
+  }, [submissions, hasChanges, saving, isRubrica, modifiedIds]);
+
+  useEffect(() => {
+    const timer = setInterval(() => { handleSaveAll(); }, 60000);
+    return () => clearInterval(timer);
+  }, [handleSaveAll]);
+
+  if (loading) return <Box sx={{ display: 'flex', justifyContent: 'center', mt: 10 }}><CircularProgress sx={{ color: COLORS.primary }} /></Box>;
 
   return (
     <Box sx={{ bgcolor: COLORS.bgLight, minHeight: '100vh', py: 4 }}>
-      <Container maxWidth="lg">
+      <Container maxWidth="xl">
         
-        <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 4 }}>
-          <Button 
-            startIcon={<ArrowBackIcon />} 
-            onClick={() => router.back()}
-            sx={{ color: '#64748B', fontWeight: 700, textTransform: 'none' }}
-          >
-            Volver a Tareas
-          </Button>
+        {/* HEADER DE ACCIONES */}
+        <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
+          <Button startIcon={<ArrowBackIcon />} onClick={() => router.back()} sx={{ color: '#64748B', fontWeight: 700 }}>Volver</Button>
+          <Stack direction="row" spacing={2} alignItems="center">
+            <Box sx={{ display: 'flex', alignItems: 'center', color: hasChanges ? '#D97706' : COLORS.success, mr: 2 }}>
+              {saving ? <CircularProgress size={14} color="inherit" /> : hasChanges ? <SyncIcon sx={{ fontSize: 16 }} /> : <SavedIcon sx={{ fontSize: 16 }} />}
+              <Typography variant="caption" sx={{ fontWeight: 800, ml: 1 }}>
+                {saving ? "GUARDANDO..." : hasChanges ? `${modifiedIds.size} CAMBIOS PENDIENTES` : `SINCRONIZADO ${lastSaved || ""}`}
+              </Typography>
+            </Box>
+            <Button variant="outlined" startIcon={<PdfIcon />} onClick={() => generateTaskPDF(taskInfo, submissions, user, selectedMoment)} sx={{ color: COLORS.primary, borderColor: COLORS.primary, fontWeight: 800, borderRadius: 2 }}>Exportar PDF</Button>
+            <Button variant="contained" onClick={handleSaveAll} disabled={saving || !hasChanges} sx={{ bgcolor: COLORS.primary, borderRadius: 2, fontWeight: 800 }}>Guardar Ahora</Button>
+          </Stack>
         </Stack>
 
-        {loading ? (
-           <Box sx={{ textAlign: 'center', py: 10 }}><CircularProgress sx={{ color: COLORS.primary }} /></Box>
-        ) : (
-          <>
-            <Paper 
-              elevation={0} 
-              sx={{ 
-                p: { xs: 3, md: 5 }, mb: 5, borderRadius: 6, 
-                background: `linear-gradient(135deg, ${COLORS.primary} 0%, ${COLORS.primaryLight} 100%)`, 
-                color: 'white', boxShadow: '0 10px 25px -5px rgba(125, 15, 21, 0.3)'
-              }}
-            >
-              <Grid container spacing={4} alignItems="center">
-                <Grid item xs={12} md={7}>
-                  <Stack direction="row" spacing={1} sx={{ mb: 2 }}>
-                    <Chip label={taskInfo?.subject} size="small" sx={{ bgcolor: 'rgba(255,255,255,0.2)', color: 'white', fontWeight: 800 }} />
-                    <Chip label={`${taskInfo?.grade} Grado`} size="small" sx={{ bgcolor: 'rgba(255,255,255,0.2)', color: 'white', fontWeight: 800 }} />
-                  </Stack>
-                  <Typography variant="h3" sx={{ fontWeight: 900, mb: 1, letterSpacing: '-1.5px' }}>
-                    {taskInfo?.topic || "Revisión de Tarea"}
-                  </Typography>
-                  <Typography sx={{ opacity: 0.9 }}>Seguimiento y gestión de indicadores de logro.</Typography>
-                </Grid>
+        {/* INFO ACADÉMICA */}
+        <Paper elevation={0} sx={{ p: 3, mb: 3, borderRadius: 4, border: `1px solid ${COLORS.border}` }}>
+          <Grid container spacing={2}>
+            <Grid item xs={12} md={4}><Stack direction="row" spacing={2}><Box sx={{ p: 1, bgcolor: '#FFF1F2', borderRadius: 2 }}><SchoolIcon sx={{ color: COLORS.primary }} /></Box><Box><Typography variant="caption" color="text.secondary" sx={{ fontWeight: 700 }}>GRADO</Typography><Typography variant="subtitle1" sx={{ fontWeight: 900 }}>{taskInfo?.grade}</Typography></Box></Stack></Grid>
+            <Grid item xs={12} md={4}><Stack direction="row" spacing={2}><Box sx={{ p: 1, bgcolor: '#F0F9FF', borderRadius: 2 }}><BookIcon sx={{ color: '#0369A1' }} /></Box><Box><Typography variant="caption" color="text.secondary" sx={{ fontWeight: 700 }}>ASIGNATURA</Typography><Typography variant="subtitle1" sx={{ fontWeight: 900 }}>{taskInfo?.subject || "General"}</Typography></Box></Stack></Grid>
+            <Grid item xs={12} md={4}><Stack direction="row" spacing={2}><Box sx={{ p: 1, bgcolor: '#F0FDF4', borderRadius: 2 }}><TaskIcon sx={{ color: '#15803D' }} /></Box><Box><Typography variant="caption" color="text.secondary" sx={{ fontWeight: 700 }}>TEMA</Typography><Typography variant="subtitle1" sx={{ fontWeight: 900 }}>{taskInfo?.topic}</Typography></Box></Stack></Grid>
+          </Grid>
+        </Paper>
 
-                <Grid item xs={12} md={5}>
-                  <Box sx={{ bgcolor: 'rgba(0,0,0,0.15)', p: 3, borderRadius: 5, backdropFilter: 'blur(10px)' }}>
-                    <Stack spacing={2}>
-                      <Box>
-                        <Stack direction="row" justifyContent="space-between" sx={{ mb: 1 }}>
-                          <Typography variant="caption" sx={{ fontWeight: 700 }}>REVISIÓN</Typography>
-                          <Typography variant="caption" sx={{ fontWeight: 900 }}>{Math.round(stats.progreso)}%</Typography>
-                        </Stack>
-                        <LinearProgress variant="determinate" value={stats.progreso} sx={{ height: 8, borderRadius: 4, bgcolor: 'rgba(255,255,255,0.1)', '& .MuiLinearProgress-bar': { bgcolor: 'white' } }} />
-                      </Box>
-                      <Grid container spacing={2}>
-                        <Grid item xs={6}>
-                          <Typography variant="caption" sx={{ opacity: 0.8, display: 'block' }}>PROMEDIO</Typography>
-                          <Typography variant="h5" sx={{ fontWeight: 900 }}>{stats.promedio}</Typography>
-                        </Grid>
-                        <Grid item xs={6}>
-                          <Typography variant="caption" sx={{ opacity: 0.8, display: 'block' }}>TOTAL PUNTOS</Typography>
-                          <Typography variant="h5" sx={{ fontWeight: 900 }}>{totalMaxScore}</Typography>
-                        </Grid>
-                      </Grid>
-                    </Stack>
-                  </Box>
-                </Grid>
-              </Grid>
-            </Paper>
-
-            <Box sx={{ mb: 3, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                <AnalyticsIcon sx={{ color: COLORS.primary }} />
-                <Typography variant="h5" sx={{ fontWeight: 900, color: '#1E293B' }}>Listado de Entregas</Typography>
-              </Box>
-
-              {/* BOTÓN DE DESCARGA PDF */}
-              <Button
-                variant="contained"
-                startIcon={<PdfIcon />}
-                onClick={async () => await generateTaskPDF(taskInfo, submissions, user)}
-                sx={{ 
-                  bgcolor: COLORS.primary, 
-                  borderRadius: 3,
-                  px: 3,
-                  fontWeight: 700,
-                  textTransform: 'none',
-                  '&:hover': { bgcolor: COLORS.primaryLight },
-                  boxShadow: '0 4px 12px rgba(125, 15, 21, 0.2)'
-                }}
-              >
-                Descargar Planilla
-              </Button>
-            </Box>
-
-            <Stack spacing={2}>
-              {submissions.length === 0 ? (
-                <Paper sx={{ p: 8, textAlign: 'center', borderRadius: 6, border: `2px dashed ${COLORS.border}`, bgcolor: 'transparent' }}>
-                  <Typography variant="h6" color="text.secondary">No hay alumnos registrados.</Typography>
-                </Paper>
-              ) : (
-                submissions.map((sub) => {
-                  const isCorregido = sub.status === "corregido";
-                  return (
-                    <Accordion 
-                      key={sub._id} 
-                      elevation={0} 
-                      sx={{ 
-                        borderRadius: '20px !important', border: `1px solid ${COLORS.border}`, 
-                        '&:hover': { borderColor: COLORS.primary }, '&:before': { display: 'none' }, mb: 1 
-                      }}
-                    >
-                      <AccordionSummary component="div" expandIcon={<ExpandMoreIcon sx={{ color: COLORS.primary }} />}>
-                        <Grid container alignItems="center" spacing={2}>
-                          <Grid item>
-                            <Avatar sx={{ bgcolor: isCorregido ? `${COLORS.success}15` : `${COLORS.pending}15`, color: isCorregido ? COLORS.success : COLORS.pending }}>
-                              <PersonIcon />
-                            </Avatar>
-                          </Grid>
-                          <Grid item xs>
-                            <Typography sx={{ fontWeight: 800 }}>{sub.student.firstName} {sub.student.lastName}</Typography>
-                            <Stack direction="row" spacing={1} alignItems="center">
-                              <Chip 
-                                label={isCorregido ? "CORREGIDO" : "PENDIENTE"} 
-                                size="small" 
-                                color={isCorregido ? "success" : "warning"} 
-                                sx={{ height: 20, fontSize: '0.65rem', fontWeight: 900 }} 
-                              />
-                              <Typography variant="caption" sx={{ fontWeight: 700, color: isCorregido ? COLORS.success : '#64748B' }}>
-                                {sub.score || 0} / {totalMaxScore} pts obtenidos
-                              </Typography>
-                            </Stack>
-                          </Grid>
-                          
-                          {canGrade && (
-                            <Grid item>
-                              <Box onClick={(e) => e.stopPropagation()}>
-                                <Tooltip title={isCorregido ? "Editar Nota" : "Calificar"}>
-                                  <IconButton
-                                    onClick={() => router.push(`/teacher/classes/students/${sub._id}`)}
-                                    sx={{ bgcolor: COLORS.primary, color: 'white', '&:hover': { bgcolor: COLORS.primaryLight } }}
-                                  >
-                                    {isCorregido ? <CheckCircleIcon fontSize="small" /> : <EditIcon fontSize="small" />}
-                                  </IconButton>
-                                </Tooltip>
-                              </Box>
-                            </Grid>
-                          )}
-                        </Grid>
-                      </AccordionSummary>
-                      
-                      <AccordionDetails sx={{ bgcolor: '#F8FAFC', p: 4, borderTop: `1px solid ${COLORS.border}` }}>
-                        <Grid container spacing={3}>
-                          <Grid item xs={12} md={6}>
-                            <Typography variant="subtitle2" sx={{ fontWeight: 800, mb: 2, color: COLORS.primary }}>
-                              Puntaje por Indicadores:
-                            </Typography>
-                            <Stack spacing={2}>
-                              {sub.indicatorScores?.length > 0 ? (
-                                sub.indicatorScores.map((indScore, idx) => {
-                                  const indicatorData = taskInfo?.indicators?.find(
-                                    (i) => (i._id === indScore.indicatorId?._id || i._id === indScore.indicatorId)
-                                  );
-
-                                  return (
-                                    <Box key={idx}>
-                                      <Stack direction="row" justifyContent="space-between" sx={{ mb: 0.5 }}>
-                                        <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                                          {indicatorData?.description || indicatorData?.name || indScore.indicatorId?.name || "Indicador"}
-                                        </Typography>
-                                        <Typography variant="body2" sx={{ fontWeight: 800 }}>
-                                          {indScore.points} / {indicatorData?.points || 1} pts
-                                        </Typography>
-                                      </Stack>
-                                      <LinearProgress
-                                        variant="determinate"
-                                        value={(indScore.points / (indicatorData?.points || 1)) * 100}
-                                        sx={{ 
-                                          height: 6, borderRadius: 3, bgcolor: '#E2E8F0',
-                                          '& .MuiLinearProgress-bar': { bgcolor: COLORS.primary }
-                                        }}
-                                      />
-                                    </Box>
-                                  );
-                                })
-                              ) : (
-                                <Typography variant="body2" color="text.secondary">No hay indicadores evaluados.</Typography>
-                              )}
-                            </Stack>
-                          </Grid>
-
-                          <Grid item xs={12} md={6}>
-                            <Box sx={{ p: 2, bgcolor: 'white', borderRadius: 4, border: `1px solid ${COLORS.border}`, height: '100%' }}>
-                              <Typography variant="subtitle2" sx={{ fontWeight: 800, mb: 1 }}>Puntaje Final:</Typography>
-                              <Stack direction="row" alignItems="baseline" spacing={1}>
-                                <Typography variant="h4" sx={{ fontWeight: 900, color: COLORS.primary }}>{sub.score ?? 0}</Typography>
-                                <Typography variant="h6" sx={{ color: '#64748B', fontWeight: 600 }}>/ {totalMaxScore} pts</Typography>
-                              </Stack>
-                              <Divider sx={{ my: 2 }} />
-                              <Typography variant="subtitle2" sx={{ fontWeight: 800, mb: 1 }}>Comentarios:</Typography>
-                              <Typography variant="body2" sx={{ fontStyle: sub.comments ? 'normal' : 'italic' }}>
-                                {sub.comments || "Sin observaciones todavía."}
-                              </Typography>
-                            </Box>
-                          </Grid>
-                        </Grid>
-                      </AccordionDetails>
-                    </Accordion>
-                  );
-                })
-              )}
-            </Stack>
-          </>
+        {!isRubrica && taskInfo?.instrumentType === 'rsa' && (
+          <ToggleButtonGroup value={selectedMoment} exclusive onChange={(_, v) => v && setSelectedMoment(v)} size="small" sx={{ mb: 2, bgcolor: 'white' }}>
+            {[1, 2, 3].map(m => <ToggleButton key={m} value={m} sx={{ px: 3, fontWeight: 700 }}>Momento {m}</ToggleButton>)}
+          </ToggleButtonGroup>
         )}
+
+        {/* TABLA PRINCIPAL */}
+        <Paper sx={{ borderRadius: 4, border: `1px solid ${COLORS.border}`, overflow: 'hidden' }}>
+          <TableContainer sx={{ maxHeight: '70vh' }}>
+            <Table size="small" stickyHeader>
+              <TableHead>
+                <TableRow>
+                  <TableCell rowSpan={isRubrica ? 2 : 1} sx={{ fontWeight: 900, bgcolor: '#F8FAFC', zIndex: 11 }}>ESTUDIANTE</TableCell>
+                  {isRubrica ? (
+                    taskInfo?.rubricCriteria.map(crit => (
+                      <TableCell key={crit._id} colSpan={crit.levels.length} align="center" sx={{ fontWeight: 900, bgcolor: '#F1F5F9', borderLeft: '1px solid #E2E8F0' }}>
+                        {crit.criterion.toUpperCase()}
+                      </TableCell>
+                    ))
+                  ) : (
+                    taskInfo?.indicators.map(ind => (
+                      <TableCell key={ind._id} align="center" sx={{ fontWeight: 900, bgcolor: '#F8FAFC' }}>
+                        {ind.description.substring(0, 30)}...
+                      </TableCell>
+                    ))
+                  )}
+                  <TableCell rowSpan={isRubrica ? 2 : 1} align="center" sx={{ fontWeight: 900, bgcolor: '#F8FAFC' }}>PUNTOS</TableCell>
+                  <TableCell rowSpan={isRubrica ? 2 : 1} sx={{ fontWeight: 900, bgcolor: '#F8FAFC' }}>OBSERVACIONES</TableCell>
+                </TableRow>
+
+                {isRubrica && (
+                  <TableRow>
+                    {taskInfo?.rubricCriteria.map(crit => 
+                      crit.levels.map(lvl => (
+                        <TableCell 
+                          key={lvl._id} align="center" 
+                          sx={{ 
+                            bgcolor: '#F8FAFC', py: 1.5, px: 1,
+                            borderLeft: lvl === crit.levels[0] ? '1px solid #E2E8F0' : 'none',
+                            verticalAlign: 'top', minWidth: '100px'
+                          }}
+                        >
+                          <Stack spacing={0.5}>
+                            <Typography sx={{ fontSize: '0.65rem', fontWeight: 900, color: COLORS.primary }}>{lvl.level.toUpperCase()}</Typography>
+                            <Typography sx={{ fontSize: '0.6rem', fontWeight: 700 }}>({lvl.points} pts)</Typography>
+                            <Typography sx={{ fontSize: '0.58rem', color: '#64748B', fontStyle: 'italic', lineHeight: 1.2, mt: 0.5 }}>{lvl.descriptor}</Typography>
+                          </Stack>
+                        </TableCell>
+                      ))
+                    )}
+                  </TableRow>
+                )}
+              </TableHead>
+
+              <TableBody>
+                {submissions.map((sub) => (
+                  <TableRow key={sub._id} hover>
+                    <TableCell sx={{ fontWeight: 700, fontSize: '0.8rem' }}>
+                      {sub.student.lastName?.toUpperCase()}, {sub.student.firstName}
+                    </TableCell>
+
+                    {isRubrica ? (
+                      taskInfo?.rubricCriteria.map((crit, index) => {
+                        // Unificar búsqueda de scores para la UI
+                        const allScores = [...(sub.rubricScores || []), ...(sub.indicatorScores || [])];
+                        const score = allScores.find((s, idx) => {
+                            const sId = s.indicatorId?._id || s.indicatorId || s._id?.$oid || s._id;
+                            return sId === crit._id || idx === index;
+                        });
+
+                        return crit.levels.map(lvl => {
+                          const isSelected = score && Number(score.points) === Number(lvl.points);
+                          return (
+                            <TableCell 
+                              key={lvl._id} align="center" 
+                              onClick={() => handleCellChange(sub._id, crit._id, lvl.points)}
+                              sx={{ 
+                                cursor: 'pointer',
+                                bgcolor: isSelected ? '#FFF1F2' : 'inherit',
+                                borderLeft: lvl === crit.levels[0] ? '1px solid #E2E8F0' : 'none',
+                                transition: '0.2s', '&:hover': { bgcolor: '#F1F5F9' }
+                              }}
+                            >
+                              {isSelected ? <CheckIcon sx={{ color: COLORS.primary, fontSize: 20 }} /> : <UncheckedIcon sx={{ color: '#CBD5E1', fontSize: 20 }} />}
+                            </TableCell>
+                          );
+                        });
+                      })
+                    ) : (
+                      taskInfo?.indicators.map(ind => {
+                        const score = sub.indicatorScores?.find(s => (s.indicatorId?._id || s.indicatorId) === ind._id && s.moment === selectedMoment);
+                        return (
+                          <TableCell key={ind._id} align="center">
+                            <Stack direction="row" justifyContent="center" spacing={0.5}>
+                              <IconButton size="small" onClick={() => handleCellChange(sub._id, ind._id, 1)} sx={{ color: score?.points === 1 ? COLORS.success : '#CBD5E1' }}><CheckIcon fontSize="small" /></IconButton>
+                              <IconButton size="small" onClick={() => handleCellChange(sub._id, ind._id, 0)} sx={{ color: score?.points === 0 ? COLORS.error : '#CBD5E1' }}><UncheckedIcon fontSize="small" /></IconButton>
+                            </Stack>
+                          </TableCell>
+                        );
+                      })
+                    )}
+
+                    <TableCell align="center">
+                      <Chip label={sub.score || 0} size="small" sx={{ fontWeight: 900, bgcolor: COLORS.primary, color: 'white', borderRadius: 1 }} />
+                    </TableCell>
+                    <TableCell>
+                      <TextField fullWidth size="small" variant="standard" value={sub.comments || ""} onChange={(e) => handleCommentChange(sub._id, e.target.value)}
+                        InputProps={{ disableUnderline: true, style: { fontSize: '0.75rem' } }}
+                        sx={{ bgcolor: '#F1F5F9', px: 1, py: 0.5, borderRadius: 2 }} />
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        </Paper>
       </Container>
     </Box>
   );

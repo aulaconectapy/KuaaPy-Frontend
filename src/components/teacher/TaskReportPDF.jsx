@@ -1,12 +1,6 @@
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
-/**
- * Genera un reporte PDF de la tarea con los indicadores y puntajes.
- * @param {Object} taskInfo - Información general de la tarea.
- * @param {Array} submissions - Lista de entregas de los alumnos.
- * @param {Object} user - Datos del docente (firstName, lastName).
- */
 export const generateTaskPDF = async (taskInfo, submissions, user) => {
   const doc = new jsPDF({
     orientation: 'landscape',
@@ -14,119 +8,197 @@ export const generateTaskPDF = async (taskInfo, submissions, user) => {
     format: 'a4'
   });
 
-  const PRIMARY_COLOR = [125, 15, 21]; // #7D0F15
+  const PRIMARY_COLOR = [125, 15, 21];
+  const isRSA = taskInfo?.instrumentType === 'rsa';
+  const isRubrica = taskInfo?.instrumentType === 'rubrica';
 
-  // --- 1. CARGAR LOGO ---
+  // --- 1. TÍTULOS ---
+  const instrumentTitles = {
+    'rsa': 'PLANILLA DE REGISTRO DE SECUENCIA DE APRENDIZAJE (RSA)',
+    'rubrica': 'PLANILLA DE RÚBRICA DE EVALUACIÓN',
+    'lista_cotejo': 'PLANILLA DE LISTA DE COTEJO',
+    'default': 'PLANILLA DE REGISTRO PEDAGÓGICO'
+  };
+  const currentTitle = instrumentTitles[taskInfo?.instrumentType] || instrumentTitles.default;
+
+  // --- 2. LÓGICA RSA ---
+  const calculateRSAFinal = (m1, m2, m3) => {
+    const check = (v) => v === 1 ? "L" : "ANL";
+    const [g, h, i] = [check(m1), check(m2), check(m3)];
+    if (g === "L" && h === "L" && i === "L") return "L";
+    if (g === "ANL" && h === "L" && i === "L") return "L";
+    if (g === "ANL" && h === "ANL" && i === "L") return "L";
+    if (g === "L" && h === "ANL" && i === "L") return "L";
+    return "ANL";
+  };
+
+  // --- 3. CARGAR LOGO ---
   const loadImage = (url) => {
     return new Promise((resolve) => {
       const img = new Image();
       img.src = url;
+      img.crossOrigin = "Anonymous";
       img.onload = () => resolve(img);
-      img.onerror = () => resolve(null); // Si falla, sigue sin logo
+      img.onerror = () => resolve(null);
     });
   };
 
   const logo = await loadImage('/logo.png');
 
-  // --- 2. ENCABEZADO ---
-  if (logo) {
-    doc.addImage(logo, 'PNG', 14, 10, 22, 22);
-  }
-
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(18);
-  doc.setTextColor(PRIMARY_COLOR[0], PRIMARY_COLOR[1], PRIMARY_COLOR[2]);
-  doc.text("REGISTRO PEDAGÓGICO DE EVALUACIÓN", 42, 18);
-  
-  doc.setFontSize(10);
-  doc.setTextColor(50, 50, 50);
-  doc.text(`Institución: Escuela Agrícola de Villarrica`, 42, 25);
-  doc.text(`Docente: ${user?.firstName || ''} ${user?.lastName || ''}`, 42, 30);
-
-  // Datos a la derecha
-  doc.setFont("helvetica", "normal");
-  doc.text(`Materia: ${taskInfo?.subject || 'N/A'}`, 210, 20);
-  doc.text(`Tema: ${taskInfo?.topic || 'N/A'}`, 210, 25);
-  doc.text(`Grado: ${taskInfo?.grade || 'N/A'}`, 210, 30);
-  doc.text(`Fecha: ${new Date().toLocaleDateString()}`, 210, 35);
-
-  // --- 3. TABLA DE CALIFICACIONES ---
-  const indicators = taskInfo?.indicators || [];
-  
-  // Definir encabezados
-  const tableHeaders = [
-    { content: 'N°', styles: { halign: 'center' } },
-    { content: 'Apellidos y Nombres', styles: { halign: 'left' } },
-    ...indicators.map(ind => ({ 
-      content: ind.description || ind.name, 
-      styles: { halign: 'center' } 
-    })),
-    { content: 'Total', styles: { halign: 'center' } },
-    { content: 'Observaciones', styles: { halign: 'left' } }
-  ];
-
-  // Definir filas
-  const tableRows = submissions.map((sub, index) => {
-    const row = [
-      index + 1,
-      `${sub.student.lastName.toUpperCase()}, ${sub.student.firstName}`
-    ];
-
-    indicators.forEach(indicator => {
-      const scoreObj = sub.indicatorScores?.find(s => 
-        (s.indicatorId?._id || s.indicatorId) === indicator._id
-      );
-      row.push(scoreObj ? scoreObj.points : '0');
-    });
-
-    row.push(sub.score || '0');
-    row.push(sub.comments || ''); 
-
-    return row;
-  });
-
-  // USAMOS autoTable COMO FUNCIÓN (esto soluciona el error)
+  // --- 4. ENCABEZADO INSTITUCIONAL ---
   autoTable(doc, {
-    startY: 42,
-    head: [tableHeaders],
-    body: tableRows,
-    theme: 'grid',
-    styles: { 
-      fontSize: 8, 
-      cellPadding: 2,
-      valign: 'middle'
-    },
-    headStyles: {
-      fillColor: PRIMARY_COLOR,
-      textColor: [255, 255, 255],
-      fontStyle: 'bold',
-      halign: 'center'
-    },
-    columnStyles: {
-      0: { cellWidth: 10 },
-      1: { cellWidth: 60, fontStyle: 'bold' },
-      // La columna de total es la penúltima
-      [tableHeaders.length - 2]: { cellWidth: 15, fontStyle: 'bold' },
-      // La columna de observaciones es la última
-      [tableHeaders.length - 1]: { cellWidth: 'auto' }
-    },
-    margin: { left: 14, right: 14 },
-    didParseCell: function (data) {
-      // Centrar notas de indicadores
-      if (data.column.index > 1 && data.column.index < (tableHeaders.length - 1)) {
-        data.cell.styles.halign = 'center';
+    startY: 10,
+    theme: 'plain',
+    styles: { cellPadding: 1 },
+    columnStyles: { 0: { cellWidth: 25 }, 1: { cellWidth: 160 }, 2: { halign: 'right' } },
+    body: [
+      [
+        { content: '', rowSpan: 3 },
+        { content: (user?.institution?.name || 'INSTITUCIÓN EDUCATIVA').toUpperCase(), styles: { fontSize: 14, fontStyle: 'bold', textColor: PRIMARY_COLOR } },
+        { content: `Fecha: ${new Date().toLocaleDateString()}`, styles: { fontSize: 8, textColor: [100, 100, 100] } }
+      ],
+      [
+        { content: currentTitle, styles: { fontSize: 11, fontStyle: 'bold' } },
+        { content: `Tema: ${taskInfo?.topic || 'N/A'}`, styles: { fontSize: 8 } }
+      ],
+      [
+        { content: `Docente: ${user?.firstName || ''} ${user?.lastName || ''}  |  Grado: ${taskInfo?.grade || 'N/A'}  |  Materia: ${taskInfo?.subject || 'General'}`, styles: { fontSize: 9 } },
+        { content: '', styles: { fontSize: 8 } }
+      ]
+    ],
+    didDrawCell: (data) => {
+      if (data.column.index === 0 && logo) {
+        doc.addImage(logo, 'PNG', data.cell.x, data.cell.y, 22, 22);
       }
     }
   });
 
-  // --- 4. FIRMA ---
-  const finalY = doc.lastAutoTable.finalY + 25;
-  doc.setDrawColor(150);
-  doc.line(110, finalY, 190, finalY); 
-  doc.setFontSize(9);
-  doc.setTextColor(100);
-  doc.text("Firma y Sello del Docente", 150, finalY + 5, { align: "center" });
+  let currentY = doc.lastAutoTable.finalY + 5;
 
-  // --- 5. DESCARGAR ---
-  doc.save(`Planilla_${taskInfo?.topic || 'Evaluacion'}.pdf`);
+  // --- 5. CUADRO DE REFERENCIA DE DESCRIPTORES (Solo para Rúbrica) ---
+  if (isRubrica && taskInfo.rubricCriteria?.length > 0) {
+    doc.setFontSize(9);
+    doc.setFont(undefined, 'bold');
+    doc.text("REFERENCIA DE CRITERIOS Y DESCRIPTORES:", 14, currentY);
+    
+    const referenceRows = [];
+    taskInfo.rubricCriteria.forEach(crit => {
+      crit.levels.forEach((lvl, idx) => {
+        referenceRows.push([
+          idx === 0 ? crit.criterion.toUpperCase() : '', // Solo pone el nombre del criterio en la primera fila del grupo
+          lvl.level.toUpperCase(),
+          lvl.points,
+          lvl.descriptor
+        ]);
+      });
+    });
+
+    autoTable(doc, {
+      startY: currentY + 2,
+      head: [['CRITERIO', 'NIVEL', 'PTS', 'DESCRIPTOR']],
+      body: referenceRows,
+      theme: 'grid',
+      styles: { fontSize: 7, cellPadding: 1 },
+      headStyles: { fillColor: [80, 80, 80] },
+      columnStyles: {
+        0: { cellWidth: 50, fontStyle: 'bold' },
+        1: { cellWidth: 25 },
+        2: { cellWidth: 15, halign: 'center' },
+        3: { cellWidth: 'auto' }
+      }
+    });
+    
+    currentY = doc.lastAutoTable.finalY + 8;
+  }
+
+  // --- 6. ESTRUCTURA DE LA TABLA DE CALIFICACIONES ---
+  const criteria = isRubrica ? (taskInfo?.rubricCriteria || []) : (taskInfo?.indicators || []);
+  
+  let headerRow1 = [
+    { content: 'N°', rowSpan: isRSA ? 2 : 1 },
+    { content: 'ESTUDIANTE', rowSpan: isRSA ? 2 : 1 }
+  ];
+  let headerRow2 = [];
+
+  criteria.forEach((item) => {
+    const title = isRubrica ? item.criterion : (item.name || item.description);
+    if (isRSA) {
+      headerRow1.push({ content: title, colSpan: 4, styles: { halign: 'center', fontSize: 7 } });
+      headerRow2.push({ content: '1°O' }, { content: '2°O' }, { content: '3°O' }, { content: 'R' });
+    } else {
+      headerRow1.push({ content: title.toUpperCase(), styles: { halign: 'center', fontSize: 7 } });
+    }
+  });
+
+  headerRow1.push({ content: isRSA ? 'TOTAL L' : 'PUNTOS', rowSpan: isRSA ? 2 : 1 });
+  headerRow1.push({ content: 'OBSERVACIONES', rowSpan: isRSA ? 2 : 1 });
+
+  // --- 7. PROCESAMIENTO DE FILAS ---
+  const tableRows = submissions.map((sub, index) => {
+    const row = [index + 1, `${sub.student.lastName.toUpperCase()}, ${sub.student.firstName}`];
+    let totalL = 0;
+
+    criteria.forEach(crit => {
+      const score = sub.indicatorScores?.find(s => (s.indicatorId?._id || s.indicatorId) === crit._id);
+      
+      if (isRSA) {
+        const getPts = (m) => {
+          const s = sub.indicatorScores?.find(is => (is.indicatorId?._id || is.indicatorId) === crit._id && is.moment === m);
+          return s ? s.points : 0;
+        };
+        const m1 = getPts(1), m2 = getPts(2), m3 = getPts(3);
+        const res = calculateRSAFinal(m1, m2, m3);
+        row.push(m1 === 1 ? 'L' : 'ANL', m2 === 1 ? 'L' : 'ANL', m3 === 1 ? 'L' : 'ANL', res);
+        if (res === 'L') totalL++;
+      } else {
+        // Para Rúbrica o Lista de Cotejo, mostramos el valor directo
+        const p = score ? score.points : 0;
+        if (isRubrica) {
+          row.push(p);
+        } else {
+          row.push(p === 1 ? 'L' : 'ANL');
+          if (p === 1) totalL++;
+        }
+      }
+    });
+
+    row.push(isRSA ? totalL : sub.score);
+    row.push(sub.comments || '');
+    return row;
+  });
+
+  // --- 8. RENDERIZADO FINAL ---
+  autoTable(doc, {
+    startY: currentY,
+    head: isRSA ? [headerRow1, headerRow2] : [headerRow1],
+    body: tableRows,
+    theme: 'grid',
+    styles: { 
+      fontSize: 7, 
+      halign: 'center', 
+      valign: 'middle',
+      cellPadding: 1 
+    },
+    headStyles: { 
+      fillColor: PRIMARY_COLOR, 
+      textColor: [255, 255, 255], 
+      fontStyle: 'bold'
+    },
+    columnStyles: { 
+      1: { halign: 'left', cellWidth: 50 } 
+    }
+  });
+
+  // --- 9. FIRMAS ---
+  const finalY = doc.lastAutoTable.finalY + 15;
+  const pageHeight = doc.internal.pageSize.height;
+  if (finalY + 20 < pageHeight) {
+    doc.line(60, finalY + 10, 120, finalY + 10);
+    doc.line(170, finalY + 10, 230, finalY + 10);
+    doc.setFontSize(8);
+    doc.text("Firma del Docente", 90, finalY + 15, { align: "center" });
+    doc.text("Dirección Académica", 200, finalY + 15, { align: "center" });
+  }
+
+  doc.save(`Reporte_${taskInfo?.topic?.replace(/\s+/g, '_') || 'Tarea'}.pdf`);
 };

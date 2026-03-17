@@ -60,6 +60,7 @@ export default function Layout({ children }) {
   const openMenu = Boolean(anchorEl);
   const [pulse, setPulse] = useState(false);
 
+  // 1. CARGA DE DATOS INICIALES (Solo si hay usuario)
   useEffect(() => {
     if (!user) return;
     const fetchInitialData = async () => {
@@ -79,6 +80,7 @@ export default function Layout({ children }) {
     fetchInitialData();
   }, [user]);
 
+  // 2. SOCKETS (Solo si hay usuario)
   useEffect(() => {
     if (!user?._id) return;
     socket.emit("join", user._id);
@@ -107,10 +109,13 @@ export default function Layout({ children }) {
       socket.off("new-report", handleNewReport);
       socket.off("alert-report", handleAlertReport);
     };
-  }, [user?._id]);
+  }, [user?._id, user?.role]);
 
+  // 3. CONTROL DE ACCESO (CORREGIDO PARA PERMITIR "/")
   useEffect(() => {
-    if (!loading && !user && !pathname.includes("/auth")) {
+    // Si terminó de cargar, NO hay usuario, NO es una página de auth Y NO es la raíz...
+    if (!loading && !user && !pathname.includes("/auth") && pathname !== "/") {
+      console.log("Acceso denegado a ruta protegida. Redirigiendo...");
       router.replace("/auth/login");
     }
   }, [loading, user, router, pathname]);
@@ -217,6 +222,7 @@ export default function Layout({ children }) {
                   </IconButton>
                 </>
               ) : (
+                // Botón de ingresar solo si no estamos en la página de Login
                 !isAuthPage && (
                   <Button 
                     onClick={() => router.push("/auth/login")} 
@@ -244,7 +250,7 @@ export default function Layout({ children }) {
           </Container>
         </Box>
 
-        {/* --- SECCIÓN: FOOTER --- */}
+        {/* FOOTER */}
         <Box 
           component="footer" 
           sx={{ 
@@ -256,13 +262,7 @@ export default function Layout({ children }) {
           }}
         >
           <Container maxWidth="lg">
-            <Box sx={{ 
-              display: 'flex', 
-              flexDirection: 'column', 
-              alignItems: 'center',
-              gap: 2 
-            }}>
-              {/* Redes Sociales */}
+            <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
               <Box sx={{ display: 'flex', gap: 2 }}>
                 <IconButton 
                   component="a" 

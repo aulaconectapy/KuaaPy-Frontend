@@ -319,7 +319,7 @@ const Dashboard = ({ docentesList }) => {
                     desc="Ver avance académico y tareas"
                     icon={School}
                     color="#2196F3"
-                    href="/teacher/classes/tasks"
+                    href="/teacher/classes/tasks/summary"
                   />
                 )}
                 <DashCard

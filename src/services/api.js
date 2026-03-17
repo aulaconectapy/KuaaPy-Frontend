@@ -35,9 +35,20 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      console.warn('Token inválido o expirado. Cerrando sesión...');
+      // 1. Limpiamos el token porque ya no es válido
       localStorage.removeItem('token');
-      window.location.href = '/auth/login';
+
+      // 2. VERIFICACIÓN CRÍTICA: 
+      // Si el usuario ya está en el Home (/) o en el Login, no lo redirigimos
+      // Esto evita el bucle de redirección infinita.
+      const currentPath = window.location.pathname;
+      
+      if (currentPath !== '/' && currentPath !== '/auth/login') {
+        console.warn('Token inválido. Redirigiendo a login...');
+        window.location.href = '/auth/login';
+      } else {
+        console.log('Sesión no iniciada o token expirado, pero estamos en zona pública.');
+      }
     }
     return Promise.reject(error);
   }
@@ -141,6 +152,26 @@ export const updateStudentTask = (studentTaskId, data) =>
 // Obtener entregas de un grado para el docente
 export const getStudentTasksByGrade = (grade) =>
   api.get(`/api/tasks/grade/${grade}`).then(res => res.data);
+
+// =====================
+// REPORTES Y ESTADÍSTICAS
+// =====================
+
+/**
+ * Obtiene el resumen académico de alumnos.
+ * @param {string} grade - El grado (ej: "1° Grado") o "all" para todos.
+ * @param {string} institutionId - ID de la institución (opcional, para directores).
+ */
+export const getStudentsSummary = (grade, institutionId = null) => {
+  let url = `/api/tasks/summary/${encodeURIComponent(grade)}`;
+  if (institutionId) {
+    url += `?institutionId=${institutionId}`;
+  }
+  return api.get(url).then(res => res.data);
+};
+// NUEVA FUNCIÓN: Obtener historial académico (tareas) de un estudiante específico
+export const getStudentTasksByStudentId = (studentId) => 
+  api.get(`/api/tasks/${studentId}/tasks`).then(res => res.data);
 // =====================
 // REPORTES DISCIPLINARIOS
 // =====================

@@ -2,305 +2,218 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { getStudentTaskById, updateStudentTask } from "@/services/api";
-import {
-  Box,
-  Typography,
-  CircularProgress,
-  Paper,
-  Stack,
-  Button,
-  TextField,
-  Divider,
-  Container,    // Añadido
-  IconButton,   // Añadido
-  Avatar,       // Añadido (Faltaba)
-  Slider,       // Añadido (Faltaba)
-  Grid,         // Añadido (Faltaba)
-  Tooltip,      // Añadido
-  Chip          // 👈 EL CULPABLE (Faltaba)
+import { 
+  Box, Container, Typography, Paper, Stack, Divider, Chip, 
+  Table, TableBody, TableCell, TableContainer, TableHead, 
+  TableRow, Button, LinearProgress 
 } from "@mui/material";
-import {
-  ArrowBack as ArrowBackIcon,
-  SaveRounded as SaveIcon,
-  AssignmentTurnedIn as TaskIcon,
-  InfoOutlined as InfoIcon,
-  GradeRounded as GradeIcon
+import { 
+  ArrowBack as BackIcon, 
+  EventNote as TaskIcon 
 } from '@mui/icons-material';
+import { getStudentTasksByStudentId } from "@/services/api";
+import { useAuth } from "@/context/AuthContext"; // Importamos el contexto de Auth
 
-export default function CorrectStudentTaskPage() {
+const COLORS = {
+  primary: "#7D0F15",
+  bgLight: "#F8FAFC",
+  border: "#E2E8F0"
+};
+
+export default function StudentDetailPage() {
   const { id } = useParams();
   const router = useRouter();
-
-  const [studentTask, setStudentTask] = useState(null);
+  const { user, loading: authLoading } = useAuth(); // Obtenemos user y estado de carga
+  const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [commentText, setCommentText] = useState("");
-  const [indicatorsArray, setIndicatorsArray] = useState([]);
+  const [studentInfo, setStudentInfo] = useState(null);
+
+  // 1. Definir roles autorizados
+  const authorizedRoles = ['director/a', 'secretario/a', 'docente', 'admin'];
 
   useEffect(() => {
-    const fetchStudentTask = async () => {
-      try {
-        const data = await getStudentTaskById(id);
-        setStudentTask(data);
-        setCommentText(data.comments || "");
+    // 2. Lógica de Protección de Ruta
+    if (!authLoading) {
+      if (!user) {
+        router.push('/login');
+        return;
+      }
+      const userRole = user.role?.toLowerCase();
+      if (!authorizedRoles.includes(userRole)) {
+        router.push('/dashboard');
+        return;
+      }
+    }
 
-        setIndicatorsArray(
-          data.task.indicators.map((indicator) => {
-            const existing = data.indicatorScores.find(
-              (i) => i.indicatorId === indicator._id
-            );
-            return {
-              indicatorId: indicator._id,
-              description: indicator.description,
-              points: existing ? existing.points : 0,
-              maxPoints: indicator.points || 0,
-            };
-          })
-        );
+    const loadStudentData = async () => {
+      setLoading(true);
+      try {
+        const data = await getStudentTasksByStudentId(id);
+        setTasks(data);
+        if (data && data.length > 0) {
+          setStudentInfo(data[0].student);
+        }
       } catch (error) {
-        console.error("Error:", error);
+        console.error("Error al cargar detalles:", error);
       } finally {
         setLoading(false);
       }
     };
-    if (id) fetchStudentTask();
-  }, [id]);
 
-  const handlePointChange = (indicatorId, points) => {
-    setIndicatorsArray((prev) =>
-      prev.map((i) =>
-        i.indicatorId === indicatorId
-          ? { ...i, points: Math.min(Math.max(Number(points), 0), i.maxPoints) }
-          : i
-      )
-    );
-  };
+    if (id && user && !authLoading) loadStudentData();
+  }, [id, user, authLoading, router]);
 
-  const totalPoints = indicatorsArray.reduce((sum, i) => sum + i.points, 0);
-  const maxPoints = indicatorsArray.reduce((sum, i) => sum + i.maxPoints, 0);
-  const percentage = maxPoints > 0 ? (totalPoints / maxPoints) * 100 : 0;
-
-  const handleSave = async () => {
-    try {
-      await updateStudentTask(id, {
-        status: "corregido",
-        comments: commentText,
-        indicatorScores: indicatorsArray.map((i) => ({
-          indicatorId: i.indicatorId,
-          points: i.points,
-        })),
-      });
-      router.back();
-    } catch (error) {
-      alert("Error al guardar la corrección.");
+  const getMaxPoints = (task) => {
+    if (!task) return 0;
+    if (task.instrumentType === 'rubrica') {
+      return task.rubricCriteria?.length || 0;
     }
+    return task.indicators?.length || 0;
   };
 
-  // Determinar color de la calificación
-  const getScoreColor = () => {
-    if (percentage < 60) return '#E53E3E'; // Rojo
-    if (percentage < 90) return '#DD6B20'; // Naranja/Amarillo
-    return '#38A169'; // Verde
-  };
+  // 3. Renderizado de carga global (Auth + Datos)
+  if (authLoading || loading) {
+    return <LinearProgress sx={{ bgcolor: '#F1F5F9', '& .MuiLinearProgress-bar': { bgcolor: COLORS.primary } }} />;
+  }
 
-  if (loading) return (
-    <Box sx={{ display: "flex", justifyContent: "center", alignItems: 'center', height: '80vh' }}>
-      <CircularProgress thickness={5} sx={{ color: '#1A365D' }} />
-    </Box>
-  );
+  // 4. Bloqueo de renderizado si no está autorizado
+  if (!user || !authorizedRoles.includes(user.role?.toLowerCase())) {
+    return null;
+  }
 
   return (
-    <Container maxWidth="md" sx={{ py: 6 }}>
-      
-      {/* HEADER ACCIONES */}
-      <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 4 }}>
-        <Button 
-          startIcon={<ArrowBackIcon />} 
-          onClick={() => router.back()}
-          sx={{ color: '#64748B', fontWeight: 800, textTransform: 'none' }}
-        >
-          Volver al listado
-        </Button>
-        <Button
-          variant="contained"
-          startIcon={<SaveIcon />}
-          onClick={handleSave}
-          sx={{ 
-            borderRadius: 3, 
-            px: 4, 
-            bgcolor: '#1A365D', 
-            fontWeight: 800, 
-            textTransform: 'none',
-            boxShadow: '0 8px 16px rgba(26, 54, 93, 0.2)'
-          }}
-        >
-          Finalizar Corrección
-        </Button>
-      </Stack>
-
-      <Grid container spacing={4}>
+    <Box sx={{ bgcolor: COLORS.bgLight, minHeight: '100vh', py: 4 }}>
+      <Container maxWidth="lg">
         
-        {/* PANEL IZQUIERDO: INDICADORES */}
-        <Grid item xs={12} md={8}>
-          <Box sx={{ mb: 3 }}>
-            <Typography variant="h4" sx={{ fontWeight: 900, color: '#1A365D', mb: 1 }}>
-              Evaluación de Entrega
-            </Typography>
-            <Stack direction="row" spacing={2} alignItems="center">
-              <Avatar sx={{ bgcolor: '#F1F5F9', color: '#1A365D', width: 32, height: 32 }}>
-                <TaskIcon fontSize="small" />
-              </Avatar>
-              <Typography variant="body1" sx={{ color: '#64748B', fontWeight: 600 }}>
-                {studentTask.student.firstName} {studentTask.student.lastName}
+        <Button 
+          startIcon={<BackIcon />} 
+          onClick={() => router.back()}
+          sx={{ mb: 3, color: COLORS.primary, fontWeight: 700, textTransform: 'none' }}
+        >
+          Volver al Resumen
+        </Button>
+
+        <Paper sx={{ p: { xs: 2, md: 4 }, borderRadius: 4, border: `1px solid ${COLORS.border}`, boxShadow: 'none' }}>
+          
+          <Stack direction={{ xs: 'column', md: 'row' }} justifyContent="space-between" alignItems={{ md: 'center' }} spacing={2}>
+            <Box>
+              <Typography variant="h4" sx={{ fontWeight: 900, color: '#1E293B' }}>
+                {studentInfo?.lastName?.toUpperCase()}, {studentInfo?.firstName}
               </Typography>
-            </Stack>
-          </Box>
-
-          <Stack spacing={2}>
-            {indicatorsArray.map((indicator, index) => (
-              <Paper
-                key={indicator.indicatorId}
-                elevation={0}
-                sx={{
-                  p: 3,
-                  borderRadius: 4,
-                  border: '1px solid #E2E8F0',
-                  transition: '0.2s',
-                  '&:hover': { borderColor: '#CBD5E1', bgcolor: '#F8FAFC' }
-                }}
-              >
-                <Stack direction="row" justifyContent="space-between" alignItems="flex-start" spacing={2}>
-                  <Box>
-                    <Typography variant="caption" sx={{ color: '#94A3B8', fontWeight: 800 }}>
-                      INDICADOR {index + 1}
-                    </Typography>
-                    <Typography variant="body1" sx={{ fontWeight: 700, color: '#1E293B', mb: 2 }}>
-                      {indicator.description}
-                    </Typography>
-                  </Box>
-                  <Chip 
-                    label={`${indicator.maxPoints} pts máx.`} 
-                    size="small" 
-                    sx={{ fontWeight: 800, bgcolor: '#F1F5F9' }} 
-                  />
-                </Stack>
-
-                <Stack direction="row" spacing={3} alignItems="center">
-                  <Slider
-                    value={indicator.points}
-                    max={indicator.maxPoints}
-                    step={1}
-                    onChange={(_, val) => handlePointChange(indicator.indicatorId, val)}
-                    sx={{ color: '#1A365D', flexGrow: 1 }}
-                  />
-                  <TextField
-                    type="number"
-                    size="small"
-                    value={indicator.points}
-                    onChange={(e) => handlePointChange(indicator.indicatorId, e.target.value)}
-                    InputProps={{ 
-                      sx: { 
-                        width: 80, 
-                        fontWeight: 900, 
-                        textAlign: 'center', 
-                        borderRadius: 2,
-                        bgcolor: indicator.points === indicator.maxPoints ? '#F0FFF4' : 'white'
-                      } 
-                    }}
-                  />
-                </Stack>
-              </Paper>
-            ))}
-          </Stack>
-
-          <Box sx={{ mt: 4 }}>
-            <Typography variant="subtitle1" sx={{ fontWeight: 800, color: '#1A365D', mb: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
-              <InfoIcon fontSize="small" /> Observaciones y Retroalimentación
-            </Typography>
-            <TextField
-              fullWidth
-              multiline
-              rows={4}
-              placeholder="Escribe aquí los comentarios para el estudiante..."
-              value={commentText}
-              onChange={(e) => setCommentText(e.target.value)}
-              sx={{ 
-                '& .MuiOutlinedInput-root': { borderRadius: 4, bgcolor: 'white' }
-              }}
-            />
-          </Box>
-        </Grid>
-
-        {/* PANEL DERECHO: RESUMEN FLOTANTE */}
-        <Grid item xs={12} md={4}>
-<Paper 
-    // Borramos la palabra 'sticky' de aquí
-    sx={{ 
-      p: 4, 
-      borderRadius: 6, 
-      bgcolor: '#F8FAFC', 
-      border: '2px solid #E2E8F0',
-      // Agregamos el comportamiento sticky correctamente aquí:
-      position: { md: 'sticky' },
-      top: 24,
-      zIndex: 10
-    }}
-  >
-            <Typography variant="h6" sx={{ fontWeight: 900, color: '#1A365D', mb: 3, textAlign: 'center' }}>
-              Resumen de Nota
-            </Typography>
-
-            <Box sx={{ textAlign: 'center', mb: 4 }}>
-              <Box 
-                sx={{ 
-                  width: 120, 
-                  height: 120, 
-                  borderRadius: '50%', 
-                  border: `8px solid ${getScoreColor()}`,
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  mx: 'auto',
-                  mb: 2,
-                  transition: '0.3s'
-                }}
-              >
-                <Typography variant="h3" sx={{ fontWeight: 950, color: '#1E293B' }}>
-                  {totalPoints}
+              <Stack direction="row" spacing={1} alignItems="center" sx={{ mt: 1 }}>
+                <Chip label={studentInfo?.grade} size="small" sx={{ fontWeight: 700, bgcolor: '#E2E8F0' }} />
+                <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 600 }}>
+                  Historial Académico Detallado
                 </Typography>
-                <Divider sx={{ width: '40%', my: 0.5 }} />
-                <Typography variant="h6" sx={{ fontWeight: 700, color: '#64748B' }}>
-                  {maxPoints}
-                </Typography>
-              </Box>
-              <Typography variant="body2" sx={{ fontWeight: 800, color: getScoreColor() }}>
-                {percentage.toFixed(0)}% del total
+              </Stack>
+            </Box>
+            
+            <Box sx={{ textAlign: { md: 'right' } }}>
+              <Typography variant="caption" sx={{ fontWeight: 800, color: '#64748B' }}>
+                TAREAS REGISTRADAS
+              </Typography>
+              <Typography variant="h5" sx={{ fontWeight: 900, color: COLORS.primary }}>
+                {tasks.length}
               </Typography>
             </Box>
+          </Stack>
+          
+          <Divider sx={{ my: 4 }} />
 
-            <Stack spacing={2}>
-              <Box sx={{ p: 2, bgcolor: 'white', borderRadius: 3, border: '1px solid #E2E8F0' }}>
-                <Typography variant="caption" sx={{ color: '#94A3B8', fontWeight: 800 }}>ESTADO</Typography>
-                <Typography variant="body2" sx={{ fontWeight: 700, color: '#1E293B' }}>
-                  {percentage >= 60 ? 'Aprobado' : 'Requiere Refuerzo'}
-                </Typography>
-              </Box>
-              
-              <Paper elevation={0} sx={{ p: 2, bgcolor: '#1A365D', color: 'white', borderRadius: 3 }}>
-                <Stack direction="row" spacing={1} alignItems="center">
-                  <GradeIcon fontSize="small" />
-                  <Typography variant="caption" sx={{ fontWeight: 800 }}>SISTEMA AULA CONECTA</Typography>
-                </Stack>
-                <Typography variant="body2" sx={{ mt: 1, opacity: 0.9, fontSize: '0.75rem' }}>
-                  Los registro se guardará en el sistema de la Institución.
-                </Typography>
-              </Paper>
-            </Stack>
-          </Paper>
-        </Grid>
+          <TableContainer>
+            <Table>
+              <TableHead sx={{ bgcolor: '#F8FAFC' }}>
+                <TableRow>
+                  <TableCell sx={{ fontWeight: 900 }}>MATERIA / TEMA</TableCell>
+                  <TableCell align="center" sx={{ fontWeight: 900 }}>INSTRUMENTO</TableCell>
+                  <TableCell align="center" sx={{ fontWeight: 900 }}>ESTADO</TableCell>
+                  <TableCell align="center" sx={{ fontWeight: 900 }}>LOGRO</TableCell>
+                  <TableCell align="center" sx={{ fontWeight: 900 }}>PUNTAJE</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {tasks.map((st) => {
+                  const maxPts = getMaxPoints(st.task);
+                  return (
+                    <TableRow key={st._id} hover>
+                      <TableCell>
+                        <Stack direction="row" spacing={2} alignItems="center">
+                          <Box sx={{ p: 1, bgcolor: '#F1F5F9', borderRadius: 2 }}>
+                            <TaskIcon sx={{ color: '#64748B', fontSize: 20 }} />
+                          </Box>
+                          <Box>
+                            <Typography variant="subtitle2" sx={{ fontWeight: 700, color: '#1E293B' }}>
+                              {st.task?.subject || 'Sin Materia'}
+                            </Typography>
+                            <Typography variant="body2" color="text.secondary">
+                              {st.task?.topic || 'Sin Tema'}
+                            </Typography>
+                          </Box>
+                        </Stack>
+                      </TableCell>
 
-      </Grid>
-    </Container>
+                      <TableCell align="center">
+                        <Chip 
+                          label={st.task?.instrumentType?.toUpperCase().replace('_', ' ')} 
+                          size="small" 
+                          variant="outlined" 
+                          sx={{ fontWeight: 700, fontSize: '0.65rem', color: '#64748B' }}
+                        />
+                      </TableCell>
+
+                      <TableCell align="center">
+                        <Chip 
+                          label={st.status} 
+                          size="small"
+                          sx={{ 
+                            fontWeight: 800,
+                            textTransform: 'uppercase',
+                            fontSize: '0.7rem',
+                            bgcolor: st.status === 'corregido' ? '#DCFCE7' : '#FEF2F2',
+                            color: st.status === 'corregido' ? '#166534' : '#991B1B',
+                          }} 
+                        />
+                      </TableCell>
+
+                      <TableCell align="center">
+                        <Typography variant="body2" sx={{ fontWeight: 700 }}>
+                          {st.score || 0} / {maxPts}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          Indicadores
+                        </Typography>
+                      </TableCell>
+
+                      <TableCell align="center">
+                        <Box sx={{ 
+                          display: 'inline-block', 
+                          px: 2, py: 0.5, 
+                          bgcolor: COLORS.primary, 
+                          color: 'white', 
+                          borderRadius: 2,
+                          fontWeight: 900
+                        }}>
+                          {st.score || 0} pts
+                        </Box>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+                
+                {tasks.length === 0 && (
+                  <TableRow>
+                    <TableCell colSpan={5} align="center" sx={{ py: 8 }}>
+                      <Typography color="text.secondary" sx={{ fontWeight: 600 }}>
+                        Este estudiante aún no tiene tareas registradas.
+                      </Typography>
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        </Paper>
+      </Container>
+    </Box>
   );
 }
