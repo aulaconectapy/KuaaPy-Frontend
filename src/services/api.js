@@ -240,4 +240,48 @@ export const markAsRead = (id) =>
      .then(res => res.data)
      .catch(error => { throw error });
 
+// =====================
+// PLANIFICACIONES SEMANALES
+// =====================
+
+/**
+ * Obtiene todas las planificaciones. 
+ * Si es docente, el backend filtrará sus propias planificaciones.
+ * Si es director, el backend mostrará las de su institución.
+ */
+export const getPlanificaciones = () => 
+  api.get('/api/planificaciones').then(res => res.data);
+
+/**
+ * Obtiene una planificación específica por ID para ver el detalle.
+ */
+export const getPlanificacionById = (id) => 
+  api.get(`/api/planificaciones/${id}`).then(res => res.data);
+
+/**
+ * Crea una nueva planificación (Inicia en estado 'Borrador').
+ */
+export const createPlanificacion = (data) => 
+  api.post('/api/planificaciones', data).then(res => res.data);
+
+/**
+ * Actualiza una planificación existente (Solo permitido si está en 'Borrador').
+ */
+export const updatePlanificacion = (id, data) => 
+  api.put(`/api/planificaciones/${id}`, data).then(res => res.data);
+
+/**
+ * Elimina una planificación.
+ */
+export const deletePlanificacion = (id) => 
+  api.delete(`/api/planificaciones/${id}`).then(res => res.data);
+
+/**
+ * CAMBIO DE ESTADO: 
+ * - Docente envía para revisión: { estado: 'Enviado' }
+ * - Director aprueba: { estado: 'Aprobado', observacionesGenerales: '...' }
+ * - Director rechaza: { estado: 'Rechazado', observacionesGenerales: '...' }
+ */
+export const updatePlanificacionStatus = (id, statusData) => 
+  api.patch(`/api/planificaciones/${id}/status`, statusData).then(res => res.data);
 export default api;

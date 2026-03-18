@@ -35,8 +35,8 @@ export default function TaskForm({ task = null }) {
     instrumentType: "lista_cotejo",
     dueDate: "",
     status: "pendiente",
-    indicators: [{ description: "", points: 0 }],
-    rubricCriteria: [{ criterion: "", levels: [{ level: "", descriptor: "", points: 0 }] }],
+    indicators: [{ description: "", points: 1 }], // Iniciamos con 1 punto
+    rubricCriteria: [{ criterion: "", levels: [{ level: "", descriptor: "", points: 1 }] }], // Iniciamos con 1 punto
   });
 
   useEffect(() => {
@@ -55,8 +55,8 @@ export default function TaskForm({ task = null }) {
         instrumentType: task.instrumentType || "lista_cotejo",
         dueDate: task.dueDate?.split("T")[0] || "",
         status: task.status || "pendiente",
-        indicators: task.indicators?.length > 0 ? task.indicators : [{ description: "", points: 0 }],
-        rubricCriteria: task.rubricCriteria?.length > 0 ? task.rubricCriteria : [{ criterion: "", levels: [{ level: "", descriptor: "", points: 0 }] }],
+        indicators: task.indicators?.length > 0 ? task.indicators : [{ description: "", points: 1 }],
+        rubricCriteria: task.rubricCriteria?.length > 0 ? task.rubricCriteria : [{ criterion: "", levels: [{ level: "", descriptor: "", points: 1 }] }],
       });
     }
   }, [task]);
@@ -65,11 +65,11 @@ export default function TaskForm({ task = null }) {
 
   const handleIndicatorChange = (index, field, value) => {
     const updated = [...formData.indicators];
-    updated[index][field] = field === "points" ? Number(value) : value;
+    updated[index][field] = field === "points" ? (value === "" ? 0 : Number(value)) : value;
     setFormData({ ...formData, indicators: updated });
   };
 
-  const addIndicator = () => setFormData({ ...formData, indicators: [...formData.indicators, { description: "", points: 0 }] });
+  const addIndicator = () => setFormData({ ...formData, indicators: [...formData.indicators, { description: "", points: 1 }] });
   const removeIndicator = index => setFormData({ ...formData, indicators: formData.indicators.filter((_, i) => i !== index) });
 
   // --- Rúbrica ---
@@ -80,16 +80,16 @@ export default function TaskForm({ task = null }) {
   };
   const handleRubricLevelChange = (cIndex, lIndex, field, value) => {
     const updated = [...formData.rubricCriteria];
-    updated[cIndex].levels[lIndex][field] = field === "points" ? Number(value) : value;
+    updated[cIndex].levels[lIndex][field] = field === "points" ? (value === "" ? 0 : Number(value)) : value;
     setFormData({ ...formData, rubricCriteria: updated });
   };
   const addRubricCriterion = () => setFormData({ 
     ...formData, 
-    rubricCriteria: [...formData.rubricCriteria, { criterion: "", levels: [{ level: "", descriptor: "", points: 0 }] }] 
+    rubricCriteria: [...formData.rubricCriteria, { criterion: "", levels: [{ level: "", descriptor: "", points: 1 }] }] 
   });
   const addRubricLevel = cIndex => {
     const updated = [...formData.rubricCriteria];
-    updated[cIndex].levels.push({ level: "", descriptor: "", points: 0 });
+    updated[cIndex].levels.push({ level: "", descriptor: "", points: 1 });
     setFormData({ ...formData, rubricCriteria: updated });
   };
   const removeRubricCriterion = cIndex => setFormData({ ...formData, rubricCriteria: formData.rubricCriteria.filter((_, i) => i !== cIndex) });
@@ -108,22 +108,23 @@ export default function TaskForm({ task = null }) {
 
     const payload = { ...formData, institution: user.institution?._id || user.institution, teacher: user._id };
 
+    // CAMBIO: Ahora solo filtramos si la descripción está totalmente vacía.
+    // Permitimos puntos >= 0 para evitar que se borren por error.
     if (formData.instrumentType === "lista_cotejo") {
-      const validIndicators = formData.indicators.filter(i => i.description.trim() && i.points > 0);
-      if (validIndicators.length === 0) return alert("Debe agregar al menos un indicador válido");
+      const validIndicators = formData.indicators.filter(i => i.description.trim() !== "");
+      if (validIndicators.length === 0) return alert("Debe agregar al menos un indicador con descripción");
       payload.indicators = validIndicators;
     }
 
     if (formData.instrumentType === "rubrica") {
-      const validCriteria = formData.rubricCriteria.filter(c => c.criterion.trim());
+      const validCriteria = formData.rubricCriteria.filter(c => c.criterion.trim() !== "");
       if (validCriteria.length === 0) return alert("Debe agregar al menos un criterio de rúbrica");
       payload.rubricCriteria = validCriteria;
     }
 
     if (formData.instrumentType === "rsa") {
-      const validIndicators = formData.indicators.filter(i => i.description.trim() && i.points > 0);
+      const validIndicators = formData.indicators.filter(i => i.description.trim() !== "");
       if (validIndicators.length === 0) return alert("Debe agregar al menos un indicador válido");
-      // Genera 3 momentos automáticamente con los mismos indicadores
       payload.rsaMomentsData = [
         { indicators: validIndicators },
         { indicators: validIndicators },
@@ -136,7 +137,7 @@ export default function TaskForm({ task = null }) {
       else await createTask(payload);
       router.push("/teacher/classes/tasks");
     } catch (error) {
-      console.error("Error createTask:", error);
+      console.error("Error al guardar:", error);
       alert("Error al guardar la tarea");
     }
   };
@@ -188,7 +189,15 @@ export default function TaskForm({ task = null }) {
                     </TextField>
                   </Grid>
                   <Grid item xs={12} sm={6}>
-                    <TextField type="date" fullWidth label="Fecha de Entrega" name="dueDate" value={formData.dueDate} onChange={handleChange} InputLabelProps={{ shrink:true }} />
+                    <TextField 
+                      type="date" 
+                      fullWidth 
+                      label="Fecha de Entrega" 
+                      name="dueDate" 
+                      value={formData.dueDate} 
+                      onChange={handleChange} 
+                      InputLabelProps={{ shrink:true }} 
+                    />
                   </Grid>
                   <Grid item xs={12} sm={6}>
                     <TextField select fullWidth label="Instrumento de Evaluación" name="instrumentType" value={formData.instrumentType} onChange={handleChange}>
@@ -210,8 +219,19 @@ export default function TaskForm({ task = null }) {
                     {formData.indicators.map((ind,index) => (
                       <Stack key={index} direction="row" spacing={2} alignItems="flex-start" sx={{ p:2, bgcolor:'#fff', borderRadius:4, border:`1px solid ${COLORS.border}` }}>
                         <Avatar sx={{ width:28, height:28, fontSize:'0.75rem', bgcolor:COLORS.primary, fontWeight:700 }}>{index+1}</Avatar>
-                        <TextField fullWidth label="Descripción" value={ind.description} onChange={(e)=>handleIndicatorChange(index,"description",e.target.value)} />
-                        <TextField type="number" label="Pts" value={ind.points} onChange={(e)=>handleIndicatorChange(index,"points",e.target.value)} sx={{ width:80 }} />
+                        <TextField 
+                          fullWidth 
+                          label="Descripción" 
+                          value={ind.description} 
+                          onChange={(e)=>handleIndicatorChange(index,"description",e.target.value)} 
+                        />
+                        <TextField 
+                          type="number" 
+                          label="Pts" 
+                          value={ind.points} 
+                          onChange={(e)=>handleIndicatorChange(index,"points",e.target.value)} 
+                          sx={{ width:80 }} 
+                        />
                         {formData.indicators.length>1 && (
                           <Tooltip title="Eliminar">
                             <IconButton onClick={()=>removeIndicator(index)} sx={{ color:'#EF4444' }}>

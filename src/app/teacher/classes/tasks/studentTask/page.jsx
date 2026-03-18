@@ -20,7 +20,9 @@ import {
   Timeline as RsaIcon,
   TableChart as RubricIcon,
   Star as StarIcon,
-  InfoOutlined as InfoIcon
+  InfoOutlined as InfoIcon,
+  Check as CheckIcon,
+  Close as CloseIcon
 } from '@mui/icons-material';
 
 import { useAuth } from '@/context/AuthContext';
@@ -55,7 +57,6 @@ const StudentTasksPage = () => {
     if (user) fetchTasks();
   }, [user]);
 
-  // Lógica de estadísticas corregida
   const stats = useMemo(() => {
     let puntosGanados = 0;
     let puntosTotalesPosibles = 0;
@@ -70,7 +71,6 @@ const StudentTasksPage = () => {
         pendientes++;
       }
 
-      // Calcular el máximo posible de ESTA tarea
       const type = st.task?.instrumentType;
       if (type === 'rubrica') {
         st.task.rubricCriteria?.forEach(crit => {
@@ -78,7 +78,6 @@ const StudentTasksPage = () => {
           puntosTotalesPosibles += maxLvl;
         });
       } else {
-        // RSA o Lista de Cotejo (Suma de puntos de indicadores)
         const maxInd = st.task?.indicators?.reduce((sum, ind) => sum + (ind.points || 0), 0) || 0;
         puntosTotalesPosibles += maxInd;
       }
@@ -118,7 +117,6 @@ const StudentTasksPage = () => {
     <Box sx={{ bgcolor: COLORS.bgLight, minHeight: '100vh', py: 6 }}>
       <Container maxWidth="lg">
         
-        {/* ENCABEZADO CON PORCENTAJE REAL */}
         <Paper 
           elevation={0} 
           sx={{ 
@@ -182,6 +180,7 @@ const StudentTasksPage = () => {
             const statusCfg = getStatusConfig(st.status);
             const isRSA = st.task?.instrumentType === 'rsa';
             const isRubric = st.task?.instrumentType === 'rubrica';
+            const isListaCotejo = st.task?.instrumentType === 'lista_cotejo';
 
             return (
               <Accordion 
@@ -222,7 +221,6 @@ const StudentTasksPage = () => {
                 <AccordionDetails sx={{ bgcolor: '#F8FAFC', p: { xs: 2, md: 4 }, borderTop: `1px solid ${COLORS.border}` }}>
                   <Grid container spacing={4}>
                     
-                    {/* PANEL DE PUNTOS LATERAL */}
                     <Grid item xs={12} md={3}>
                       <Stack spacing={2}>
                         <Paper elevation={0} sx={{ p: 2, borderRadius: 4, border: `1px solid ${COLORS.border}`, bgcolor: 'white' }}>
@@ -244,10 +242,8 @@ const StudentTasksPage = () => {
                       </Stack>
                     </Grid>
 
-                    {/* DETALLES DEL LOGRO (RSA / RÚBRICA) */}
                     <Grid item xs={12} md={9}>
                       
-                      {/* VISTA RSA */}
                       {isRSA && (
                         <Box>
                           <Typography variant="subtitle2" sx={{ fontWeight: 900, mb: 2, color: '#1E293B' }}>SEGUIMIENTO RSA (3 MOMENTOS)</Typography>
@@ -291,13 +287,55 @@ const StudentTasksPage = () => {
                         </Box>
                       )}
 
-                      {/* VISTA RÚBRICA */}
+                      {isListaCotejo && (
+                        <Box>
+                          <Typography variant="subtitle2" sx={{ fontWeight: 900, mb: 2, color: '#1E293B' }}>INDICADORES DE LOGRO</Typography>
+                          <TableContainer component={Paper} elevation={0} sx={{ borderRadius: 4, border: `1px solid ${COLORS.border}` }}>
+                            <Table size="small">
+                              <TableHead sx={{ bgcolor: '#F1F5F9' }}>
+                                <TableRow>
+                                  <TableCell sx={{ fontWeight: 800 }}>Descripción del Indicador</TableCell>
+                                  <TableCell align="center" sx={{ fontWeight: 800 }}>Pts</TableCell>
+                                  <TableCell align="center" sx={{ fontWeight: 800 }}>Estado</TableCell>
+                                </TableRow>
+                              </TableHead>
+                              <TableBody>
+                                {st.task?.indicators?.map((ind) => {
+                                  const score = st.indicatorScores?.find(s => 
+                                    (s.indicatorId?._id || s.indicatorId) === ind._id
+                                  );
+                                  return (
+                                    <TableRow key={ind._id} hover>
+                                      <TableCell sx={{ fontSize: '0.85rem', py: 1.5 }}>{ind.description}</TableCell>
+                                      <TableCell align="center" sx={{ fontWeight: 700 }}>{ind.points}</TableCell>
+                                      <TableCell align="center">
+                                        {st.status === 'corregido' ? (
+                                          <Avatar sx={{ 
+                                            width: 28, height: 28, 
+                                            bgcolor: score?.points > 0 ? `${COLORS.success}20` : '#FDA4AF20',
+                                            color: score?.points > 0 ? COLORS.success : '#EF4444',
+                                            border: `1px solid ${score?.points > 0 ? COLORS.success : '#EF4444'}`
+                                          }}>
+                                            {score?.points > 0 ? <CheckIcon sx={{ fontSize: 16 }} /> : <CloseIcon sx={{ fontSize: 16 }} />}
+                                          </Avatar>
+                                        ) : (
+                                          <Typography variant="caption" color="text.disabled">Pendiente</Typography>
+                                        )}
+                                      </TableCell>
+                                    </TableRow>
+                                  );
+                                })}
+                              </TableBody>
+                            </Table>
+                          </TableContainer>
+                        </Box>
+                      )}
+
                       {isRubric && (
                         <Box>
                           <Typography variant="subtitle2" sx={{ fontWeight: 900, mb: 2, color: '#1E293B' }}>MATRIZ DE CALIFICACIÓN POR RÚBRICA</Typography>
                           <Stack spacing={3}>
                             {st.task?.rubricCriteria?.map((crit) => {
-                              // Buscar el nivel que el profe marcó
                               const score = st.rubricScores?.find(rs => 
                                 (rs.indicatorId?._id || rs.indicatorId) === crit._id || rs.criterion === crit.criterion
                               );
@@ -337,7 +375,6 @@ const StudentTasksPage = () => {
                         </Box>
                       )}
 
-                      {/* COMENTARIOS */}
                       {st.comments && (
                         <Box sx={{ mt: 4, p: 2, bgcolor: '#FFFBEB', borderRadius: 4, borderLeft: `5px solid ${COLORS.accent}` }}>
                           <Typography variant="caption" sx={{ fontWeight: 900, color: '#92400E', display: 'flex', alignItems: 'center', gap: 0.5 }}>
