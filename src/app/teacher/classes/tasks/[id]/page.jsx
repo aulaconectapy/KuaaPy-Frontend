@@ -44,9 +44,6 @@ export default function TaskSubmissionsPage() {
   const [hasChanges, setHasChanges] = useState(false);
   const [lastSaved, setLastSaved] = useState(null);
   const [selectedMoment, setSelectedMoment] = useState(3);
-  
-  // NUEVO: Rastro de IDs modificados para no guardar a todos
-  const [modifiedIds, setModifiedIds] = useState(new Set());
 
   const isRubrica = taskInfo?.instrumentType === 'rubrica';
 
@@ -67,6 +64,7 @@ export default function TaskSubmissionsPage() {
     if (id) fetchData();
   }, [id]);
 
+  // Modificado: Ahora acepta el array de puntajes directamente para el cálculo
   const calculateInstantScore = (scores) => {
     if (!scores) return 0;
     return scores
@@ -76,29 +74,35 @@ export default function TaskSubmissionsPage() {
 
   const handleCellChange = (submissionId, criterionId, points) => {
     setHasChanges(true);
-    // Registrar ID modificado
-    setModifiedIds(prev => new Set(prev).add(submissionId));
-    
     setSubmissions(prev => prev.map(sub => {
       if (sub._id !== submissionId) return sub;
       
-      const currentScores = isRubrica ? (sub.rubricScores || sub.indicatorScores || []) : (sub.indicatorScores || []);
-      
+      // DETERMINAR QUÉ CAMPO USAR SEGÚN DB
+      const currentScores = isRubrica ? (sub.rubricScores || []) : (sub.indicatorScores || []);
+
       const newScores = [...currentScores].filter(s => {
-        const idMatch = (s.indicatorId?._id || s.indicatorId || s._id?.$oid || s._id) === criterionId;
-        return isRubrica ? !idMatch : !(idMatch && s.moment === selectedMoment);
+        // Buscamos coincidencia en indicatorId o directamente en _id (como está en tu JSON de DB)
+        const sId = s.indicatorId?._id || s.indicatorId || s._id;
+        return isRubrica ? sId !== criterionId : !(sId === criterionId && s.moment === selectedMoment);
       });
 
-      newScores.push({ 
-        indicatorId: criterionId, 
+      const newEntry = { 
         points, 
         moment: isRubrica ? 1 : selectedMoment 
-      });
+      };
+
+      // Mantenemos consistencia con los nombres de campos de la DB
+      if (isRubrica) {
+        newEntry._id = criterionId;
+      } else {
+        newEntry.indicatorId = criterionId;
+      }
+
+      newScores.push(newEntry);
 
       return { 
         ...sub, 
-        indicatorScores: newScores, // Temporalmente en indicatorScores para la lógica de UI
-        rubricScores: isRubrica ? newScores : sub.rubricScores,
+        [isRubrica ? 'rubricScores' : 'indicatorScores']: newScores,
         score: calculateInstantScore(newScores)
       };
     }));
@@ -106,29 +110,24 @@ export default function TaskSubmissionsPage() {
 
   const handleCommentChange = (submissionId, text) => {
     setHasChanges(true);
-    setModifiedIds(prev => new Set(prev).add(submissionId));
     setSubmissions(prev => prev.map(sub => 
       sub._id === submissionId ? { ...sub, comments: text } : sub
     ));
   };
 
   const handleSaveAll = useCallback(async () => {
-    if (!hasChanges || saving || modifiedIds.size === 0) return;
+    if (!hasChanges || saving) return;
     setSaving(true);
     try {
-      // FILTRAR: Solo enviar los alumnos modificados
-      const toUpdate = submissions.filter(sub => modifiedIds.has(sub._id));
-
-      const promises = toUpdate.map(sub => {
+      const promises = submissions.map(sub => {
         const updateData = {
           comments: sub.comments,
           score: sub.score,
           status: "corregido"
         };
 
-        // Enviar al campo correcto según el esquema de tu DB
         if (isRubrica) {
-          updateData.rubricScores = sub.indicatorScores || sub.rubricScores;
+          updateData.rubricScores = sub.rubricScores;
         } else {
           updateData.indicatorScores = sub.indicatorScores;
         }
@@ -138,14 +137,13 @@ export default function TaskSubmissionsPage() {
 
       await Promise.all(promises);
       setHasChanges(false);
-      setModifiedIds(new Set()); // Limpiar lista de modificados
       setLastSaved(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
     } catch (error) {
       console.error("Error al guardar:", error);
     } finally {
       setSaving(false);
     }
-  }, [submissions, hasChanges, saving, isRubrica, modifiedIds]);
+  }, [submissions, hasChanges, saving, isRubrica]);
 
   useEffect(() => {
     const timer = setInterval(() => { handleSaveAll(); }, 60000);
@@ -165,7 +163,7 @@ export default function TaskSubmissionsPage() {
             <Box sx={{ display: 'flex', alignItems: 'center', color: hasChanges ? '#D97706' : COLORS.success, mr: 2 }}>
               {saving ? <CircularProgress size={14} color="inherit" /> : hasChanges ? <SyncIcon sx={{ fontSize: 16 }} /> : <SavedIcon sx={{ fontSize: 16 }} />}
               <Typography variant="caption" sx={{ fontWeight: 800, ml: 1 }}>
-                {saving ? "GUARDANDO..." : hasChanges ? `${modifiedIds.size} CAMBIOS PENDIENTES` : `SINCRONIZADO ${lastSaved || ""}`}
+                {saving ? "GUARDANDO..." : hasChanges ? "CAMBIOS PENDIENTES" : `SINCRONIZADO ${lastSaved || ""}`}
               </Typography>
             </Box>
             <Button variant="outlined" startIcon={<PdfIcon />} onClick={() => generateTaskPDF(taskInfo, submissions, user, selectedMoment)} sx={{ color: COLORS.primary, borderColor: COLORS.primary, fontWeight: 800, borderRadius: 2 }}>Exportar PDF</Button>
@@ -188,46 +186,32 @@ export default function TaskSubmissionsPage() {
           </ToggleButtonGroup>
         )}
 
-        {/* TABLA PRINCIPAL */}
         <Paper sx={{ borderRadius: 4, border: `1px solid ${COLORS.border}`, overflow: 'hidden' }}>
           <TableContainer sx={{ maxHeight: '70vh' }}>
             <Table size="small" stickyHeader>
               <TableHead>
                 <TableRow>
-                  <TableCell rowSpan={isRubrica ? 2 : 1} sx={{ fontWeight: 900, bgcolor: '#F8FAFC', zIndex: 11 }}>ESTUDIANTE</TableCell>
+                  <TableCell rowSpan={isRubrica ? 2 : 1} sx={{ fontWeight: 900, bgcolor: '#F8FAFC' }}>ESTUDIANTE</TableCell>
                   {isRubrica ? (
-                    taskInfo?.rubricCriteria.map(crit => (
-                      <TableCell key={crit._id} colSpan={crit.levels.length} align="center" sx={{ fontWeight: 900, bgcolor: '#F1F5F9', borderLeft: '1px solid #E2E8F0' }}>
-                        {crit.criterion.toUpperCase()}
-                      </TableCell>
+                    taskInfo?.rubricCriteria.map((crit) => (
+                      <TableCell key={crit._id} colSpan={crit.levels.length} align="center" sx={{ fontWeight: 900, bgcolor: '#F1F5F9' }}>{crit.criterion.toUpperCase()}</TableCell>
                     ))
                   ) : (
-                    taskInfo?.indicators.map(ind => (
-                      <TableCell key={ind._id} align="center" sx={{ fontWeight: 900, bgcolor: '#F8FAFC' }}>
-                        {ind.description.substring(0, 30)}...
-                      </TableCell>
+                    taskInfo?.indicators.map((ind) => (
+                      <TableCell key={ind._id} align="center" sx={{ fontWeight: 900, bgcolor: '#F8FAFC' }}>{ind.description.substring(0,30)}...</TableCell>
                     ))
                   )}
-                  <TableCell rowSpan={isRubrica ? 2 : 1} align="center" sx={{ fontWeight: 900, bgcolor: '#F8FAFC' }}>PUNTOS</TableCell>
-                  <TableCell rowSpan={isRubrica ? 2 : 1} sx={{ fontWeight: 900, bgcolor: '#F8FAFC' }}>OBSERVACIONES</TableCell>
+                  <TableCell rowSpan={isRubrica ? 2 : 1} align="center" sx={{ fontWeight: 900 }}>PUNTOS</TableCell>
+                  <TableCell rowSpan={isRubrica ? 2 : 1} sx={{ fontWeight: 900 }}>OBSERVACIONES</TableCell>
                 </TableRow>
-
                 {isRubrica && (
                   <TableRow>
-                    {taskInfo?.rubricCriteria.map(crit => 
-                      crit.levels.map(lvl => (
-                        <TableCell 
-                          key={lvl._id} align="center" 
-                          sx={{ 
-                            bgcolor: '#F8FAFC', py: 1.5, px: 1,
-                            borderLeft: lvl === crit.levels[0] ? '1px solid #E2E8F0' : 'none',
-                            verticalAlign: 'top', minWidth: '100px'
-                          }}
-                        >
-                          <Stack spacing={0.5}>
-                            <Typography sx={{ fontSize: '0.65rem', fontWeight: 900, color: COLORS.primary }}>{lvl.level.toUpperCase()}</Typography>
-                            <Typography sx={{ fontSize: '0.6rem', fontWeight: 700 }}>({lvl.points} pts)</Typography>
-                            <Typography sx={{ fontSize: '0.58rem', color: '#64748B', fontStyle: 'italic', lineHeight: 1.2, mt: 0.5 }}>{lvl.descriptor}</Typography>
+                    {taskInfo?.rubricCriteria.map((crit) =>
+                      crit.levels.map((lvl) => (
+                        <TableCell key={lvl._id} align="center">
+                          <Stack spacing={0.3}>
+                            <Typography sx={{ fontSize:11, fontWeight:900 }}>{lvl.level}</Typography>
+                            <Typography sx={{ fontSize:10 }}>({lvl.points})</Typography>
                           </Stack>
                         </TableCell>
                       ))
@@ -244,25 +228,26 @@ export default function TaskSubmissionsPage() {
                     </TableCell>
 
                     {isRubrica ? (
-                      taskInfo?.rubricCriteria.map((crit, index) => {
-                        // Unificar búsqueda de scores para la UI
-                        const allScores = [...(sub.rubricScores || []), ...(sub.indicatorScores || [])];
-                        const score = allScores.find((s, idx) => {
-                            const sId = s.indicatorId?._id || s.indicatorId || s._id?.$oid || s._id;
-                            return sId === crit._id || idx === index;
+                      taskInfo?.rubricCriteria.map((crit) => {
+                        // LEER DEL CAMPO CORRECTO (rubricScores)
+                        const score = sub.rubricScores?.find((s) => {
+                          const sId = s.indicatorId?._id || s.indicatorId || s._id;
+                          return sId === crit._id;
                         });
 
-                        return crit.levels.map(lvl => {
+                        return crit.levels.map((lvl) => {
                           const isSelected = score && Number(score.points) === Number(lvl.points);
                           return (
-                            <TableCell 
-                              key={lvl._id} align="center" 
+                            <TableCell
+                              key={lvl._id}
+                              align="center"
                               onClick={() => handleCellChange(sub._id, crit._id, lvl.points)}
-                              sx={{ 
+                              sx={{
                                 cursor: 'pointer',
                                 bgcolor: isSelected ? '#FFF1F2' : 'inherit',
                                 borderLeft: lvl === crit.levels[0] ? '1px solid #E2E8F0' : 'none',
-                                transition: '0.2s', '&:hover': { bgcolor: '#F1F5F9' }
+                                transition: '0.2s',
+                                '&:hover': { bgcolor: '#F1F5F9' }
                               }}
                             >
                               {isSelected ? <CheckIcon sx={{ color: COLORS.primary, fontSize: 20 }} /> : <UncheckedIcon sx={{ color: '#CBD5E1', fontSize: 20 }} />}
@@ -272,12 +257,19 @@ export default function TaskSubmissionsPage() {
                       })
                     ) : (
                       taskInfo?.indicators.map(ind => {
-                        const score = sub.indicatorScores?.find(s => (s.indicatorId?._id || s.indicatorId) === ind._id && s.moment === selectedMoment);
+                        const score = sub.indicatorScores?.find((s) => {
+                          const sId = s.indicatorId?._id || s.indicatorId || s._id;
+                          return sId === ind._id && s.moment === selectedMoment;
+                        });
                         return (
                           <TableCell key={ind._id} align="center">
                             <Stack direction="row" justifyContent="center" spacing={0.5}>
-                              <IconButton size="small" onClick={() => handleCellChange(sub._id, ind._id, 1)} sx={{ color: score?.points === 1 ? COLORS.success : '#CBD5E1' }}><CheckIcon fontSize="small" /></IconButton>
-                              <IconButton size="small" onClick={() => handleCellChange(sub._id, ind._id, 0)} sx={{ color: score?.points === 0 ? COLORS.error : '#CBD5E1' }}><UncheckedIcon fontSize="small" /></IconButton>
+                              <IconButton size="small" onClick={() => handleCellChange(sub._id, ind._id, 1)} sx={{ color: score?.points === 1 ? COLORS.success : '#CBD5E1' }}>
+                                <CheckIcon fontSize="small" />
+                              </IconButton>
+                              <IconButton size="small" onClick={() => handleCellChange(sub._id, ind._id, 0)} sx={{ color: score?.points === 0 ? COLORS.error : '#CBD5E1' }}>
+                                <UncheckedIcon fontSize="small" />
+                              </IconButton>
                             </Stack>
                           </TableCell>
                         );
@@ -287,10 +279,15 @@ export default function TaskSubmissionsPage() {
                     <TableCell align="center">
                       <Chip label={sub.score || 0} size="small" sx={{ fontWeight: 900, bgcolor: COLORS.primary, color: 'white', borderRadius: 1 }} />
                     </TableCell>
+
                     <TableCell>
-                      <TextField fullWidth size="small" variant="standard" value={sub.comments || ""} onChange={(e) => handleCommentChange(sub._id, e.target.value)}
+                      <TextField
+                        fullWidth size="small" variant="standard"
+                        value={sub.comments || ""}
+                        onChange={(e) => handleCommentChange(sub._id, e.target.value)}
                         InputProps={{ disableUnderline: true, style: { fontSize: '0.75rem' } }}
-                        sx={{ bgcolor: '#F1F5F9', px: 1, py: 0.5, borderRadius: 2 }} />
+                        sx={{ bgcolor: '#F1F5F9', px: 1, py: 0.5, borderRadius: 2 }}
+                      />
                     </TableCell>
                   </TableRow>
                 ))}

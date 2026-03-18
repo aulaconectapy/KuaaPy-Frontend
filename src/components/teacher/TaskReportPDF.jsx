@@ -85,7 +85,7 @@ export const generateTaskPDF = async (taskInfo, submissions, user) => {
     taskInfo.rubricCriteria.forEach(crit => {
       crit.levels.forEach((lvl, idx) => {
         referenceRows.push([
-          idx === 0 ? crit.criterion.toUpperCase() : '', // Solo pone el nombre del criterio en la primera fila del grupo
+          idx === 0 ? crit.criterion.toUpperCase() : '', 
           lvl.level.toUpperCase(),
           lvl.points,
           lvl.descriptor
@@ -135,34 +135,40 @@ export const generateTaskPDF = async (taskInfo, submissions, user) => {
 
   // --- 7. PROCESAMIENTO DE FILAS ---
   const tableRows = submissions.map((sub, index) => {
-    const row = [index + 1, `${sub.student.lastName.toUpperCase()}, ${sub.student.firstName}`];
-    let totalL = 0;
+    const row = [index + 1, `${sub.student.lastName?.toUpperCase() || ''}, ${sub.student.firstName || ''}`];
+    
+    // Seleccionamos el array de puntajes correcto según el instrumento
+    const currentScores = isRubrica ? (sub.rubricScores || []) : (sub.indicatorScores || []);
 
     criteria.forEach(crit => {
-      const score = sub.indicatorScores?.find(s => (s.indicatorId?._id || s.indicatorId) === crit._id);
-      
       if (isRSA) {
         const getPts = (m) => {
-          const s = sub.indicatorScores?.find(is => (is.indicatorId?._id || is.indicatorId) === crit._id && is.moment === m);
+          const s = currentScores.find(is => 
+            (is.indicatorId?._id || is.indicatorId || is._id) === crit._id && is.moment === m
+          );
           return s ? s.points : 0;
         };
         const m1 = getPts(1), m2 = getPts(2), m3 = getPts(3);
         const res = calculateRSAFinal(m1, m2, m3);
         row.push(m1 === 1 ? 'L' : 'ANL', m2 === 1 ? 'L' : 'ANL', m3 === 1 ? 'L' : 'ANL', res);
-        if (res === 'L') totalL++;
       } else {
-        // Para Rúbrica o Lista de Cotejo, mostramos el valor directo
+        // CORRECCIÓN AQUÍ: Buscar en currentScores que ya sabe si es rúbrica o indicador
+        const score = currentScores.find(s => 
+          (s.indicatorId?._id || s.indicatorId || s._id) === crit._id
+        );
+        
         const p = score ? score.points : 0;
+        
         if (isRubrica) {
           row.push(p);
         } else {
           row.push(p === 1 ? 'L' : 'ANL');
-          if (p === 1) totalL++;
         }
       }
     });
 
-    row.push(isRSA ? totalL : sub.score);
+    // Puntaje total y comentarios
+    row.push(sub.score || 0);
     row.push(sub.comments || '');
     return row;
   });
