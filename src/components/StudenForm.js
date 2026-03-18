@@ -7,17 +7,16 @@ import { createStudent, updateStudent, getStudentById, getInstitutions } from "@
 import {
   TextField, Button, MenuItem, Select, InputLabel, FormControl,
   CircularProgress, Snackbar, Box, Typography, Paper, Grid,
-  Divider, Stack, OutlinedInput, Checkbox, ListItemText, Avatar, Container, Alert
+  Stack, OutlinedInput, Checkbox, ListItemText, Avatar, Container, Alert
 } from "@mui/material";
 
 import { 
-  CheckCircle, Error, ArrowBack, Dashboard, 
+  ArrowBack, Dashboard, 
   Person as PersonIcon, School as SchoolIcon, 
   FamilyRestroom as FamilyIcon, LocalHospital as HealthIcon,
-  Home as HomeIcon, Lock as LockIcon
+  Lock as LockIcon
 } from "@mui/icons-material";
 
-// 🔹 Mapeo de valores (Mantenido)
 const gradeMapping = {
   "1": "1° grado", "2": "2° grado", "3": "3° grado", "4": "4° grado",
   "5": "5° grado", "6": "6° grado", "7": "7° grado", "8": "8° grado",
@@ -51,17 +50,14 @@ const StudentForm = ({ studentId, onSuccess }) => {
   const [snackbar, setSnackbar] = useState({ open: false, message: "", success: true });
   const [isAuthorized, setIsAuthorized] = useState(false);
 
-  // 🛡️ PROTECCIÓN DE RUTA POR ROL
   useEffect(() => {
     if (!authLoading) {
       if (!currentUser) {
         router.push("/login");
         return;
       }
-
       const role = currentUser.role?.toLowerCase();
       const allowedRoles = ["director/a", "secretario/a", "secretaria", "docente", "administrador"];
-      
       if (!allowedRoles.includes(role)) {
         router.push("/dashboard");
       } else {
@@ -70,7 +66,6 @@ const StudentForm = ({ studentId, onSuccess }) => {
     }
   }, [currentUser, authLoading, router]);
 
-  // 🔹 Cargar instituciones (Mantenido)
   useEffect(() => {
     const loadInstitutions = async () => {
       if (!isAuthorized || !currentUser) return;
@@ -94,27 +89,22 @@ const StudentForm = ({ studentId, onSuccess }) => {
     loadInstitutions();
   }, [currentUser, isAuthorized]);
 
-  // 🔹 Cargar estudiante si es edición (Mantenido)
   useEffect(() => {
     if (!studentId || !isAuthorized) return;
     setLoading(true);
     getStudentById(studentId)
       .then(data => {
         setStudent({
-          firstName: data.firstName || "", lastName: data.lastName || "", sex: data.sex || "",
-          cedula: data.cedula || "", birthDate: data.birthDate?.split("T")[0] || "",
-          institution: data.institution?._id || "", grade: data.grade ? [data.grade] : [],
-          father: data.father || { firstName: "", lastName: "", phone: "" },
-          mother: data.mother || { firstName: "", lastName: "", phone: "" },
-          guardian: data.guardian || "", allergies: data.allergies || "",
-          healthIssues: data.healthIssues || "", reasonableAdjustments: data.reasonableAdjustments || "",
-          address: data.address || "", observations: data.observations || "", password: "",
+          ...data,
+          institution: data.institution?._id || "",
+          grade: data.grade ? [data.grade] : [],
+          birthDate: data.birthDate?.split("T")[0] || "",
+          password: "", // Siempre vacío al editar para evitar pisar la actual por error
         });
       })
       .finally(() => setLoading(false));
   }, [studentId, isAuthorized]);
 
-  // 🔹 Actualizar grados (Mantenido)
   useEffect(() => {
     if (!student.institution || !isAuthorized) {
       setGrades([]);
@@ -141,6 +131,7 @@ const StudentForm = ({ studentId, onSuccess }) => {
     setErrors(prev => ({ ...prev, [name]: "" }));
   };
 
+  // --- VALIDACIONES ACTUALIZADAS ---
   const validate = () => {
     const newErrors = {};
     if (!student.firstName) newErrors.firstName = "El nombre es obligatorio.";
@@ -148,11 +139,28 @@ const StudentForm = ({ studentId, onSuccess }) => {
     if (!student.birthDate) newErrors.birthDate = "La fecha es obligatoria.";
     if (!student.institution) newErrors.institution = "Seleccione una institución.";
     if (!student.grade || student.grade.length === 0) newErrors.grade = "Seleccione al menos un grado.";
-    if (student.cedula && !/^\d+$/.test(student.cedula)) newErrors.cedula = "La cédula solo debe contener números.";
-    if (!studentId || student.password) {
-      if (!student.password) newErrors.password = "La contraseña es obligatoria.";
-      else if (student.password.length < 6) newErrors.password = "La contraseña debe tener al menos 6 caracteres.";
+
+    // Validación de Cédula (Obligatoria, solo números, mín 6)
+    if (!student.cedula) {
+      newErrors.cedula = "La cédula es obligatoria.";
+    } else if (!/^\d+$/.test(student.cedula)) {
+      newErrors.cedula = "La cédula solo debe contener números.";
+    } else if (student.cedula.length < 6) {
+      newErrors.cedula = "La cédula debe tener al menos 6 dígitos.";
     }
+
+    // Validación de Contraseña (Solo si es nuevo o si se intenta cambiar)
+    if (!studentId || student.password) {
+      const hasLetter = /[a-zA-Z]/.test(student.password);
+      if (!student.password) {
+        newErrors.password = "La contraseña es obligatoria.";
+      } else if (student.password.length < 6) {
+        newErrors.password = "Mínimo 6 caracteres.";
+      } else if (!hasLetter) {
+        newErrors.password = "Debe incluir al menos una letra.";
+      }
+    }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -164,6 +172,8 @@ const StudentForm = ({ studentId, onSuccess }) => {
     try {
       const mappedGrade = gradeMapping[student.grade[0]] || student.grade[0];
       const payload = { ...student, grade: mappedGrade };
+      if (studentId && !student.password) delete payload.password; // No enviar contraseña vacía al editar
+      
       studentId ? await updateStudent(studentId, payload) : await createStudent(payload);
       setSnackbar({ open: true, message: studentId ? "Actualizado correctamente" : "Creado correctamente", success: true });
       onSuccess?.();
@@ -185,7 +195,6 @@ const StudentForm = ({ studentId, onSuccess }) => {
     </Stack>
   );
 
-  // Mientras verifica permisos o carga datos de autenticación
   if (authLoading || !isAuthorized) {
     return (
       <Box sx={{ display: "flex", justifyContent: "center", alignItems: 'center', height: '100vh', bgcolor: COLORS.bgLight }}>
@@ -212,7 +221,7 @@ const StudentForm = ({ studentId, onSuccess }) => {
             </Typography>
           </Box>
 
-          <form onSubmit={handleSubmit}>
+          <form onSubmit={handleSubmit} autoComplete="off">
             <Grid container spacing={3}>
               <Grid item xs={12}><SectionTitle icon={PersonIcon} title="Información Personal" /></Grid>
               <Grid item xs={12} sm={6}><TextField label="Nombre" name="firstName" value={student.firstName} onChange={handleChange} fullWidth required error={!!errors.firstName} helperText={errors.firstName} variant="outlined" InputProps={{ sx: { borderRadius: 3 } }} /></Grid>
@@ -226,7 +235,23 @@ const StudentForm = ({ studentId, onSuccess }) => {
                   </Select>
                 </FormControl>
               </Grid>
-              <Grid item xs={12} sm={6}><TextField label="Cédula" name="cedula" value={student.cedula} onChange={handleChange} fullWidth error={!!errors.cedula} helperText={errors.cedula} variant="outlined" InputProps={{ sx: { borderRadius: 3 } }} /></Grid>
+              
+              {/* Cédula con Validaciones */}
+              <Grid item xs={12} sm={6}>
+                <TextField 
+                  label="Cédula" 
+                  name="cedula" 
+                  value={student.cedula} 
+                  onChange={handleChange} 
+                  fullWidth 
+                  required
+                  error={!!errors.cedula} 
+                  helperText={errors.cedula || "Mínimo 6 números"} 
+                  variant="outlined" 
+                  InputProps={{ sx: { borderRadius: 3 } }} 
+                />
+              </Grid>
+              
               <Grid item xs={12}><TextField label="Fecha de Nacimiento" type="date" name="birthDate" value={student.birthDate} onChange={handleChange} fullWidth InputLabelProps={{ shrink: true }} error={!!errors.birthDate} helperText={errors.birthDate} required variant="outlined" InputProps={{ sx: { borderRadius: 3 } }} /></Grid>
 
               <Grid item xs={12} sx={{ mt: 2 }}><SectionTitle icon={SchoolIcon} title="Ubicación Académica" /></Grid>
@@ -262,11 +287,11 @@ const StudentForm = ({ studentId, onSuccess }) => {
               <Grid item xs={12} sx={{ mt: 2 }}><SectionTitle icon={FamilyIcon} title="Información Familiar" /></Grid>
               <Grid item xs={12} sm={4}><TextField label="Padre (Nombres)" name="father.firstName" value={student.father.firstName} onChange={handleChange} fullWidth variant="outlined" InputProps={{ sx: { borderRadius: 3 } }} /></Grid>
               <Grid item xs={12} sm={4}><TextField label="Padre (Apellidos)" name="father.lastName" value={student.father.lastName} onChange={handleChange} fullWidth variant="outlined" InputProps={{ sx: { borderRadius: 3 } }} /></Grid>
-              <Grid item xs={12} sm={4}><TextField label="Padre (Tel)" name="father.phone" value={student.father.phone} onChange={handleChange} fullWidth variant="outlined" InputProps={{ sx: { borderRadius: 3 } }} /></Grid>
+              <Grid item xs={12} sm={4}><TextField label="Padre (Tel)" name="father.phone" value={student.father.phone} onChange={handleChange} fullWidth variant="outlined" InputProps={{ sx: { borderRadius: 3 } }} autoComplete="none" /></Grid>
 
               <Grid item xs={12} sm={4}><TextField label="Madre (Nombres)" name="mother.firstName" value={student.mother.firstName} onChange={handleChange} fullWidth variant="outlined" InputProps={{ sx: { borderRadius: 3 } }} /></Grid>
               <Grid item xs={12} sm={4}><TextField label="Madre (Apellidos)" name="mother.lastName" value={student.mother.lastName} onChange={handleChange} fullWidth variant="outlined" InputProps={{ sx: { borderRadius: 3 } }} /></Grid>
-              <Grid item xs={12} sm={4}><TextField label="Madre (Tel)" name="mother.phone" value={student.mother.phone} onChange={handleChange} fullWidth variant="outlined" InputProps={{ sx: { borderRadius: 3 } }} /></Grid>
+              <Grid item xs={12} sm={4}><TextField label="Madre (Tel)" name="mother.phone" value={student.mother.phone} onChange={handleChange} fullWidth variant="outlined" InputProps={{ sx: { borderRadius: 3 } }} autoComplete="none" /></Grid>
 
               <Grid item xs={12} sx={{ mt: 2 }}><SectionTitle icon={HealthIcon} title="Salud y Adaptaciones" /></Grid>
               <Grid item xs={12} md={6}><TextField label="Alergias" name="allergies" value={student.allergies} onChange={handleChange} fullWidth multiline rows={2} variant="outlined" InputProps={{ sx: { borderRadius: 4 } }} /></Grid>
@@ -283,9 +308,10 @@ const StudentForm = ({ studentId, onSuccess }) => {
                   onChange={handleChange}
                   fullWidth
                   error={!!errors.password}
-                  helperText={studentId ? "Dejar vacío para no cambiar" : errors.password}
+                  helperText={studentId ? "Dejar vacío para no cambiar. Mín 6 caracteres + letras." : errors.password || "Mínimo 6 caracteres + letras."}
                   required={!studentId}
                   variant="outlined"
+                  autoComplete="new-password" // <-- Evita autocompletado
                   InputProps={{ sx: { borderRadius: 3 } }}
                 />
               </Grid>
