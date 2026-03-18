@@ -13,7 +13,8 @@ import {
   School, People,
   AdminPanelSettings, MenuBook,
   Settings, Class, Badge,
-  AccountCircle, Edit, Email, Close
+  AccountCircle, Edit, Email, Close,
+  EventNote // Icono para Planificaciones
 } from '@mui/icons-material';
 
 import StudentProfileForm from "@/components/StudentProfileForm";
@@ -70,7 +71,6 @@ const Dashboard = ({ docentesList }) => {
           }
           data = await getReportsByGrade(grade);
         } else if (['administrador', 'director/a', 'secretario/a'].includes(role)) {
-          // Ahora secretario/a también carga todos los reportes
           data = await getAllDisciplineReports();
         }
         setReports(data);
@@ -298,6 +298,13 @@ const Dashboard = ({ docentesList }) => {
                   href="/teacher/classes/tasks"
                 />
                 <DashCard
+                  title="Planificaciones"
+                  desc="Gestión de planes semanales"
+                  icon={EventNote}
+                  color={COLORS.primary}
+                  href="/teacher/planificacion"
+                />
+                <DashCard
                   title="Ver Estudiantes"
                   desc="Listado de estudiantes"
                   icon={People}
@@ -317,15 +324,23 @@ const Dashboard = ({ docentesList }) => {
             {/* SECCIÓN PARA ADMINISTRADOR, DIRECTOR Y SECRETARIO */}
             {['administrador', 'director/a', 'secretario/a'].includes(currentRole) && (
               <>
-                {/* Director y Secretario ven el progreso académico */}
                 {['director/a', 'secretario/a'].includes(currentRole) && (
-                  <DashCard
-                    title="Progreso de Estudiantes"
-                    desc="Ver avance académico y tareas"
-                    icon={School}
-                    color="#2196F3"
-                    href="/teacher/classes/tasks/summary"
-                  />
+                  <>
+                    <DashCard
+                      title="Progreso de Estudiantes"
+                      desc="Ver avance académico y tareas"
+                      icon={School}
+                      color="#2196F3"
+                      href="/teacher/classes/tasks/summary"
+                    />
+                    <DashCard
+                      title="Planificaciones"
+                      desc="Revisar planes docentes"
+                      icon={EventNote}
+                      color={COLORS.primary}
+                      href="/teacher/planificacion"
+                    />
+                  </>
                 )}
                 <DashCard
                   title="Listado de Alumnos"
