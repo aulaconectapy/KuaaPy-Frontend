@@ -6,7 +6,7 @@ import {
   Chip, Box, LinearProgress, Accordion, AccordionSummary, AccordionDetails,
   Avatar, Stack, Paper, CircularProgress, Divider,
   Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
-  TextField, MenuItem, InputAdornment, IconButton
+  TextField, MenuItem, InputAdornment, IconButton, Tooltip
 } from '@mui/material';
 import {
   Assignment as AssignmentIcon,
@@ -26,7 +26,10 @@ import {
   Close as CloseIcon,
   Search as SearchIcon,
   FilterList as FilterIcon,
-  Clear as ClearIcon
+  Clear as ClearIcon,
+  Lightbulb as LightbulbIcon,
+  Psychology as PsychologyIcon,
+  BarChart as BarChartIcon
 } from '@mui/icons-material';
 
 import { useAuth } from '@/context/AuthContext';
@@ -39,7 +42,8 @@ const COLORS = {
   border: "#E2E8F0",
   success: "#059669",
   pending: "#D97706",
-  accent: "#FBC02D"
+  accent: "#FBC02D",
+  info: "#3B82F6"
 };
 
 const StudentTasksPage = () => {
@@ -92,22 +96,27 @@ const StudentTasksPage = () => {
     let pendientes = 0;
 
     tasks.forEach(st => {
+      // Solo sumamos a las estadísticas si es SUMATIVA
+      const isSumative = st.task?.taskType === 'sumativo';
+
       if (st.status === 'corregido') {
-        puntosGanados += (st.score || 0);
+        if (isSumative) puntosGanados += (st.score || 0);
         corregidas++;
       } else {
         pendientes++;
       }
 
-      const type = st.task?.instrumentType;
-      if (type === 'rubrica') {
-        st.task.rubricCriteria?.forEach(crit => {
-          const maxLvl = Math.max(...crit.levels.map(l => l.points || 0));
-          puntosTotalesPosibles += maxLvl;
-        });
-      } else {
-        const maxInd = st.task?.indicators?.reduce((sum, ind) => sum + (ind.points || 0), 0) || 0;
-        puntosTotalesPosibles += maxInd;
+      if (isSumative) {
+        const type = st.task?.instrumentType;
+        if (type === 'rubrica') {
+          st.task.rubricCriteria?.forEach(crit => {
+            const maxLvl = Math.max(...crit.levels.map(l => l.points || 0));
+            puntosTotalesPosibles += maxLvl;
+          });
+        } else {
+          const maxInd = st.task?.indicators?.reduce((sum, ind) => sum + (ind.points || 0), 0) || 0;
+          puntosTotalesPosibles += maxInd;
+        }
       }
     });
 
@@ -130,6 +139,19 @@ const StudentTasksPage = () => {
       case 'corregido': return { color: COLORS.success, label: 'CORREGIDO' };
       case 'entregada': return { color: COLORS.pending, label: 'ENTREGADA' };
       default: return { color: COLORS.primary, label: 'PENDIENTE' };
+    }
+  };
+
+  const getTaskTypeConfig = (type) => {
+    switch (type) {
+      case 'diagnostico': 
+        return { label: 'Diagnóstico', color: '#64748B', icon: <PsychologyIcon sx={{ fontSize: 16 }} />, desc: 'No suma puntos. Identifica saberes previos.' };
+      case 'formativo': 
+        return { label: 'Formativo', color: COLORS.info, icon: <LightbulbIcon sx={{ fontSize: 16 }} />, desc: 'No suma puntos. Evalúa el proceso de aprendizaje.' };
+      case 'sumativo': 
+        return { label: 'Sumativo', color: COLORS.primary, icon: <BarChartIcon sx={{ fontSize: 16 }} />, desc: 'Suma para la calificación final.' };
+      default: 
+        return { label: 'N/A', color: '#ccc', icon: null, desc: '' };
     }
   };
 
@@ -189,7 +211,7 @@ const StudentTasksPage = () => {
                 </Box>
                 <Box>
                   <Typography variant="caption" sx={{ fontWeight: 800, opacity: 0.8, textTransform: 'uppercase', display: 'block' }}>
-                    RENDIMIENTO GENERAL
+                    RENDIMIENTO SUMATIVO
                   </Typography>
                   <Typography variant="h4" sx={{ fontWeight: 900 }}>
                     {stats.puntosGanados} <Box component="span" sx={{ fontSize: '1rem', opacity: 0.7 }}>/ {stats.puntosTotalesPosibles} pts</Box>
@@ -199,6 +221,29 @@ const StudentTasksPage = () => {
             </Grid>
           </Grid>
         </Paper>
+
+        {/* --- EXPLICACIÓN DE FUNCIONES DE EVALUACIÓN --- */}
+        <Grid container spacing={2} sx={{ mb: 4 }}>
+          {[
+            { type: 'diagnostico', title: 'Evaluación Diagnóstica', text: 'Sirve para conocer tus conocimientos previos. No afecta tu calificación final.', color: '#64748B', icon: <PsychologyIcon /> },
+            { type: 'formativo', title: 'Evaluación Formativa', text: 'Ayuda a monitorear tu progreso durante el aprendizaje. No afecta tu calificación final.', color: COLORS.info, icon: <LightbulbIcon /> },
+            { type: 'sumativo', title: 'Evaluación Sumativa', text: 'Valora lo aprendido al final de un proceso. Estos puntos sí cuentan para tu calificación.', color: COLORS.primary, icon: <BarChartIcon /> }
+          ].map((item) => (
+            <Grid item xs={12} md={4} key={item.type}>
+              <Card sx={{ height: '100%', borderRadius: 4, border: `1px solid ${item.color}30`, bgcolor: `${item.color}05` }}>
+                <CardContent sx={{ p: 2 }}>
+                  <Stack direction="row" spacing={1.5} alignItems="center" sx={{ mb: 1 }}>
+                    <Box sx={{ color: item.color }}>{item.icon}</Box>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 900, color: item.color }}>{item.title}</Typography>
+                  </Stack>
+                  <Typography variant="caption" sx={{ color: '#475569', lineHeight: 1.3, display: 'block' }}>
+                    {item.text}
+                  </Typography>
+                </CardContent>
+              </Card>
+            </Grid>
+          ))}
+        </Grid>
 
         {/* --- BARRA DE BÚSQUEDA Y FILTRO --- */}
         <Paper elevation={0} sx={{ p: 2, mb: 4, borderRadius: 4, border: `1px solid ${COLORS.border}`, bgcolor: 'white' }}>
@@ -252,13 +297,14 @@ const StudentTasksPage = () => {
 
         <Typography variant="h5" sx={{ fontWeight: 900, color: '#1E293B', mb: 3, display: 'flex', alignItems: 'center', gap: 1.5 }}>
           <DescriptionIcon sx={{ color: COLORS.primary }} /> 
-          {searchTerm || selectedSubject !== 'Todas' ? 'Resultados de búsqueda' : 'Mis Calificaciones Detalladas'}
+          {searchTerm || selectedSubject !== 'Todas' ? 'Resultados de búsqueda' : 'Mi avance académi'}
         </Typography>
 
         <Stack spacing={3}>
           {filteredTasks.length > 0 ? (
             filteredTasks.map((st) => {
               const statusCfg = getStatusConfig(st.status);
+              const typeCfg = getTaskTypeConfig(st.task?.taskType);
               const isRSA = st.task?.instrumentType === 'rsa';
               const isRubric = st.task?.instrumentType === 'rubrica';
               const isListaCotejo = st.task?.instrumentType === 'lista_cotejo';
@@ -283,9 +329,19 @@ const StudentTasksPage = () => {
                           </Box>
                           <Box>
                             <Typography sx={{ fontWeight: 800, color: '#1E293B' }}>{st.task?.topic}</Typography>
-                            <Typography variant="caption" sx={{ fontWeight: 700, color: COLORS.primary, textTransform: 'uppercase' }}>
-                              {st.task?.subject} • {st.task?.instrumentType?.replace('_', ' ')}
-                            </Typography>
+                            <Stack direction="row" spacing={1} alignItems="center">
+                              <Typography variant="caption" sx={{ fontWeight: 700, color: COLORS.primary, textTransform: 'uppercase' }}>
+                                {st.task?.subject} • {st.task?.instrumentType?.replace('_', ' ')}
+                              </Typography>
+                              <Tooltip title={typeCfg.desc}>
+                                <Chip 
+                                  label={typeCfg.label} 
+                                  icon={typeCfg.icon} 
+                                  size="small" 
+                                  sx={{ height: 20, fontSize: '0.65rem', fontWeight: 700, bgcolor: `${typeCfg.color}15`, color: typeCfg.color }} 
+                                />
+                              </Tooltip>
+                            </Stack>
                           </Box>
                         </Stack>
                       </Grid>
@@ -311,12 +367,14 @@ const StudentTasksPage = () => {
                           </Paper>
                           
                           {st.status === 'corregido' && (
-                            <Paper elevation={0} sx={{ p: 3, bgcolor: `${COLORS.success}08`, borderRadius: 4, border: `2px solid ${COLORS.success}20`, textAlign: 'center' }}>
-                              <TrophyIcon sx={{ color: COLORS.accent, fontSize: 40, mb: 1 }} />
-                              <Typography variant="h3" sx={{ fontWeight: 900, color: COLORS.success }}>
+                            <Paper elevation={0} sx={{ p: 3, bgcolor: `${st.task?.taskType === 'sumativo' ? COLORS.success : '#64748B'}08`, borderRadius: 4, border: `2px solid ${st.task?.taskType === 'sumativo' ? COLORS.success : '#64748B'}20`, textAlign: 'center' }}>
+                              <TrophyIcon sx={{ color: st.task?.taskType === 'sumativo' ? COLORS.accent : '#94A3B8', fontSize: 40, mb: 1 }} />
+                              <Typography variant="h3" sx={{ fontWeight: 900, color: st.task?.taskType === 'sumativo' ? COLORS.success : '#475569' }}>
                                 {st.score}
                               </Typography>
-                              <Typography variant="caption" sx={{ fontWeight: 800, color: COLORS.success }}>PUNTOS OBTENIDOS</Typography>
+                              <Typography variant="caption" sx={{ fontWeight: 800, color: st.task?.taskType === 'sumativo' ? COLORS.success : '#475569' }}>
+                                {st.task?.taskType === 'sumativo' ? 'PUNTOS OBTENIDOS' : 'PUNTOS (SIN VALOR SUMATIVO)'}
+                              </Typography>
                             </Paper>
                           )}
                         </Stack>
@@ -412,14 +470,16 @@ const StudentTasksPage = () => {
                           </Box>
                         )}
 
-                        {/* RUBRICA TABLE */}
+                        {/* RUBRICA TABLE - CORREGIDA PARA MARCAR DESCRIPTORES */}
                         {isRubric && (
                           <Box>
                             <Typography variant="subtitle2" sx={{ fontWeight: 900, mb: 2, color: '#1E293B' }}>MATRIZ DE CALIFICACIÓN POR RÚBRICA</Typography>
                             <Stack spacing={3}>
                               {st.task?.rubricCriteria?.map((crit) => {
-                                const score = st.rubricScores?.find(rs => 
-                                  (rs.indicatorId?._id || rs.indicatorId) === crit._id || rs.criterion === crit.criterion
+                                // Buscamos el puntaje obtenido para este criterio específico
+                                const scoreEntry = st.rubricScores?.find(rs => 
+                                  (rs.indicatorId?._id || rs.indicatorId) === crit._id || 
+                                  rs.criterion === crit.criterion
                                 );
 
                                 return (
@@ -429,20 +489,25 @@ const StudentTasksPage = () => {
                                     </Typography>
                                     <Grid container spacing={1}>
                                       {crit.levels.map((lvl) => {
-                                        const isSelected = score && Number(score.points) === Number(lvl.points);
+                                        // Comparamos los puntos convertidos a Number para asegurar coincidencia
+                                        const isSelected = scoreEntry && Number(scoreEntry.points) === Number(lvl.points);
+                                        
                                         return (
                                           <Grid item xs={12} sm={3} key={lvl._id}>
                                             <Box sx={{ 
                                               p: 2, height: '100%', borderRadius: 3, 
                                               border: `2px solid ${isSelected ? COLORS.success : COLORS.border}`,
-                                              bgcolor: isSelected ? `${COLORS.success}05` : 'white',
-                                              position: 'relative', transition: '0.3s'
+                                              bgcolor: isSelected ? `${COLORS.success}10` : 'white',
+                                              position: 'relative', transition: '0.3s',
+                                              boxShadow: isSelected ? '0 4px 12px rgba(5, 150, 105, 0.15)' : 'none'
                                             }}>
-                                              {isSelected && <StarIcon sx={{ position: 'absolute', top: -8, right: -8, color: COLORS.accent, fontSize: 20 }} />}
+                                              {isSelected && (
+                                                <CheckCircleIcon sx={{ position: 'absolute', top: -8, right: -8, color: COLORS.success, fontSize: 20, bgcolor: 'white', borderRadius: '50%' }} />
+                                              )}
                                               <Typography variant="caption" sx={{ fontWeight: 900, display: 'block', color: isSelected ? COLORS.success : '#64748B' }}>
                                                 {lvl.level} ({lvl.points} pts)
                                               </Typography>
-                                              <Typography sx={{ fontSize: '0.65rem', mt: 0.5, color: isSelected ? '#166534' : '#94A3B8', lineHeight: 1.2 }}>
+                                              <Typography sx={{ fontSize: '0.7rem', mt: 0.5, color: isSelected ? '#064E3B' : '#64748B', lineHeight: 1.3, fontWeight: isSelected ? 600 : 400 }}>
                                                 {lvl.descriptor}
                                               </Typography>
                                             </Box>
