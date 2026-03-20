@@ -183,14 +183,14 @@ export default function HomePage() {
                 <Avatar sx={{ bgcolor: COLORS.primary, width: 56, height: 56 }}>CG</Avatar>
                 <Box>
                   <Typography variant="subtitle2" color="primary" sx={{ fontWeight: 800 }}>DIRECTORA GENERAL</Typography>
-                  <Typography variant="h6" sx={{ fontWeight: 700 }}>Prof. Celia Cristina Galeano</Typography>
+                  <Typography variant="h6" sx={{ fontWeight: 700 }}>Lic. Celia María Villalba Galeano</Typography>
                 </Box>
               </Paper>
               <Paper sx={{ p: 3, display: 'flex', alignItems: 'center', gap: 3, borderLeft: `6px solid ${COLORS.secondary}` }}>
                 <Avatar sx={{ bgcolor: COLORS.secondary, width: 56, height: 56 }}>CV</Avatar>
                 <Box>
-                  <Typography variant="subtitle2" sx={{ fontWeight: 800, color: '#9a7d1a' }}>COORDINACIÓN PEDAGÓGICA</Typography>
-                  <Typography variant="h6" sx={{ fontWeight: 700 }}>Prof. Celia Maria Villalba</Typography>
+                  <Typography variant="subtitle2" sx={{ fontWeight: 800, color: '#9a7d1a' }}>Secretaria</Typography>
+                  <Typography variant="h6" sx={{ fontWeight: 700 }}>Prof. Claudia Villalba Galeano</Typography>
                 </Box>
               </Paper>
             </Stack>
