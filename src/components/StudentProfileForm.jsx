@@ -19,7 +19,7 @@ import { getMyProfile, updateMyProfile } from '@/services/api';
 
 const StudentProfileForm = () => {
 
-  const { user, loading: authLoading } = useAuth(); // <-- AuthContext
+  const { user, loading: authLoading, refreshUser } = useAuth();
   const [student, setStudent] = useState({ father: {}, mother: {} });
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -27,11 +27,11 @@ const StudentProfileForm = () => {
 
   useEffect(() => {
     const fetchProfile = async () => {
-      if (!authLoading && user?._id) { // <-- usamos user._id para asegurar que tenemos el usuario
+      if (!authLoading && user?._id) {
         setLoading(true);
         try {
           console.log('Fetching profile for user:', user._id);
-          const data = await getMyProfile(); // backend identifica al usuario via JWT
+          const data = await getMyProfile();
           console.log('Profile data received:', data);
 
           setStudent({
@@ -76,6 +76,8 @@ const StudentProfileForm = () => {
       console.log('Updating profile with payload:', payload);
       await updateMyProfile(payload);
 
+      await refreshUser(); 
+
       setSnackbar({ open: true, message: 'Perfil actualizado correctamente', success: true });
       setPassword('');
     } catch (err) {
@@ -98,7 +100,8 @@ const StudentProfileForm = () => {
       <Paper sx={{ p: 4, borderRadius: 3 }}>
         <Typography variant="h5" sx={{ mb: 3, fontWeight: 700 }}>Mi Perfil</Typography>
 
-        <form onSubmit={handleSubmit}>
+        {/* autoComplete="off" evita que el navegador sugiera datos generales */}
+        <form onSubmit={handleSubmit} autoComplete="off">
           <Grid container spacing={2}>
             <Grid item xs={12} sm={6}>
               <TextField
@@ -107,6 +110,7 @@ const StudentProfileForm = () => {
                 value={student.firstName || ''}
                 onChange={handleChange}
                 fullWidth
+                inputProps={{ autoComplete: 'none' }} 
               />
             </Grid>
             <Grid item xs={12} sm={6}>
@@ -116,6 +120,7 @@ const StudentProfileForm = () => {
                 value={student.lastName || ''}
                 onChange={handleChange}
                 fullWidth
+                inputProps={{ autoComplete: 'none' }}
               />
             </Grid>
 
@@ -154,6 +159,7 @@ const StudentProfileForm = () => {
                 value={student.father?.firstName || ''}
                 onChange={handleChange}
                 fullWidth
+                inputProps={{ autoComplete: 'none' }}
               />
             </Grid>
             <Grid item xs={12} sm={6}>
@@ -163,6 +169,7 @@ const StudentProfileForm = () => {
                 value={student.father?.phone || ''}
                 onChange={handleChange}
                 fullWidth
+                inputProps={{ autoComplete: 'none' }}
               />
             </Grid>
 
@@ -175,6 +182,7 @@ const StudentProfileForm = () => {
                 value={student.mother?.firstName || ''}
                 onChange={handleChange}
                 fullWidth
+                inputProps={{ autoComplete: 'none' }}
               />
             </Grid>
             <Grid item xs={12} sm={6}>
@@ -184,6 +192,7 @@ const StudentProfileForm = () => {
                 value={student.mother?.phone || ''}
                 onChange={handleChange}
                 fullWidth
+                inputProps={{ autoComplete: 'none' }}
               />
             </Grid>
 
@@ -196,6 +205,7 @@ const StudentProfileForm = () => {
                 onChange={handleChange}
                 fullWidth
                 multiline
+                inputProps={{ autoComplete: 'none' }}
               />
             </Grid>
             <Grid item xs={12}>
@@ -206,6 +216,7 @@ const StudentProfileForm = () => {
                 onChange={handleChange}
                 fullWidth
                 multiline
+                inputProps={{ autoComplete: 'none' }}
               />
             </Grid>
             <Grid item xs={12}>
@@ -216,6 +227,7 @@ const StudentProfileForm = () => {
                 onChange={handleChange}
                 fullWidth
                 multiline
+                inputProps={{ autoComplete: 'none' }}
               />
             </Grid>
             <Grid item xs={12}>
@@ -225,6 +237,7 @@ const StudentProfileForm = () => {
                 value={student.address || ''}
                 onChange={handleChange}
                 fullWidth
+                inputProps={{ autoComplete: 'none' }}
               />
             </Grid>
 
@@ -253,6 +266,7 @@ const StudentProfileForm = () => {
                 onChange={(e) => setPassword(e.target.value)}
                 fullWidth
                 helperText="Dejar vacío si no desea cambiarla"
+                inputProps={{ autoComplete: 'new-password' }} // Evita que sugiera contraseñas viejas
               />
             </Grid>
 
@@ -271,8 +285,8 @@ const StudentProfileForm = () => {
       <Snackbar
         open={snackbar.open}
         autoHideDuration={3000}
-        message={snackbar.message}
         onClose={() => setSnackbar({ ...snackbar, open: false })}
+        message={snackbar.message}
       />
 
     </Box>

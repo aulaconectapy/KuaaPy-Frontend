@@ -389,7 +389,7 @@ const Dashboard = ({ docentesList }) => {
       >
         {/* Cabecera del Diálogo */}
         <Box sx={{ p: 1, display: 'flex', justifyContent: 'space-between', alignItems: 'center', bgcolor: COLORS.bgLight }}>
-          <Typography variant="h5" fontWeight={800} color={COLORS.primary}>
+          <Typography variant="h5" fontWeight={800} color={COLORS.primary} sx={{ ml: 2 }}>
             Mi Perfil
           </Typography>
           <IconButton onClick={() => setProfileOpen(false)}>
@@ -400,7 +400,7 @@ const Dashboard = ({ docentesList }) => {
         <Divider />
 
         {/* Contenedor del Formulario */}
-        <Box sx={{ mt: 5, mb: 5, px: 0, overflowY: 'auto', padding: 3 }}>
+        <Box sx={{ overflowY: 'auto', padding: 3 }}>
           {user.role === 'estudiante'
             ? <StudentProfileForm />
             : <UserForm userId={user._id} onSuccess={() => setProfileOpen(false)} />
