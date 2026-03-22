@@ -1,6 +1,6 @@
 import { AuthProvider } from '../context/AuthContext';
 import Layout from '../components/layout/Layout'; // ruta relativa correcta
-
+import { NotificationProvider } from '../context/NotificationContext'; // <-- AÑADE ESTA LÍNEA
 export const metadata = {
   title: 'CPMA',
   description: 'Campus virtual Colegio Privado María Auxiliadora',
@@ -11,7 +11,9 @@ export default function RootLayout({ children }) {
     <html lang="es">
       <body>
         <AuthProvider>
-          <Layout>{children}</Layout>
+          <NotificationProvider> {/* <-- Nuevo */}
+            <Layout>{children}</Layout>
+          </NotificationProvider>
         </AuthProvider>
       </body>
     </html>

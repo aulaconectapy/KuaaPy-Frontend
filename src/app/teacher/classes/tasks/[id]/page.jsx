@@ -53,7 +53,12 @@ export default function TaskSubmissionsPage() {
         const taskData = await getTaskById(id);
         setTaskInfo(taskData);
         const studentTasks = await getStudentTasksByGrade(taskData.grade);
-        const filtered = studentTasks.filter(st => (st.task?._id || st.task) === id);
+        
+        // MODIFICACIÓN: Filtramos para que solo queden las tareas que tienen un estudiante existente
+        const filtered = studentTasks.filter(st => 
+          (st.task?._id || st.task) === id && st.student !== null
+        );
+        
         setSubmissions(filtered);
       } catch (error) {
         console.error("Error:", error);
@@ -64,7 +69,6 @@ export default function TaskSubmissionsPage() {
     if (id) fetchData();
   }, [id]);
 
-  // Modificado: Ahora acepta el array de puntajes directamente para el cálculo
   const calculateInstantScore = (scores) => {
     if (!scores) return 0;
     return scores
@@ -77,11 +81,9 @@ export default function TaskSubmissionsPage() {
     setSubmissions(prev => prev.map(sub => {
       if (sub._id !== submissionId) return sub;
       
-      // DETERMINAR QUÉ CAMPO USAR SEGÚN DB
       const currentScores = isRubrica ? (sub.rubricScores || []) : (sub.indicatorScores || []);
 
       const newScores = [...currentScores].filter(s => {
-        // Buscamos coincidencia en indicatorId o directamente en _id (como está en tu JSON de DB)
         const sId = s.indicatorId?._id || s.indicatorId || s._id;
         return isRubrica ? sId !== criterionId : !(sId === criterionId && s.moment === selectedMoment);
       });
@@ -91,7 +93,6 @@ export default function TaskSubmissionsPage() {
         moment: isRubrica ? 1 : selectedMoment 
       };
 
-      // Mantenemos consistencia con los nombres de campos de la DB
       if (isRubrica) {
         newEntry._id = criterionId;
       } else {
@@ -224,12 +225,12 @@ export default function TaskSubmissionsPage() {
                 {submissions.map((sub) => (
                   <TableRow key={sub._id} hover>
                     <TableCell sx={{ fontWeight: 700, fontSize: '0.8rem' }}>
-                      {sub.student.lastName?.toUpperCase()}, {sub.student.firstName}
+                      {/* MODIFICACIÓN: Agregamos opcional chaining extra y valor por defecto */}
+                      {sub.student?.lastName?.toUpperCase() || 'S/A'}, {sub.student?.firstName || 'Eliminado'}
                     </TableCell>
 
                     {isRubrica ? (
                       taskInfo?.rubricCriteria.map((crit) => {
-                        // LEER DEL CAMPO CORRECTO (rubricScores)
                         const score = sub.rubricScores?.find((s) => {
                           const sId = s.indicatorId?._id || s.indicatorId || s._id;
                           return sId === crit._id;

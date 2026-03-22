@@ -99,7 +99,7 @@ const StudentForm = ({ studentId, onSuccess }) => {
           institution: data.institution?._id || "",
           grade: data.grade ? [data.grade] : [],
           birthDate: data.birthDate?.split("T")[0] || "",
-          password: "", // Siempre vacío al editar para evitar pisar la actual por error
+          password: "", 
         });
       })
       .finally(() => setLoading(false));
@@ -131,7 +131,6 @@ const StudentForm = ({ studentId, onSuccess }) => {
     setErrors(prev => ({ ...prev, [name]: "" }));
   };
 
-  // --- VALIDACIONES ACTUALIZADAS ---
   const validate = () => {
     const newErrors = {};
     if (!student.firstName) newErrors.firstName = "El nombre es obligatorio.";
@@ -140,7 +139,6 @@ const StudentForm = ({ studentId, onSuccess }) => {
     if (!student.institution) newErrors.institution = "Seleccione una institución.";
     if (!student.grade || student.grade.length === 0) newErrors.grade = "Seleccione al menos un grado.";
 
-    // Validación de Cédula (Obligatoria, solo números, mín 6)
     if (!student.cedula) {
       newErrors.cedula = "La cédula es obligatoria.";
     } else if (!/^\d+$/.test(student.cedula)) {
@@ -149,7 +147,6 @@ const StudentForm = ({ studentId, onSuccess }) => {
       newErrors.cedula = "La cédula debe tener al menos 6 dígitos.";
     }
 
-    // Validación de Contraseña (Solo si es nuevo o si se intenta cambiar)
     if (!studentId || student.password) {
       const hasLetter = /[a-zA-Z]/.test(student.password);
       if (!student.password) {
@@ -170,17 +167,25 @@ const StudentForm = ({ studentId, onSuccess }) => {
     if (!validate()) return;
     setLoading(true);
     try {
-      const mappedGrade = gradeMapping[student.grade[0]] || student.grade[0];
+      const mappedGrade = Array.isArray(student.grade) ? student.grade[0] : student.grade;
       const payload = { ...student, grade: mappedGrade };
-      if (studentId && !student.password) delete payload.password; // No enviar contraseña vacía al editar
+      if (studentId && !student.password) delete payload.password; 
       
-      studentId ? await updateStudent(studentId, payload) : await createStudent(payload);
-      setSnackbar({ open: true, message: studentId ? "Actualizado correctamente" : "Creado correctamente", success: true });
+      const response = studentId ? await updateStudent(studentId, payload) : await createStudent(payload);
+      
+      setSnackbar({ 
+        open: true, 
+        message: response.message || (studentId ? "Actualizado correctamente" : "Creado correctamente"), 
+        success: true 
+      });
       onSuccess?.();
     } catch (error) {
+      // ⚡ Captura el mensaje de error específico del backend
+      const errorMessage = error?.response?.data?.message || "Error al guardar.";
       const backendErrors = error?.response?.data?.errors || {};
+      
       setErrors(prev => ({ ...prev, ...backendErrors }));
-      setSnackbar({ open: true, message: error?.response?.data?.message || "Error al guardar.", success: false });
+      setSnackbar({ open: true, message: errorMessage, success: false });
     } finally { setLoading(false); }
   };
 
@@ -224,8 +229,8 @@ const StudentForm = ({ studentId, onSuccess }) => {
           <form onSubmit={handleSubmit} autoComplete="off">
             <Grid container spacing={3}>
               <Grid item xs={12}><SectionTitle icon={PersonIcon} title="Información Personal" /></Grid>
-              <Grid item xs={12} sm={6}><TextField label="Nombre" name="firstName" value={student.firstName} onChange={handleChange} fullWidth required error={!!errors.firstName} helperText={errors.firstName} variant="outlined" InputProps={{ sx: { borderRadius: 3 } }} /></Grid>
-              <Grid item xs={12} sm={6}><TextField label="Apellido" name="lastName" value={student.lastName} onChange={handleChange} fullWidth required error={!!errors.lastName} helperText={errors.lastName} variant="outlined" InputProps={{ sx: { borderRadius: 3 } }} /></Grid>
+              <Grid item xs={12} sm={6}><TextField label="Nombre" name="firstName" value={student.firstName} onChange={handleChange} fullWidth required error={!!errors.firstName} helperText={errors.firstName} variant="outlined" InputProps={{ sx: { borderRadius: 3 } }} inputProps={{ autoComplete: 'none' }} /></Grid>
+              <Grid item xs={12} sm={6}><TextField label="Apellido" name="lastName" value={student.lastName} onChange={handleChange} fullWidth required error={!!errors.lastName} helperText={errors.lastName} variant="outlined" InputProps={{ sx: { borderRadius: 3 } }} inputProps={{ autoComplete: 'none' }} /></Grid>
               <Grid item xs={12} sm={6}>
                 <FormControl fullWidth>
                   <InputLabel>Sexo</InputLabel>
@@ -236,7 +241,6 @@ const StudentForm = ({ studentId, onSuccess }) => {
                 </FormControl>
               </Grid>
               
-              {/* Cédula con Validaciones */}
               <Grid item xs={12} sm={6}>
                 <TextField 
                   label="Cédula" 
@@ -249,6 +253,7 @@ const StudentForm = ({ studentId, onSuccess }) => {
                   helperText={errors.cedula || "Mínimo 6 números"} 
                   variant="outlined" 
                   InputProps={{ sx: { borderRadius: 3 } }} 
+                  inputProps={{ autoComplete: 'none' }}
                 />
               </Grid>
               
@@ -285,18 +290,18 @@ const StudentForm = ({ studentId, onSuccess }) => {
               </Grid>
 
               <Grid item xs={12} sx={{ mt: 2 }}><SectionTitle icon={FamilyIcon} title="Información Familiar" /></Grid>
-              <Grid item xs={12} sm={4}><TextField label="Padre (Nombres)" name="father.firstName" value={student.father.firstName} onChange={handleChange} fullWidth variant="outlined" InputProps={{ sx: { borderRadius: 3 } }} /></Grid>
-              <Grid item xs={12} sm={4}><TextField label="Padre (Apellidos)" name="father.lastName" value={student.father.lastName} onChange={handleChange} fullWidth variant="outlined" InputProps={{ sx: { borderRadius: 3 } }} /></Grid>
-              <Grid item xs={12} sm={4}><TextField label="Padre (Tel)" name="father.phone" value={student.father.phone} onChange={handleChange} fullWidth variant="outlined" InputProps={{ sx: { borderRadius: 3 } }} autoComplete="none" /></Grid>
+              <Grid item xs={12} sm={4}><TextField label="Padre (Nombres)" name="father.firstName" value={student.father.firstName} onChange={handleChange} fullWidth variant="outlined" InputProps={{ sx: { borderRadius: 3 } }} inputProps={{ autoComplete: 'none' }} /></Grid>
+              <Grid item xs={12} sm={4}><TextField label="Padre (Apellidos)" name="father.lastName" value={student.father.lastName} onChange={handleChange} fullWidth variant="outlined" InputProps={{ sx: { borderRadius: 3 } }} inputProps={{ autoComplete: 'none' }} /></Grid>
+              <Grid item xs={12} sm={4}><TextField label="Padre (Tel)" name="father.phone" value={student.father.phone} onChange={handleChange} fullWidth variant="outlined" InputProps={{ sx: { borderRadius: 3 } }} inputProps={{ autoComplete: 'none' }} /></Grid>
 
-              <Grid item xs={12} sm={4}><TextField label="Madre (Nombres)" name="mother.firstName" value={student.mother.firstName} onChange={handleChange} fullWidth variant="outlined" InputProps={{ sx: { borderRadius: 3 } }} /></Grid>
-              <Grid item xs={12} sm={4}><TextField label="Madre (Apellidos)" name="mother.lastName" value={student.mother.lastName} onChange={handleChange} fullWidth variant="outlined" InputProps={{ sx: { borderRadius: 3 } }} /></Grid>
-              <Grid item xs={12} sm={4}><TextField label="Madre (Tel)" name="mother.phone" value={student.mother.phone} onChange={handleChange} fullWidth variant="outlined" InputProps={{ sx: { borderRadius: 3 } }} autoComplete="none" /></Grid>
+              <Grid item xs={12} sm={4}><TextField label="Madre (Nombres)" name="mother.firstName" value={student.mother.firstName} onChange={handleChange} fullWidth variant="outlined" InputProps={{ sx: { borderRadius: 3 } }} inputProps={{ autoComplete: 'none' }} /></Grid>
+              <Grid item xs={12} sm={4}><TextField label="Madre (Apellidos)" name="mother.lastName" value={student.mother.lastName} onChange={handleChange} fullWidth variant="outlined" InputProps={{ sx: { borderRadius: 3 } }} inputProps={{ autoComplete: 'none' }} /></Grid>
+              <Grid item xs={12} sm={4}><TextField label="Madre (Tel)" name="mother.phone" value={student.mother.phone} onChange={handleChange} fullWidth variant="outlined" InputProps={{ sx: { borderRadius: 3 } }} inputProps={{ autoComplete: 'none' }} /></Grid>
 
               <Grid item xs={12} sx={{ mt: 2 }}><SectionTitle icon={HealthIcon} title="Salud y Adaptaciones" /></Grid>
-              <Grid item xs={12} md={6}><TextField label="Alergias" name="allergies" value={student.allergies} onChange={handleChange} fullWidth multiline rows={2} variant="outlined" InputProps={{ sx: { borderRadius: 4 } }} /></Grid>
-              <Grid item xs={12} md={6}><TextField label="Problemas de Salud" name="healthIssues" value={student.healthIssues} onChange={handleChange} fullWidth multiline rows={2} variant="outlined" InputProps={{ sx: { borderRadius: 4 } }} /></Grid>
-              <Grid item xs={12}><TextField label="Ajustes Razonables" name="reasonableAdjustments" value={student.reasonableAdjustments} onChange={handleChange} fullWidth multiline rows={2} variant="outlined" InputProps={{ sx: { borderRadius: 4 } }} /></Grid>
+              <Grid item xs={12} md={6}><TextField label="Alergias" name="allergies" value={student.allergies} onChange={handleChange} fullWidth multiline rows={2} variant="outlined" InputProps={{ sx: { borderRadius: 4 } }} inputProps={{ autoComplete: 'none' }} /></Grid>
+              <Grid item xs={12} md={6}><TextField label="Problemas de Salud" name="healthIssues" value={student.healthIssues} onChange={handleChange} fullWidth multiline rows={2} variant="outlined" InputProps={{ sx: { borderRadius: 4 } }} inputProps={{ autoComplete: 'none' }} /></Grid>
+              <Grid item xs={12}><TextField label="Ajustes Razonables" name="reasonableAdjustments" value={student.reasonableAdjustments} onChange={handleChange} fullWidth multiline rows={2} variant="outlined" InputProps={{ sx: { borderRadius: 4 } }} inputProps={{ autoComplete: 'none' }} /></Grid>
 
               <Grid item xs={12} sx={{ mt: 2 }}><SectionTitle icon={LockIcon} title="Credenciales" /></Grid>
               <Grid item xs={12}>
@@ -311,7 +316,7 @@ const StudentForm = ({ studentId, onSuccess }) => {
                   helperText={studentId ? "Dejar vacío para no cambiar. Mín 6 caracteres + letras." : errors.password || "Mínimo 6 caracteres + letras."}
                   required={!studentId}
                   variant="outlined"
-                  autoComplete="new-password" // <-- Evita autocompletado
+                  autoComplete="new-password" 
                   InputProps={{ sx: { borderRadius: 3 } }}
                 />
               </Grid>
