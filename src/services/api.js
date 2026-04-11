@@ -110,7 +110,7 @@ export const toggleStudentStatus = (id) =>
 // Obtener estudiantes por grado e institución
 export const getStudentsByGradeAndInstitution = (grade, institutionId) =>
   api
-    .get(`/api/students?grade=${encodeURIComponent(grade)}&institution=${institutionId}`)
+    .get(`/api/students/by-grades?grade=${encodeURIComponent(grade)}&institution=${institutionId}`)
     .then(res => res.data)
     .catch(error => { throw error });
 // =====================

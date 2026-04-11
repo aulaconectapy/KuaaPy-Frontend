@@ -46,7 +46,7 @@ export default function CreateReportPage() {
     const loadStudents = async () => {
       try {
         const data = await getStudentsByGradeAndInstitution(
-          user.grades[0],
+          user.grades,
           user.institution._id
         );
         setStudents(data);

@@ -55,8 +55,18 @@ export const generateTaskPDF = async (taskInfo, submissions, user) => {
       [
         { content: '', rowSpan: 3 },
         { content: (user?.institution?.name || 'INSTITUCIÓN EDUCATIVA').toUpperCase(), styles: { fontSize: 14, fontStyle: 'bold', textColor: PRIMARY_COLOR } },
-        { content: `Fecha: ${new Date().toLocaleDateString()}`, styles: { fontSize: 8, textColor: [100, 100, 100] } }
-      ],
+{ 
+  content: `Fecha de entrega: ${
+    taskInfo?.dueDate 
+      ? new Date(taskInfo.dueDate).toLocaleDateString('es-ES', {
+          day: '2-digit',
+          month: '2-digit',
+          year: 'numeric'
+        })
+      : 'N/A'
+  }`, 
+  styles: { fontSize: 8, textColor: [100, 100, 100] } 
+}      ],
       [
         { content: currentTitle, styles: { fontSize: 11, fontStyle: 'bold' } },
         { content: `Tema: ${taskInfo?.topic || 'N/A'}`, styles: { fontSize: 8 } }
