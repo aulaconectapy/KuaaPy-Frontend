@@ -10,6 +10,16 @@ import { AddCircle, Delete, EventNote, School } from "@mui/icons-material";
 
 const DIAS = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes"];
 
+// 🔹 Unidades Temáticas extraídas de tu documento de 3º Grado
+const UNIDADES_TEMATICAS_3GRADO = {
+  "Comunicación L1 Castellano": ["Comprensión de textos orales", "Expresión oral", "Comprensión de textos escritos", "Expresión escrita"],
+  "Comunicación L2 (Guaraní)": ["Comprensión de textos orales", "Expresión oral", "Comprensión de textos escritos", "Expresión escrita"],
+  "Matemática": ["El número y las operaciones", "La geometría y la medida", "Los datos y la estadística"],
+  "Medio Natural y Salud": ["Materia y Energía", "Estructura, función y salud de los seres vivos", "Ambiente Saludable", "Universo"],
+  "Vida Social y Trabajo": ["Ubicación en el tiempo y en el espacio", "Conviviendo en sociedad", "Disfrutando de las tareas laborales"],
+  "Educación Artística": ["Música", "Artes Plásticas", "Danza Paraguaya", "Expresión Corporal"]
+};
+
 const ASIGNATURAS_POR_CICLO = {
   ciclo1: [
     "Comunicación L1 Castellano", "Comunicación L2 (Guaraní)", "Matemática",
@@ -25,8 +35,6 @@ const ASIGNATURAS_POR_CICLO = {
 
 const PlanificacionForm = ({ initialData, onSubmit, loading, isReadOnly = false }) => {
   const { user } = useAuth();
-  
-  // Detectar si el usuario actual es directivo
   const isDirectivo = ['director/a', 'secretario/a', 'secretaria'].includes(user?.role?.toLowerCase());
 
   const [form, setForm] = useState({
@@ -63,7 +71,8 @@ const PlanificacionForm = ({ initialData, onSubmit, loading, isReadOnly = false 
     const newDias = [...form.dias];
     newDias[diaIndex].materias.push({
       asignatura: "", 
-      unidadTematica: "", // 🔹 Agregado al estado inicial
+      unidadTematica: "", 
+      unidadTematicaPersonalizada: "", 
       tema: "", 
       guiaDocente: "", 
       cuadernilloEstudiante: "", 
@@ -82,17 +91,40 @@ const PlanificacionForm = ({ initialData, onSubmit, loading, isReadOnly = false 
   const handleMateriaChange = (diaIndex, matIndex, field, value) => {
     if (isReadOnly || isDirectivo) return;
     const newDias = [...form.dias];
+    
+    if (field === 'asignatura') {
+      newDias[diaIndex].materias[matIndex].unidadTematica = "";
+      newDias[diaIndex].materias[matIndex].unidadTematicaPersonalizada = "";
+    }
+
     newDias[diaIndex].materias[matIndex][field] = value;
     setForm({ ...form, dias: newDias });
   };
 
-  // Variable para controlar si mostramos las acciones de edición (botones de agregar/eliminar y guardar)
+  // 🔹 Procesar antes de enviar a la DB
+  const handleSubmit = () => {
+    const formToSubmit = JSON.parse(JSON.stringify(form));
+
+    formToSubmit.dias.forEach(dia => {
+      dia.materias.forEach(mat => {
+        // Si eligió "Otro", reemplazamos el valor por lo escrito
+        if (mat.unidadTematica === "Otro") {
+          mat.unidadTematica = mat.unidadTematicaPersonalizada || "Personalizada";
+        }
+        // Limpiamos campos auxiliares
+        delete mat.unidadTematicaPersonalizada;
+      });
+    });
+
+    onSubmit(formToSubmit);
+  };
+
   const showActions = !isReadOnly && !isDirectivo;
 
   return (
-    <Box sx={{ pb: showActions ? 10 : 2 }}> {/* Padding dinámico */}
+    <Box sx={{ pb: showActions ? 10 : 2 }}>
       
-      {/* HEADER DE LA PLANIFICACIÓN */}
+      {/* HEADER DATOS SEMANA */}
       <Paper elevation={0} sx={{ p: 3, mb: 4, borderRadius: 4, border: '1px solid #e0e0e0', bgcolor: '#fff' }}>
         <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 2 }}>
           <EventNote color="action" />
@@ -100,10 +132,7 @@ const PlanificacionForm = ({ initialData, onSubmit, loading, isReadOnly = false 
         </Stack>
         <Grid container spacing={2}>
           <Grid item xs={12} sm={4}>
-            <TextField 
-              fullWidth label="Grado" value={form.grado} disabled 
-              variant="filled" size="small"
-            />
+            <TextField fullWidth label="Grado" value={form.grado} disabled variant="filled" size="small" />
           </Grid>
           <Grid item xs={6} sm={4}>
             <TextField 
@@ -134,148 +163,123 @@ const PlanificacionForm = ({ initialData, onSubmit, loading, isReadOnly = false 
               <School /> {dia.nombreDia}
             </Typography>
             {showActions && (
-              <Button 
-                size="small" 
-                startIcon={<AddCircle />} 
-                onClick={() => addMateria(dIdx)}
-                sx={{ color: '#7D0F15', fontWeight: 'bold', textTransform: 'none' }}
-              >
+              <Button size="small" startIcon={<AddCircle />} onClick={() => addMateria(dIdx)} sx={{ color: '#7D0F15', fontWeight: 'bold' }}>
                 Materia
               </Button>
             )}
           </Stack>
 
-          {dia.materias.length === 0 ? (
-            <Typography variant="body2" sx={{ px: 2, color: 'text.secondary', fontStyle: 'italic' }}>
-              No hay materias programadas.
-            </Typography>
-          ) : (
-            <Stack spacing={2}>
-              {dia.materias.map((mat, mIdx) => (
-                <Card key={mIdx} sx={{ 
-                  borderRadius: 3, 
-                  boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
-                  border: '1px solid #eee',
-                  overflow: 'visible',
-                  position: 'relative'
-                }}>
-                  <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
-                    <Grid container spacing={2}>
-                      
-                      {/* ASIGNATURA */}
-                      <Grid item xs={12} md={3}>
-                        <FormControl fullWidth size="small">
-                          <InputLabel>Asignatura</InputLabel>
-                          <Select
-                            label="Asignatura"
-                            value={mat.asignatura}
-                            onChange={(e) => handleMateriaChange(dIdx, mIdx, 'asignatura', e.target.value)}
-                            disabled={isReadOnly || isDirectivo}
-                          >
-                            {materiasDisponibles.map(m => <MenuItem key={m} value={m}>{m}</MenuItem>)}
-                          </Select>
-                        </FormControl>
-                      </Grid>
-{/* 🔹 UNIDAD TEMÁTICA (NUEVO CAMPO) */}
-                      <Grid item xs={12} md={4}>
-                        <TextField 
+          <Stack spacing={2}>
+            {dia.materias.map((mat, mIdx) => (
+              <Card key={mIdx} sx={{ borderRadius: 3, border: '1px solid #eee', boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>
+                <CardContent sx={{ p: 2 }}>
+                  <Grid container spacing={2}>
+                    
+                    {/* ASIGNATURA */}
+                    <Grid item xs={12} md={3}>
+                      <FormControl fullWidth size="small">
+                        <InputLabel>Asignatura</InputLabel>
+                        <Select
+                          label="Asignatura"
+                          value={mat.asignatura}
+                          onChange={(e) => handleMateriaChange(dIdx, mIdx, 'asignatura', e.target.value)}
+                          disabled={isReadOnly || isDirectivo}
+                        >
+                          {materiasDisponibles.map(m => <MenuItem key={m} value={m}>{m}</MenuItem>)}
+                        </Select>
+                      </FormControl>
+                    </Grid>
+
+                    {/* UNIDAD TEMÁTICA */}
+                    <Grid item xs={12} md={4}>
+                      <FormControl fullWidth size="small">
+                        <InputLabel>Unidad Temática</InputLabel>
+                        <Select
                           label="Unidad Temática"
-                          placeholder="Ej: Los seres vivos / Geometría"
-                          fullWidth variant="outlined" size="small"
-                          value={mat.unidadTematica || ""} 
-                          onChange={(e) => handleMateriaChange(dIdx, mIdx, 'unidadTematica', e.target.value)} 
-                          disabled={isReadOnly || isDirectivo} 
-                        />
-                        </Grid>                      
-
-                      {/* TEMA */}
-                      <Grid item xs={12} md={4}>
+                          value={mat.unidadTematica}
+                          onChange={(e) => handleMateriaChange(dIdx, mIdx, 'unidadTematica', e.target.value)}
+                          disabled={!mat.asignatura || isReadOnly || isDirectivo}
+                        >
+                          {(UNIDADES_TEMATICAS_3GRADO[mat.asignatura] || []).map(u => (
+                            <MenuItem key={u} value={u}>{u}</MenuItem>
+                          ))}
+                          <MenuItem value="Otro">-- Otro (Escribir) --</MenuItem>
+                        </Select>
+                      </FormControl>
+                      
+                      {mat.unidadTematica === "Otro" && (
                         <TextField 
-                          label="Tema"
-                          fullWidth multiline variant="outlined" size="small"
-                          value={mat.tema} 
-                          onChange={(e) => handleMateriaChange(dIdx, mIdx, 'tema', e.target.value)} 
-                          disabled={isReadOnly || isDirectivo} 
+                          sx={{ mt: 1 }}
+                          fullWidth size="small"
+                          label="Escriba la Unidad"
+                          autoFocus
+                          placeholder="Nombre de la unidad..."
+                          value={mat.unidadTematicaPersonalizada || ""} 
+                          onChange={(e) => handleMateriaChange(dIdx, mIdx, 'unidadTematicaPersonalizada', e.target.value)}
                         />
-                      </Grid>
-
-                      {/* GUÍA Y CUADERNILLO */}
-                      <Grid item xs={6} md={1.5}>
-                        <TextField 
-                          label="Guía Pág."
-                          fullWidth variant="outlined" size="small"
-                          value={mat.guiaDocente} 
-                          onChange={(e) => handleMateriaChange(dIdx, mIdx, 'guiaDocente', e.target.value)} 
-                          disabled={isReadOnly || isDirectivo} 
-                        />
-                      </Grid>
-                      <Grid item xs={6} md={1.5}>
-                        <TextField 
-                          label="Cuad. Pág."
-                          fullWidth variant="outlined" size="small"
-                          value={mat.cuadernilloEstudiante} 
-                          onChange={(e) => handleMateriaChange(dIdx, mIdx, 'cuadernilloEstudiante', e.target.value)} 
-                          disabled={isReadOnly || isDirectivo} 
-                        />
-                      </Grid>
-
-                      {/* EVALUACIÓN */}
-                      <Grid item xs={showActions ? 10 : 12} md={showActions ? 1.5 : 2}>
-                        <FormControl fullWidth size="small">
-                          <InputLabel>Evaluación</InputLabel>
-                          <Select 
-                            label="Evaluación"
-                            value={mat.instrumentoEvaluacion} 
-                            onChange={(e) => handleMateriaChange(dIdx, mIdx, 'instrumentoEvaluacion', e.target.value)} 
-                            disabled={isReadOnly || isDirectivo}
-                          >
-                            <MenuItem value="Lista de cotejo">Lista de cotejo</MenuItem>
-                            <MenuItem value="Rúbrica">Rúbrica</MenuItem>
-                            <MenuItem value="RSA">RSA</MenuItem>
-                            <MenuItem value="Prueba Escrita">Prueba Escrita</MenuItem>
-                          </Select>
-                        </FormControl>
-                      </Grid>
-
-                      {/* BOTÓN ELIMINAR */}
-                      {showActions && (
-                        <Grid item xs={2} md={0.5} sx={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
-                          <IconButton color="error" onClick={() => removeMateria(dIdx, mIdx)} size="small">
-                            <Delete />
-                          </IconButton>
-                        </Grid>
                       )}
                     </Grid>
-                  </CardContent>
-                </Card>
-              ))}
-            </Stack>
-          )}
+
+                    {/* TEMA */}
+                    <Grid item xs={12} md={5}>
+                      <TextField 
+                        label="Tema / Capacidad"
+                        fullWidth multiline size="small"
+                        value={mat.tema} 
+                        onChange={(e) => handleMateriaChange(dIdx, mIdx, 'tema', e.target.value)} 
+                        disabled={isReadOnly || isDirectivo} 
+                      />
+                    </Grid>
+
+                    {/* FILA INFERIOR: PÁGINAS Y EVALUACIÓN */}
+                    <Grid item xs={4} md={1.5}>
+                      <TextField label="Guía Pág." fullWidth size="small" value={mat.guiaDocente} onChange={(e) => handleMateriaChange(dIdx, mIdx, 'guiaDocente', e.target.value)} disabled={isReadOnly || isDirectivo} />
+                    </Grid>
+                    <Grid item xs={4} md={1.5}>
+                      <TextField label="Cuad. Pág." fullWidth size="small" value={mat.cuadernilloEstudiante} onChange={(e) => handleMateriaChange(dIdx, mIdx, 'cuadernilloEstudiante', e.target.value)} disabled={isReadOnly || isDirectivo} />
+                    </Grid>
+                    <Grid item xs={4} md={3}>
+                      <FormControl fullWidth size="small">
+                        <InputLabel>Evaluación</InputLabel>
+                        <Select value={mat.instrumentoEvaluacion} label="Evaluación" onChange={(e) => handleMateriaChange(dIdx, mIdx, 'instrumentoEvaluacion', e.target.value)} disabled={isReadOnly || isDirectivo}>
+                          <MenuItem value="Lista de cotejo">Lista de cotejo</MenuItem>
+                          <MenuItem value="Rúbrica">Rúbrica</MenuItem>
+                          <MenuItem value="RSA">RSA</MenuItem>
+                          <MenuItem value="Prueba Escrita">Prueba Escrita</MenuItem>
+                        </Select>
+                      </FormControl>
+                    </Grid>
+
+                    {showActions && (
+                      <Grid item xs={12} md={6} sx={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
+                        <IconButton color="error" onClick={() => removeMateria(dIdx, mIdx)} size="small">
+                          <Delete />
+                        </IconButton>
+                      </Grid>
+                    )}
+                  </Grid>
+                </CardContent>
+              </Card>
+            ))}
+          </Stack>
           <Divider sx={{ mt: 3, opacity: 0.5 }} />
         </Box>
       ))}
 
-      {/* BOTÓN DE GUARDAR (Solo para el docente) */}
+      {/* FOOTER ACCIÓN GUARDAR */}
       {showActions && (
         <Box sx={{ 
-          position: 'fixed', 
-          bottom: 0, left: 0, right: 0, 
-          p: 2, bgcolor: 'rgba(255,255,255,0.9)', 
-          backdropFilter: 'blur(8px)',
-          borderTop: '1px solid #ddd',
-          zIndex: 1000,
-          textAlign: 'center'
+          position: 'fixed', bottom: 0, left: 0, right: 0, 
+          p: 2, bgcolor: 'rgba(255,255,255,0.9)', backdropFilter: 'blur(8px)', 
+          borderTop: '1px solid #ddd', zIndex: 1000, textAlign: 'center' 
         }}>
           <Button 
-            variant="contained" 
-            fullWidth
-            size="large" 
-            onClick={() => onSubmit(form)} 
+            variant="contained" fullWidth size="large" 
+            onClick={handleSubmit} 
             disabled={loading}
             sx={{ 
-              bgcolor: '#7D0F15', borderRadius: 3, maxWidth: '500px',
-              py: 1.5, fontWeight: 'bold',
-              '&:hover': { bgcolor: '#5d0b10' }
+              bgcolor: '#7D0F15', borderRadius: 3, maxWidth: '500px', 
+              py: 1.5, fontWeight: 'bold', '&:hover': { bgcolor: '#5d0b10' }
             }}
           >
             {loading ? "Guardando..." : "Finalizar Planificación"}
