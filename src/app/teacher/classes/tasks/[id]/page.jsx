@@ -9,7 +9,8 @@ import { generateTaskPDF } from "@/components/teacher/TaskReportPDF";
 import {
   Box, Typography, CircularProgress, Paper, Stack, Button, Container, 
   Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
-  Chip, IconButton, TextField, Grid, ToggleButton, ToggleButtonGroup
+  Chip, IconButton, TextField, Grid, ToggleButton, ToggleButtonGroup,
+  Tooltip, Menu, MenuItem
 } from "@mui/material";
 
 import {
@@ -21,7 +22,11 @@ import {
   Assignment as TaskIcon,
   CloudDone as SavedIcon,
   Sync as SyncIcon,
-  PictureAsPdf as PdfIcon
+  PictureAsPdf as PdfIcon,
+  MoreVert as MoreIcon,
+  DeleteSweep as ClearIcon,
+  DoneAll as DoneAllIcon,
+  ArrowDownward as DownIcon
 } from '@mui/icons-material';
 
 const COLORS = {
@@ -44,6 +49,7 @@ export default function TaskSubmissionsPage() {
   const [hasChanges, setHasChanges] = useState(false);
   const [lastSaved, setLastSaved] = useState(null);
   const [selectedMoment, setSelectedMoment] = useState(3);
+  const [anchorEl, setAnchorEl] = useState(null);
 
   const isRubrica = taskInfo?.instrumentType === 'rubrica';
 
@@ -54,7 +60,6 @@ export default function TaskSubmissionsPage() {
         setTaskInfo(taskData);
         const studentTasks = await getStudentTasksByGrade(taskData.grade);
         
-        // MODIFICACIÓN: Filtramos para que solo queden las tareas que tienen un estudiante existente
         const filtered = studentTasks.filter(st => 
           (st.task?._id || st.task) === id && st.student !== null
         );
@@ -82,23 +87,31 @@ export default function TaskSubmissionsPage() {
       if (sub._id !== submissionId) return sub;
       
       const currentScores = isRubrica ? (sub.rubricScores || []) : (sub.indicatorScores || []);
+      
+      const existingScore = currentScores.find(s => {
+        const sId = s.indicatorId?._id || s.indicatorId || s._id;
+        return isRubrica ? sId === criterionId : (sId === criterionId && s.moment === selectedMoment);
+      });
 
-      const newScores = [...currentScores].filter(s => {
+      if (existingScore && Number(existingScore.points) === Number(points)) {
+        const clearedScores = currentScores.filter(s => {
+            const sId = s.indicatorId?._id || s.indicatorId || s._id;
+            return isRubrica ? sId !== criterionId : !(sId === criterionId && s.moment === selectedMoment);
+        });
+        return {
+            ...sub,
+            [isRubrica ? 'rubricScores' : 'indicatorScores']: clearedScores,
+            score: calculateInstantScore(clearedScores)
+        };
+      }
+
+      const newScores = currentScores.filter(s => {
         const sId = s.indicatorId?._id || s.indicatorId || s._id;
         return isRubrica ? sId !== criterionId : !(sId === criterionId && s.moment === selectedMoment);
       });
 
-      const newEntry = { 
-        points, 
-        moment: isRubrica ? 1 : selectedMoment 
-      };
-
-      if (isRubrica) {
-        newEntry._id = criterionId;
-      } else {
-        newEntry.indicatorId = criterionId;
-      }
-
+      const newEntry = { points, moment: isRubrica ? 1 : selectedMoment };
+      if (isRubrica) { newEntry._id = criterionId; } else { newEntry.indicatorId = criterionId; }
       newScores.push(newEntry);
 
       return { 
@@ -107,6 +120,78 @@ export default function TaskSubmissionsPage() {
         score: calculateInstantScore(newScores)
       };
     }));
+  };
+
+  const handleColumnAction = (criterionId, points) => {
+    setHasChanges(true);
+
+    // 1. Verificar si TODOS ya tienen este puntaje para decidir si marcar o desmarcar
+    const allAlreadyMarked = submissions.every(sub => {
+      const currentScores = isRubrica ? (sub.rubricScores || []) : (sub.indicatorScores || []);
+      return currentScores.some(s => {
+        const sId = s.indicatorId?._id || s.indicatorId || s._id;
+        const matchesId = sId === criterionId;
+        const matchesMoment = isRubrica ? true : s.moment === selectedMoment;
+        return matchesId && matchesMoment && Number(s.points) === Number(points);
+      });
+    });
+
+    setSubmissions(prev => prev.map(sub => {
+      const currentScores = isRubrica ? (sub.rubricScores || []) : (sub.indicatorScores || []);
+      
+      // Limpiar el criterio actual en cualquier caso
+      const filteredScores = currentScores.filter(s => {
+        const sId = s.indicatorId?._id || s.indicatorId || s._id;
+        return isRubrica ? sId !== criterionId : !(sId === criterionId && s.moment === selectedMoment);
+      });
+
+      let newScores;
+      if (allAlreadyMarked) {
+        // Si todos estaban marcados, la columna queda limpia
+        newScores = filteredScores;
+      } else {
+        // Si no todos estaban marcados, asignamos el puntaje a todos
+        const newEntry = { points, moment: isRubrica ? 1 : selectedMoment };
+        if (isRubrica) { newEntry._id = criterionId; } else { newEntry.indicatorId = criterionId; }
+        newScores = [...filteredScores, newEntry];
+      }
+
+      return {
+        ...sub,
+        [isRubrica ? 'rubricScores' : 'indicatorScores']: newScores,
+        score: calculateInstantScore(newScores)
+      };
+    }));
+  };
+
+  const handleBulkAction = (type) => {
+    setHasChanges(true);
+    setSubmissions(prev => prev.map(sub => {
+      let newScores = [];
+      if (type === 'all') {
+        if (isRubrica) {
+          newScores = taskInfo.rubricCriteria.map(crit => ({
+            _id: crit._id,
+            points: Math.max(...crit.levels.map(l => l.points)),
+            moment: 1
+          }));
+        } else {
+          newScores = taskInfo.indicators.map(ind => ({
+            indicatorId: ind._id,
+            points: 1,
+            moment: selectedMoment
+          }));
+        }
+      } else {
+        newScores = [];
+      }
+      return {
+        ...sub,
+        [isRubrica ? 'rubricScores' : 'indicatorScores']: newScores,
+        score: calculateInstantScore(newScores)
+      };
+    }));
+    setAnchorEl(null);
   };
 
   const handleCommentChange = (submissionId, text) => {
@@ -124,18 +209,11 @@ export default function TaskSubmissionsPage() {
         const updateData = {
           comments: sub.comments,
           score: sub.score,
-          status: "corregido"
+          status: "corregido",
+          [isRubrica ? 'rubricScores' : 'indicatorScores']: isRubrica ? sub.rubricScores : sub.indicatorScores
         };
-
-        if (isRubrica) {
-          updateData.rubricScores = sub.rubricScores;
-        } else {
-          updateData.indicatorScores = sub.indicatorScores;
-        }
-
         return updateStudentTask(sub._id, updateData);
       });
-
       await Promise.all(promises);
       setHasChanges(false);
       setLastSaved(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
@@ -167,6 +245,13 @@ export default function TaskSubmissionsPage() {
                 {saving ? "GUARDANDO..." : hasChanges ? "CAMBIOS PENDIENTES" : `SINCRONIZADO ${lastSaved || ""}`}
               </Typography>
             </Box>
+
+            <Button variant="outlined" startIcon={<MoreIcon />} onClick={(e) => setAnchorEl(e.currentTarget)} sx={{ borderRadius: 2, fontWeight: 800 }}>Acciones</Button>
+            <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={() => setAnchorEl(null)}>
+              <MenuItem onClick={() => handleBulkAction('all')} sx={{ gap: 1, fontWeight: 600 }}><DoneAllIcon fontSize="small" color="success" /> Marcar Todo Máximo</MenuItem>
+              <MenuItem onClick={() => handleBulkAction('clear')} sx={{ gap: 1, fontWeight: 600, color: COLORS.error }}><ClearIcon fontSize="small" /> Desmarcar Todo</MenuItem>
+            </Menu>
+
             <Button variant="outlined" startIcon={<PdfIcon />} onClick={() => generateTaskPDF(taskInfo, submissions, user, selectedMoment)} sx={{ color: COLORS.primary, borderColor: COLORS.primary, fontWeight: 800, borderRadius: 2 }}>Exportar PDF</Button>
             <Button variant="contained" onClick={handleSaveAll} disabled={saving || !hasChanges} sx={{ bgcolor: COLORS.primary, borderRadius: 2, fontWeight: 800 }}>Guardar Ahora</Button>
           </Stack>
@@ -192,32 +277,57 @@ export default function TaskSubmissionsPage() {
             <Table size="small" stickyHeader>
               <TableHead>
                 <TableRow>
-                  <TableCell rowSpan={isRubrica ? 2 : 1} sx={{ fontWeight: 900, bgcolor: '#F8FAFC' }}>ESTUDIANTE</TableCell>
+                  <TableCell rowSpan={isRubrica ? 3 : 2} sx={{ fontWeight: 900, bgcolor: '#F8FAFC' }}>ESTUDIANTE</TableCell>
                   {isRubrica ? (
                     taskInfo?.rubricCriteria.map((crit) => (
                       <TableCell key={crit._id} colSpan={crit.levels.length} align="center" sx={{ fontWeight: 900, bgcolor: '#F1F5F9' }}>{crit.criterion.toUpperCase()}</TableCell>
                     ))
                   ) : (
                     taskInfo?.indicators.map((ind) => (
-                      <TableCell key={ind._id} align="center" sx={{ fontWeight: 900, bgcolor: '#F8FAFC' }}>{ind.description.substring(0,30)}...</TableCell>
+                      <TableCell key={ind._id} align="center" sx={{ fontWeight: 900, bgcolor: '#F8FAFC' }}>
+                        <Stack alignItems="center">
+                           <Tooltip title="Alternar marcar/desmarcar toda la columna">
+                            <IconButton size="small" onClick={() => handleColumnAction(ind._id, 1)} sx={{ color: COLORS.success, mb: 0.5 }}>
+                                <DownIcon fontSize="small" />
+                            </IconButton>
+                           </Tooltip>
+                           <Typography variant="caption" sx={{ fontSize: '0.65rem' }}>{ind.description.substring(0,25)}...</Typography>
+                        </Stack>
+                      </TableCell>
                     ))
                   )}
-                  <TableCell rowSpan={isRubrica ? 2 : 1} align="center" sx={{ fontWeight: 900 }}>PUNTOS</TableCell>
-                  <TableCell rowSpan={isRubrica ? 2 : 1} sx={{ fontWeight: 900 }}>OBSERVACIONES</TableCell>
+                  <TableCell rowSpan={isRubrica ? 3 : 2} align="center" sx={{ fontWeight: 900 }}>PUNTOS</TableCell>
+                  <TableCell rowSpan={isRubrica ? 3 : 2} sx={{ fontWeight: 900 }}>OBSERVACIONES</TableCell>
                 </TableRow>
+                
                 {isRubrica && (
-                  <TableRow>
-                    {taskInfo?.rubricCriteria.map((crit) =>
-                      crit.levels.map((lvl) => (
-                        <TableCell key={lvl._id} align="center">
-                          <Stack spacing={0.3}>
-                            <Typography sx={{ fontSize:11, fontWeight:900 }}>{lvl.level}</Typography>
-                            <Typography sx={{ fontSize:10 }}>({lvl.points})</Typography>
-                          </Stack>
-                        </TableCell>
-                      ))
-                    )}
-                  </TableRow>
+                  <>
+                    <TableRow>
+                        {taskInfo?.rubricCriteria.map((crit) =>
+                            crit.levels.map((lvl) => (
+                                <TableCell key={`col-btn-${lvl._id}`} align="center" sx={{ py: 0, bgcolor: '#F8FAFC' }}>
+                                    <Tooltip title={`Alternar todos como ${lvl.level}`}>
+                                        <IconButton size="small" onClick={() => handleColumnAction(crit._id, lvl.points)} sx={{ color: COLORS.primary }}>
+                                            <DownIcon fontSize="small" />
+                                        </IconButton>
+                                    </Tooltip>
+                                </TableCell>
+                            ))
+                        )}
+                    </TableRow>
+                    <TableRow>
+                        {taskInfo?.rubricCriteria.map((crit) =>
+                        crit.levels.map((lvl) => (
+                            <TableCell key={lvl._id} align="center">
+                            <Stack spacing={0.3}>
+                                <Typography sx={{ fontSize:10, fontWeight:900 }}>{lvl.level}</Typography>
+                                <Typography sx={{ fontSize:9 }}>({lvl.points})</Typography>
+                            </Stack>
+                            </TableCell>
+                        ))
+                        )}
+                    </TableRow>
+                  </>
                 )}
               </TableHead>
 
@@ -225,7 +335,6 @@ export default function TaskSubmissionsPage() {
                 {submissions.map((sub) => (
                   <TableRow key={sub._id} hover>
                     <TableCell sx={{ fontWeight: 700, fontSize: '0.8rem' }}>
-                      {/* MODIFICACIÓN: Agregamos opcional chaining extra y valor por defecto */}
                       {sub.student?.lastName?.toUpperCase() || 'S/A'}, {sub.student?.firstName || 'Eliminado'}
                     </TableCell>
 
@@ -239,20 +348,21 @@ export default function TaskSubmissionsPage() {
                         return crit.levels.map((lvl) => {
                           const isSelected = score && Number(score.points) === Number(lvl.points);
                           return (
-                            <TableCell
-                              key={lvl._id}
-                              align="center"
-                              onClick={() => handleCellChange(sub._id, crit._id, lvl.points)}
-                              sx={{
-                                cursor: 'pointer',
-                                bgcolor: isSelected ? '#FFF1F2' : 'inherit',
-                                borderLeft: lvl === crit.levels[0] ? '1px solid #E2E8F0' : 'none',
-                                transition: '0.2s',
-                                '&:hover': { bgcolor: '#F1F5F9' }
-                              }}
-                            >
-                              {isSelected ? <CheckIcon sx={{ color: COLORS.primary, fontSize: 20 }} /> : <UncheckedIcon sx={{ color: '#CBD5E1', fontSize: 20 }} />}
-                            </TableCell>
+                            <Tooltip key={lvl._id} title={lvl.description || "Sin descripción"} arrow placement="top">
+                                <TableCell
+                                align="center"
+                                onClick={() => handleCellChange(sub._id, crit._id, lvl.points)}
+                                sx={{
+                                    cursor: 'pointer',
+                                    bgcolor: isSelected ? '#FFF1F2' : 'inherit',
+                                    borderLeft: lvl === crit.levels[0] ? '1px solid #E2E8F0' : 'none',
+                                    transition: '0.2s',
+                                    '&:hover': { bgcolor: '#F1F5F9' }
+                                }}
+                                >
+                                {isSelected ? <CheckIcon sx={{ color: COLORS.primary, fontSize: 20 }} /> : <UncheckedIcon sx={{ color: '#CBD5E1', fontSize: 20 }} />}
+                                </TableCell>
+                            </Tooltip>
                           );
                         });
                       })

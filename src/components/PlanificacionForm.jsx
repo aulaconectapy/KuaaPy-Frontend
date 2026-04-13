@@ -63,6 +63,7 @@ const PlanificacionForm = ({ initialData, onSubmit, loading, isReadOnly = false 
     const newDias = [...form.dias];
     newDias[diaIndex].materias.push({
       asignatura: "", 
+      unidadTematica: "", // 🔹 Agregado al estado inicial
       tema: "", 
       guiaDocente: "", 
       cuadernilloEstudiante: "", 
@@ -175,11 +176,22 @@ const PlanificacionForm = ({ initialData, onSubmit, loading, isReadOnly = false 
                           </Select>
                         </FormControl>
                       </Grid>
+{/* 🔹 UNIDAD TEMÁTICA (NUEVO CAMPO) */}
+                      <Grid item xs={12} md={4}>
+                        <TextField 
+                          label="Unidad Temática"
+                          placeholder="Ej: Los seres vivos / Geometría"
+                          fullWidth variant="outlined" size="small"
+                          value={mat.unidadTematica || ""} 
+                          onChange={(e) => handleMateriaChange(dIdx, mIdx, 'unidadTematica', e.target.value)} 
+                          disabled={isReadOnly || isDirectivo} 
+                        />
+                        </Grid>                      
 
                       {/* TEMA */}
                       <Grid item xs={12} md={4}>
                         <TextField 
-                          label="Tema / Capacidad"
+                          label="Tema"
                           fullWidth multiline variant="outlined" size="small"
                           value={mat.tema} 
                           onChange={(e) => handleMateriaChange(dIdx, mIdx, 'tema', e.target.value)} 
