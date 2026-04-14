@@ -291,7 +291,7 @@ export default function TaskSubmissionsPage() {
                                 <DownIcon fontSize="small" />
                             </IconButton>
                            </Tooltip>
-                           <Typography variant="caption" sx={{ fontSize: '0.65rem' }}>{ind.description.substring(0,25)}...</Typography>
+                           <Typography variant="caption" sx={{ fontSize: '0.65rem' }}>{ind.descriptor.substring(0,25)}...</Typography>
                         </Stack>
                       </TableCell>
                     ))
@@ -348,7 +348,7 @@ export default function TaskSubmissionsPage() {
                         return crit.levels.map((lvl) => {
                           const isSelected = score && Number(score.points) === Number(lvl.points);
                           return (
-                            <Tooltip key={lvl._id} title={lvl.description || "Sin descripción"} arrow placement="top">
+                            <Tooltip key={lvl._id} title={lvl.descriptor || "Sin descripción"} arrow placement="top">
                                 <TableCell
                                 align="center"
                                 onClick={() => handleCellChange(sub._id, crit._id, lvl.points)}
