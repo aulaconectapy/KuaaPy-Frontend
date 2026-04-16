@@ -291,8 +291,9 @@ export default function TaskSubmissionsPage() {
                                 <DownIcon fontSize="small" />
                             </IconButton>
                            </Tooltip>
-                           <Typography variant="caption" sx={{ fontSize: '0.65rem' }}>{ind.descriptor.substring(0,25)}...</Typography>
-                        </Stack>
+<Typography variant="caption" sx={{ fontSize: '0.65rem' }}>
+  {(ind?.description || "").substring(0, 25)}...
+</Typography>                        </Stack>
                       </TableCell>
                     ))
                   )}
