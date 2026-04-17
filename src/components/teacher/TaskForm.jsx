@@ -27,17 +27,19 @@ export default function TaskForm({ task = null }) {
   const router = useRouter();
   const { user, loading: loadingAuth } = useAuth();
 
-  const [formData, setFormData] = useState({
-    subject: "",
-    topic: "",
-    grade: "",
-    taskType: "formativo",
-    instrumentType: "lista_cotejo",
-    dueDate: "",
-    status: "pendiente",
-    indicators: [{ description: "", points: 1 }], // Iniciamos con 1 punto
-    rubricCriteria: [{ criterion: "", levels: [{ level: "", descriptor: "", points: 1 }] }], // Iniciamos con 1 punto
-  });
+const [formData, setFormData] = useState({
+  subject: "",
+  topic: "",
+  grade: "",
+  taskType: "formativo",
+  instrumentType: "lista_cotejo",
+  dueDate: "",
+  status: "pendiente",
+  consigna: "",
+  observacion: "",
+  indicators: [{ description: "", points: 1 }],
+  rubricCriteria: [{ criterion: "", levels: [{ level: "", descriptor: "", points: 1 }] }],
+});
 
   useEffect(() => {
     if (user && user.grades?.length === 1 && !task) {
@@ -47,17 +49,19 @@ export default function TaskForm({ task = null }) {
 
   useEffect(() => {
     if (task) {
-      setFormData({
-        subject: task.subject || "",
-        topic: task.topic || "",
-        grade: task.grade || "",
-        taskType: task.taskType || "formativo",
-        instrumentType: task.instrumentType || "lista_cotejo",
-        dueDate: task.dueDate?.split("T")[0] || "",
-        status: task.status || "pendiente",
-        indicators: task.indicators?.length > 0 ? task.indicators : [{ description: "", points: 1 }],
-        rubricCriteria: task.rubricCriteria?.length > 0 ? task.rubricCriteria : [{ criterion: "", levels: [{ level: "", descriptor: "", points: 1 }] }],
-      });
+setFormData({
+  subject: task.subject || "",
+  topic: task.topic || "",
+  grade: task.grade || "",
+  taskType: task.taskType || "formativo",
+  instrumentType: task.instrumentType || "lista_cotejo",
+  dueDate: task.dueDate?.split("T")[0] || "",
+  status: task.status || "pendiente",
+  consigna: task.consigna || "",
+  observacion: task.observacion || "",
+  indicators: task.indicators?.length > 0 ? task.indicators : [{ description: "", points: 1 }],
+  rubricCriteria: task.rubricCriteria?.length > 0 ? task.rubricCriteria : [{ criterion: "", levels: [{ level: "", descriptor: "", points: 1 }] }],
+});
     }
   }, [task]);
 
@@ -181,6 +185,17 @@ export default function TaskForm({ task = null }) {
                   <Grid item xs={12}>
                     <TextField fullWidth label="Tema de la clase" name="topic" value={formData.topic} onChange={handleChange} />
                   </Grid>
+                  <Grid item xs={12}>
+  <TextField 
+    fullWidth 
+    label="Consigna (Instrucciones para el estudiante)" 
+    name="consigna" 
+    value={formData.consigna} 
+    onChange={handleChange}
+    multiline
+    rows={3}
+  />
+</Grid>
                   <Grid item xs={12} sm={6}>
                     <TextField select fullWidth label="Tipo de Evaluación" name="taskType" value={formData.taskType} onChange={handleChange}>
                       <MenuItem value="diagnostico">Diagnóstico</MenuItem>
@@ -273,7 +288,17 @@ export default function TaskForm({ task = null }) {
                   </Stack>
                 </Box>
               )}
-
+<Grid item xs={12}>
+  <TextField 
+    fullWidth 
+    label="Observación (Opcional)" 
+    name="observacion" 
+    value={formData.observacion} 
+    onChange={handleChange}
+    multiline
+    rows={2}
+  />
+</Grid>
               <Box sx={{ pt:2 }}>
                 <Button type="submit" variant="contained" fullWidth sx={{ bgcolor:COLORS.primary, py:2 }}>{task ? "Actualizar Tarea" : "Publicar Tarea"}</Button>
                 <Button fullWidth sx={{ mt:2 }} onClick={()=>router.back()}>Cancelar</Button>
