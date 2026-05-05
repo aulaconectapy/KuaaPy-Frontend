@@ -284,4 +284,21 @@ export const deletePlanificacion = (id) =>
  */
 export const updatePlanificacionStatus = (id, statusData) => 
   api.patch(`/api/planificaciones/${id}/status`, statusData).then(res => res.data);
+
+// =====================
+// REPORTES Y ESTADÍSTICAS
+// =====================
+
+export const getGeneralTaskReport = (grade, institutionId = null) => {
+  let url = `/api/tasks/report/general/${encodeURIComponent(grade)}`;
+
+  if (institutionId) {
+    url += `?institutionId=${institutionId}`;
+  }
+
+  return api.get(url).then(res => res.data);
+};
+
+
+
 export default api;
