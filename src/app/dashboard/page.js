@@ -288,39 +288,49 @@ const Dashboard = ({ docentesList }) => {
               </>
             )}
 
-            {currentRole === 'docente' && (
-              <>
-                <DashCard
-                  title="Gestión de Clases"
-                  desc="Crear tareas y calificar"
-                  icon={School}
-                  color="#2196F3"
-                  href="/teacher/classes/tasks"
-                />
-                <DashCard
-                  title="Planificaciones"
-                  desc="Gestión de planes semanales"
-                  icon={EventNote}
-                  color={COLORS.primary}
-                  href="/teacher/planificacion"
-                />
-                <DashCard
-                  title="Ver Estudiantes"
-                  desc="Listado de estudiantes"
-                  icon={People}
-                  color="#0288d1"
-                  href="/user/students"
-                />
-                <DashCard
-                  title="Reportes Disciplinarios"
-                  desc="Ver reportes de estudiantes"
-                  icon={Badge}
-                  color="#F57C00"
-                  href="/reportes"
-                />
-              </>
-            )}
+{currentRole === 'docente' && (
+  <>
+    <DashCard
+      title="Gestión de Clases"
+      desc="Crear tareas y calificar"
+      icon={School}
+      color="#2196F3"
+      href="/teacher/classes/tasks"
+    />
 
+    <DashCard
+      title="Reporte de Tareas"
+      desc="Ver planilla general de puntajes"
+      icon={MenuBook}
+      color="#7D0F15"
+      href="/taskReport"
+    />
+
+    <DashCard
+      title="Planificaciones"
+      desc="Gestión de planes semanales"
+      icon={EventNote}
+      color={COLORS.primary}
+      href="/teacher/planificacion"
+    />
+
+    <DashCard
+      title="Ver Estudiantes"
+      desc="Listado de estudiantes"
+      icon={People}
+      color="#0288d1"
+      href="/user/students"
+    />
+
+    <DashCard
+      title="Reportes Disciplinarios"
+      desc="Ver reportes de estudiantes"
+      icon={Badge}
+      color="#F57C00"
+      href="/reportes"
+    />
+  </>
+)}
             {/* SECCIÓN PARA ADMINISTRADOR, DIRECTOR Y SECRETARIO */}
             {['administrador', 'director/a', 'secretario/a'].includes(currentRole) && (
               <>
