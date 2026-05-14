@@ -101,7 +101,7 @@ const unreadCount = Array.isArray(notifications)
           <Toolbar sx={{ justifyContent: "space-between", px: { xs: 1.5, sm: 2 }, minHeight: { xs: 64, sm: 70 } }}>
 
             {/* LOGO */}
-            <Box onClick={() => router.push("/")} sx={{ display: "flex", alignItems: "center", cursor: "pointer", gap: 1.5 }}>
+            <Box onClick={() => router.push("/dashboard")} sx={{ display: "flex", alignItems: "center", cursor: "pointer", gap: 1.5 }}>
               <Box sx={{ p: 0.5, borderRadius: "50%", display: "flex", border: `1px solid ${theme.palette.primary.main}`, backgroundColor: "#fff" }}>
                 <Image src="/logo.png" alt="Logo C.P.M.A" width={isMobile ? 32 : 40} height={isMobile ? 32 : 40} priority style={{ borderRadius: '50%' }} />
               </Box>
