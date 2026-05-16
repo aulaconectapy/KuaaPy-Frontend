@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { getGeneralTaskReport } from '@/services/api';
 
@@ -39,6 +40,8 @@ const COLORS = {
 };
 
 export default function TaskReportPage() {
+    const router = useRouter();
+
   const { user, loading } = useAuth();
 
   const [report, setReport] = useState(null);
@@ -239,28 +242,49 @@ export default function TaskReportPage() {
               />
             </Box>
 
-            <Box sx={{ mt: 2 }}>
-              <Button
-                variant="contained"
-                startIcon={<PictureAsPdfIcon />}
-                onClick={() =>
-                  generateAllTaskReportPDF({
-                    report,
-                    user,
-                    groupedColumns: allGroupedColumns,
-                  })
-                }
-                sx={{
-                  backgroundColor: COLORS.primary,
-                  fontWeight: 'bold',
-                  '&:hover': {
-                    backgroundColor: COLORS.primaryDark,
-                  },
-                }}
-              >
-                Generar PDF completo
-              </Button>
-            </Box>
+<Box
+  sx={{
+    mt: 2,
+    display: 'flex',
+    gap: 2,
+    flexWrap: 'wrap',
+  }}
+>
+  <Button
+    variant="contained"
+    onClick={() => router.push('/teacher/calificaciones')}
+    sx={{
+      backgroundColor: '#1976d2',
+      fontWeight: 'bold',
+      '&:hover': {
+        backgroundColor: '#1259a7',
+      },
+    }}
+  >
+    Ir a calificaciones
+  </Button>
+
+  <Button
+    variant="contained"
+    startIcon={<PictureAsPdfIcon />}
+    onClick={() =>
+      generateAllTaskReportPDF({
+        report,
+        user,
+        groupedColumns: allGroupedColumns,
+      })
+    }
+    sx={{
+      backgroundColor: COLORS.primary,
+      fontWeight: 'bold',
+      '&:hover': {
+        backgroundColor: COLORS.primaryDark,
+      },
+    }}
+  >
+    Generar PDF completo
+  </Button>
+</Box>
           </Box>
         </Box>
       </Paper>
@@ -380,74 +404,85 @@ export default function TaskReportPage() {
               border: `1px solid ${COLORS.border}`,
             }}
           >
-            <TableHead>
-              <TableRow sx={{ backgroundColor: COLORS.primary }}>
-                <TableCell
-                  rowSpan={2}
-                  sx={{
-                    color: '#fff',
-                    fontWeight: 'bold',
-                    border: '1px solid #fff',
-                  }}
-                >
-                  N°
-                </TableCell>
+<TableHead>
+  <TableRow sx={{ backgroundColor: COLORS.primary }}>
+    <TableCell
+      rowSpan={2}
+      sx={{
+        color: '#fff',
+        fontWeight: 'bold',
+        border: '1px solid #fff',
+      }}
+    >
+      N°
+    </TableCell>
 
-                <TableCell
-                  rowSpan={2}
-                  sx={{
-                    color: '#fff',
-                    fontWeight: 'bold',
-                    border: '1px solid #fff',
-                  }}
-                >
-                  Estudiante
-                </TableCell>
+    <TableCell
+      rowSpan={2}
+      sx={{
+        color: '#fff',
+        fontWeight: 'bold',
+        border: '1px solid #fff',
+      }}
+    >
+      Estudiante
+    </TableCell>
 
-                {columns.map(col => (
-                  <TableCell
-                    key={col.taskId}
-                    align="center"
-                    sx={{
-                      color: '#fff',
-                      fontWeight: 'bold',
-                      border: '1px solid #fff',
-                      minWidth: 140,
-                    }}
-                  >
-                    {col.topic}
-                  </TableCell>
-                ))}
+    {columns.map(col => (
+      <TableCell
+        key={col.taskId}
+        align="center"
+        sx={{
+          color: '#fff',
+          fontWeight: 'bold',
+          border: '1px solid #fff',
+          minWidth: 140,
+        }}
+      >
+        {col.topic}
+      </TableCell>
+    ))}
 
-                <TableCell
-                  rowSpan={2}
-                  align="center"
-                  sx={{
-                    color: '#fff',
-                    fontWeight: 'bold',
-                    border: '1px solid #fff',
-                  }}
-                >
-                  Total
-                </TableCell>
-              </TableRow>
+    <TableCell
+      align="center"
+      sx={{
+        color: '#fff',
+        fontWeight: 'bold',
+        border: '1px solid #fff',
+        minWidth: 100,
+      }}
+    >
+      Total
+    </TableCell>
+  </TableRow>
 
-              <TableRow sx={{ backgroundColor: COLORS.primaryDark }}>
-                {columns.map(col => (
-                  <TableCell
-                    key={col.taskId}
-                    align="center"
-                    sx={{
-                      color: '#fff',
-                      fontWeight: 'bold',
-                      border: '1px solid #fff',
-                    }}
-                  >
-                    {col.maxPoints} pts
-                  </TableCell>
-                ))}
-              </TableRow>
-            </TableHead>
+  <TableRow sx={{ backgroundColor: COLORS.primaryDark }}>
+    {columns.map(col => (
+      <TableCell
+        key={col.taskId}
+        align="center"
+        sx={{
+          color: '#fff',
+          fontWeight: 'bold',
+          border: '1px solid #fff',
+        }}
+      >
+        {col.maxPoints} pts
+      </TableCell>
+    ))}
+
+    <TableCell
+      align="center"
+      sx={{
+        color: '#fff',
+        fontWeight: 'bold',
+        border: '1px solid #fff',
+      }}
+    >
+      {columns.reduce((sum, col) => sum + (col.maxPoints || 0), 0)} pts
+    </TableCell>
+  </TableRow>
+</TableHead>
 
             <TableBody>
               {report.rows.map((student, index) => {
