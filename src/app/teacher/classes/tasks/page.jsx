@@ -179,7 +179,27 @@ export default function TasksPage() {
             >
               Ver Resumen
             </Button>
-
+<Button
+  variant="outlined"
+  fullWidth={isMobile}
+  startIcon={<AssignmentIcon />}
+  onClick={() => router.push("/taskReport")}
+  sx={{ 
+    color: COLORS.primary,
+    borderColor: COLORS.primary,
+    borderRadius: 3,
+    px: 3,
+    textTransform: 'none',
+    fontWeight: 800,
+    height: 48,
+    '&:hover': {
+      borderColor: COLORS.primaryLight,
+      bgcolor: `${COLORS.primary}05`
+    }
+  }}
+>
+  Planilla de puntaje
+</Button>
             {isTeacher && (
               <Button
                 variant="contained"

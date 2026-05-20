@@ -43,8 +43,8 @@ export default function AcademicSummaryPage() {
 
   const teacherGrade = user?.grades?.[0];
 
-  const authorizedRoles = ['director/a', 'secretario/a', 'docente', 'admin'];
-  const canSeeAll = ['director/a', 'admin', 'secretario/a'].includes(user?.role?.toLowerCase());
+  const authorizedRoles = ['director/a', 'secretario/a', 'docente', 'administrador'];
+  const canSeeAll = ['director/a', 'administrador', 'secretario/a'].includes(user?.role?.toLowerCase());
 
   // Sincronizar grado del docente
   useEffect(() => {
@@ -105,13 +105,28 @@ export default function AcademicSummaryPage() {
   }, [user, filterGrade, authLoading]);
 
   // Filtrar estudiantes
-  const filteredData = useMemo(() => {
+const filteredData = useMemo(() => {
 
-    return summary.filter(s =>
-      `${s.firstName || ''} ${s.lastName || ''}`.toLowerCase().includes(search.toLowerCase())
-    );
+  return summary.filter((s) => {
 
-  }, [summary, search]);
+    const matchesSearch =
+      `${s.firstName || ''} ${s.lastName || ''}`
+        .toLowerCase()
+        .includes(search.toLowerCase());
+
+    // 🔥 FILTRAR POR GRADOS DEL DOCENTE
+    const matchesGrade =
+      user?.role?.toLowerCase() === "docente"
+        ? user?.grades?.includes(s.grade)
+        : filterGrade === "all"
+          ? true
+          : s.grade === filterGrade;
+
+    return matchesSearch && matchesGrade;
+
+  });
+
+}, [summary, search, user, filterGrade]);
 
   // Estadísticas
   const stats = useMemo(() => {
