@@ -41,17 +41,16 @@ export default function AcademicSummaryPage() {
   const [search, setSearch] = useState("");
   const [filterGrade, setFilterGrade] = useState("all");
 
-  const teacherGrade = user?.grades?.[0];
-
+const teacherGrades = user?.grades || [];
   const authorizedRoles = ['director/a', 'secretario/a', 'docente', 'administrador'];
   const canSeeAll = ['director/a', 'administrador', 'secretario/a'].includes(user?.role?.toLowerCase());
 
   // Sincronizar grado del docente
   useEffect(() => {
-    if (teacherGrade && user.role === 'docente') {
-      setFilterGrade(teacherGrade);
-    }
-  }, [teacherGrade, user]);
+if (user?.grades?.length && user.role === 'docente') {
+  setFilterGrade(user.grades[0]);
+}
+  }, [teacherGrades, user]);
 
   // Protección de ruta
   useEffect(() => {
@@ -81,9 +80,8 @@ export default function AcademicSummaryPage() {
 
       try {
 
-        const institutionId = (user?.role !== 'docente')
-          ? user?.institution?._id || user?.institution
-          : null;
+      const institutionId =
+  user?.institution?._id || user?.institution;
 
         const data = await getStudentsSummary(filterGrade, institutionId);
 
@@ -177,7 +175,9 @@ const filteredData = useMemo(() => {
             </Typography>
 
             <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 600 }}>
-              {canSeeAll ? "Panel Institucional" : `Grado: ${teacherGrade}`}
+              {canSeeAll
+  ? "Panel Institucional"
+  : `Grados: ${teacherGrades.join(", ")}`}
             </Typography>
 
           </Box>

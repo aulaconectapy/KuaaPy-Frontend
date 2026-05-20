@@ -6,7 +6,7 @@ import { useState, useEffect } from "react";
 import {
   Container, Typography, Box, Grid, Paper,
   Avatar, CircularProgress, Stack, Chip, Divider, Dialog,
-  useMediaQuery, useTheme, IconButton
+  useMediaQuery, useTheme, IconButton, Button
 } from '@mui/material';
 
 import {
@@ -14,12 +14,12 @@ import {
   AdminPanelSettings, MenuBook,
   Settings, Class, Badge,
   AccountCircle, Edit, Email, Close,
-  EventNote // Icono para Planificaciones
+  EventNote 
 } from '@mui/icons-material';
 
 import StudentProfileForm from "@/components/StudentProfileForm";
 import UserForm from "@/components/UserForm";
-
+import HorarioExamenDialog from "@/app/Institution/horarioDeExamen/page";
 import {
   getMyDisciplineReports,
   getReportsByGrade,
@@ -33,6 +33,7 @@ const Dashboard = ({ docentesList }) => {
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
   const [profileOpen, setProfileOpen] = useState(false);
+  const [examsOpen, setExamsOpen] = useState(false); 
   const [reports, setReports] = useState([]);
   const [loadingReports, setLoadingReports] = useState(false);
 
@@ -51,6 +52,13 @@ const Dashboard = ({ docentesList }) => {
       router.replace('/auth/login');
     }
   }, [loading, initialized, user, router]);
+
+  // ELEGIR AUTO-APERTURA SI ES ESTUDIANTE
+  useEffect(() => {
+    if (initialized && user && user.role?.toLowerCase() === 'estudiante') {
+      setExamsOpen(true);
+    }
+  }, [initialized, user]);
 
   useEffect(() => {
     if (!initialized || !user) return;
@@ -260,6 +268,57 @@ const Dashboard = ({ docentesList }) => {
             </Typography>
           </Box>
 
+          {/* BANNER EN FORMA DE ALERTA EXCLUSIVO PARA ESTUDIANTES */}
+          {currentRole === 'estudiante' && (
+            <Paper 
+              elevation={0}
+              sx={{
+                p: 3,
+                mb: 4,
+                borderRadius: 4,
+                display: 'flex',
+                flexDirection: isMobile ? 'column' : 'row',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: 2,
+                background: `linear-gradient(90deg, #FFF9E6 0%, #FFF3CD 100%)`,
+                border: `2px dashed ${COLORS.secondary}`,
+                boxShadow: '0 4px 12px rgba(212, 175, 55, 0.15)'
+              }}
+            >
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, textAlign: isMobile ? 'center' : 'left', flexDirection: isMobile ? 'column' : 'row' }}>
+                <Avatar sx={{ bgcolor: COLORS.secondary, color: '#000', width: 48, height: 48 }}>
+                  <EventNote />
+                </Avatar>
+                <Box>
+                  <Typography fontWeight={800} variant="h6" sx={{ color: COLORS.primaryDark }}>
+                    ¡Atención! Cronograma de Exámenes
+                  </Typography>
+                  <Typography variant="body2" sx={{ color: "#7A5A00" }}>
+                    Ya se encuentran disponibles las fechas oficiales de la Primera Etapa.
+                  </Typography>
+                </Box>
+              </Box>
+              <Button 
+                variant="contained" 
+                onClick={() => setExamsOpen(true)}
+                sx={{
+                  bgcolor: COLORS.primary,
+                  color: '#fff',
+                  fontWeight: 700,
+                  px: 3,
+                  py: 1,
+                  borderRadius: 3,
+                  textTransform: 'none',
+                  boxShadow: '0 4px 10px rgba(125, 15, 21, 0.3)',
+                  '&:hover': { bgcolor: COLORS.primaryDark }
+                }}
+              >
+                Ver Mi Horario
+              </Button>
+            </Paper>
+          )}
+
           <Grid container spacing={3}>
             <DashCard
               title="Mi Perfil"
@@ -269,6 +328,7 @@ const Dashboard = ({ docentesList }) => {
               onClick={() => setProfileOpen(true)}
             />
 
+            {/* SECCIÓN PARA ESTUDIANTES (Sin la tarjeta duplicada del horario) */}
             {currentRole === 'estudiante' && (
               <>
                 <DashCard
@@ -288,49 +348,54 @@ const Dashboard = ({ docentesList }) => {
               </>
             )}
 
-{currentRole === 'docente' && (
-  <>
-    <DashCard
-      title="Gestión de Clases"
-      desc="Crear tareas y calificar"
-      icon={School}
-      color="#2196F3"
-      href="/teacher/classes/tasks"
-    />
+            {/* SECCIÓN PARA DOCENTES */}
+            {currentRole === 'docente' && (
+              <>
+                <DashCard
+                  title="Gestión de Clases"
+                  desc="Crear tareas y calificar"
+                  icon={School}
+                  color="#2196F3"
+                  href="/teacher/classes/tasks"
+                />
+                <DashCard
+                  title="Reporte de Tareas"
+                  desc="Ver planilla general de puntajes"
+                  icon={MenuBook}
+                  color="#7D0F15"
+                  href="/taskReport"
+                />
+                <DashCard
+                  title="Planificaciones"
+                  desc="Gestión de planes semanales"
+                  icon={EventNote}
+                  color={COLORS.primary}
+                  href="/teacher/planificacion"
+                />
+                <DashCard
+                  title="Horario de Exámenes"
+                  desc="Consultar cronograma institucional"
+                  icon={EventNote}
+                  color="#D4AF37"
+                  onClick={() => setExamsOpen(true)}
+                />
+                <DashCard
+                  title="Ver Estudiantes"
+                  desc="Listado de estudiantes"
+                  icon={People}
+                  color="#0288d1"
+                  href="/user/students"
+                />
+                <DashCard
+                  title="Reportes Disciplinarios"
+                  desc="Ver reportes de estudiantes"
+                  icon={Badge}
+                  color="#F57C00"
+                  href="/reportes"
+                />
+              </>
+            )}
 
-    <DashCard
-      title="Reporte de Tareas"
-      desc="Ver planilla general de puntajes"
-      icon={MenuBook}
-      color="#7D0F15"
-      href="/taskReport"
-    />
-
-    <DashCard
-      title="Planificaciones"
-      desc="Gestión de planes semanales"
-      icon={EventNote}
-      color={COLORS.primary}
-      href="/teacher/planificacion"
-    />
-
-    <DashCard
-      title="Ver Estudiantes"
-      desc="Listado de estudiantes"
-      icon={People}
-      color="#0288d1"
-      href="/user/students"
-    />
-
-    <DashCard
-      title="Reportes Disciplinarios"
-      desc="Ver reportes de estudiantes"
-      icon={Badge}
-      color="#F57C00"
-      href="/reportes"
-    />
-  </>
-)}
             {/* SECCIÓN PARA ADMINISTRADOR, DIRECTOR Y SECRETARIO */}
             {['administrador', 'director/a', 'secretario/a'].includes(currentRole) && (
               <>
@@ -386,7 +451,7 @@ const Dashboard = ({ docentesList }) => {
         </Grid>
       </Grid>
 
-      {/* DIÁLOGO DE FORMULARIOS ACTUALIZADO */}
+      {/* DIÁLOGO DE PERFIL */}
       <Dialog
         open={profileOpen}
         onClose={() => setProfileOpen(false)}
@@ -397,7 +462,6 @@ const Dashboard = ({ docentesList }) => {
           sx: { borderRadius: isMobile ? 0 : 4 }
         }}
       >
-        {/* Cabecera del Diálogo */}
         <Box sx={{ p: 1, display: 'flex', justifyContent: 'space-between', alignItems: 'center', bgcolor: COLORS.bgLight }}>
           <Typography variant="h5" fontWeight={800} color={COLORS.primary} sx={{ ml: 2 }}>
             Mi Perfil
@@ -406,10 +470,7 @@ const Dashboard = ({ docentesList }) => {
             <Close />
           </IconButton>
         </Box>
-
         <Divider />
-
-        {/* Contenedor del Formulario */}
         <Box sx={{ overflowY: 'auto', padding: 3 }}>
           {user.role === 'estudiante'
             ? <StudentProfileForm />
@@ -417,6 +478,13 @@ const Dashboard = ({ docentesList }) => {
           }
         </Box>
       </Dialog>
+
+      {/* NUEVO DIÁLOGO FLOTANTE PARA EL HORARIO DE EXÁMENES */}
+      <HorarioExamenDialog 
+        open={examsOpen} 
+        onClose={() => setExamsOpen(false)} 
+      />
+
     </Container>
   );
 };

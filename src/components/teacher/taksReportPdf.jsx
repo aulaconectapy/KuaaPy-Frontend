@@ -108,39 +108,79 @@ const addFooter = (doc) => {
 };
 
 const buildSubjectTable = (doc, report, subject, columns, startY) => {
+
+  // 🔥 SUMA TOTAL DE LOS TEMAS
+  const totalMaxPoints = columns.reduce(
+    (sum, col) => sum + Number(col.maxPoints || 0),
+    0
+  );
+
   const head = [
     [
-      { content: 'N°', rowSpan: 2 },
-      { content: 'Estudiante', rowSpan: 2 },
+      {
+        content: 'N°',
+        rowSpan: 2,
+      },
+
+      {
+        content: 'Estudiante',
+        rowSpan: 2,
+      },
+
       ...columns.map(col => ({
         content: col.topic || '-',
       })),
-      { content: 'Total', rowSpan: 2 },
+
+      {
+        content: `Total\n${totalMaxPoints} pts`,
+        rowSpan: 2,
+      },
     ],
-    columns.map(col => ({
-      content: `${col.maxPoints || 0} pts`,
-    })),
+
+    [
+      ...columns.map(col => ({
+        content: `${Number(col.maxPoints || 0)} pts`,
+      })),
+    ],
   ];
 
   const body = report.rows.map((student, index) => {
+
+    // 🔥 TOTAL DEL ALUMNO
     const subjectTotal = columns.reduce((sum, col) => {
-      return sum + (student.scores?.[col.taskId]?.score ?? 0);
+
+      return (
+        sum +
+        Number(student.scores?.[col.taskId]?.score || 0)
+      );
+
     }, 0);
 
     return [
       index + 1,
+
       student.studentName,
-      ...columns.map(col => student.scores?.[col.taskId]?.score ?? 0),
+
+      ...columns.map(col =>
+        Number(student.scores?.[col.taskId]?.score || 0)
+      ),
+
+      // 🔥 TOTAL FINAL
       subjectTotal,
     ];
   });
 
   autoTable(doc, {
     startY,
+
     head,
+
     body,
+
     theme: 'grid',
+
     tableWidth: 'auto',
+
     styles: {
       fontSize: 7,
       cellPadding: 1.4,
@@ -148,16 +188,28 @@ const buildSubjectTable = (doc, report, subject, columns, startY) => {
       valign: 'middle',
       overflow: 'linebreak',
     },
+
     headStyles: {
       fillColor: PRIMARY_COLOR,
       textColor: [255, 255, 255],
       fontStyle: 'bold',
     },
+
     columnStyles: {
-      0: { cellWidth: 10 },
-      1: { cellWidth: 55, halign: 'left' },
+      0: {
+        cellWidth: 10,
+      },
+
+      1: {
+        cellWidth: 55,
+        halign: 'left',
+      },
     },
-    margin: { left: 8, right: 8 },
+
+    margin: {
+      left: 8,
+      right: 8,
+    },
   });
 
   return doc.lastAutoTable.finalY + 10;
