@@ -41,19 +41,18 @@ const getUserInfo = (user) => {
   };
 };
 
-const calculateGrade = (obtained, total) => {
+cconst calculateGrade = (obtained, total) => {
   if (total === 0) return 1;
 
   const percentage = (obtained / total) * 100;
 
-  if (percentage >= 90) return 5;
-  if (percentage >= 70) return 4;
-  if (percentage >= 60) return 3;
-  if (percentage >= 50) return 2;
+  if (percentage < 70) return 1;
+  if (percentage < 77.5) return 2;
+  if (percentage < 85.5) return 3;
+  if (percentage < 93.5) return 4;
 
-  return 1;
+  return 5;
 };
-
 const addHeader = async (doc, user) => {
   const logo = await loadImage('/logo.png');
 
