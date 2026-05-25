@@ -112,14 +112,40 @@ export default function CalificacionesPage() {
   }, [report]);
 
 const calculateGrade = (obtained, total) => {
-  if (total === 0) return 1;
+  if (!total || total <= 0) return 1;
 
-  const percentage = (obtained / total) * 100;
+  // Límite para nota 2: 70% redondeado hacia abajo
+  const minimumPass = Math.floor(total * 0.7);
 
-  if (percentage < 70) return 1;
-  if (percentage < 77.5) return 2;
-  if (percentage < 85.5) return 3;
-  if (percentage < 93.5) return 4;
+  // Si no llega al mínimo, nota 1
+  if (obtained < minimumPass) return 1;
+
+  // Si llega justo al mínimo, nota 2
+  if (obtained === minimumPass) return 2;
+
+  // Desde el punto siguiente al mínimo se reparten notas 3, 4 y 5
+  const start = minimumPass + 1;
+  const upperLimit = total;
+
+  const range = upperLimit - start + 1;
+  const baseInterval = Math.floor(range / 3);
+  const remainder = range % 3;
+
+  let currentStart = start;
+
+  for (let grade = 3; grade <= 5; grade++) {
+    // El sobrante se agrega a las notas superiores
+    const extra = grade > 5 - remainder ? 1 : 0;
+
+    const intervalSize = baseInterval + extra;
+    const currentEnd = currentStart + intervalSize - 1;
+
+    if (obtained >= currentStart && obtained <= currentEnd) {
+      return grade;
+    }
+
+    currentStart = currentEnd + 1;
+  }
 
   return 5;
 };
