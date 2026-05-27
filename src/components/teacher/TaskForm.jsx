@@ -65,8 +65,23 @@ setFormData({
     }
   }, [task]);
 
-  const handleChange = e => setFormData({ ...formData, [e.target.name]: e.target.value });
+const handleChange = (e) => {
+  const { name, value } = e.target;
 
+  if (name === "grade") {
+    setFormData({
+      ...formData,
+      grade: value,
+      subject: "",
+    });
+    return;
+  }
+
+  setFormData({
+    ...formData,
+    [name]: value,
+  });
+};
   const handleIndicatorChange = (index, field, value) => {
     const updated = [...formData.indicators];
     updated[index][field] = field === "points" ? (value === "" ? 0 : Number(value)) : value;
@@ -158,7 +173,41 @@ setFormData({
       <Typography variant="h6" sx={{ fontWeight: 800, color: "#1E293B" }}>{title}</Typography>
     </Stack>
   );
+const subjectsByGrade = {
+  lower: [
+    "Comunicación",
+    "Matemáticas",
+    "Medio Natural y Salud",
+    "Guaraní",
+    "Educación Física",
+    "Educación Artística",
+    "Vida Social y Trabajo",
+  ],
+  upper: [
+    "Castellano",
+    "Guaraní",
+    "Educación para la Salud",
+    "Ciencias Sociales",
+    "Ciencias Naturales",
+    "Matemática",
+    "Trabajo y Tecnología",
+    "Educación Artística",
+  ],
+};
 
+const getSubjectsByGrade = (grade) => {
+  if (["1° grado", "2° grado", "3° grado"].includes(grade)) {
+    return subjectsByGrade.lower;
+  }
+
+  if (["4° grado", "5° grado", "6° grado"].includes(grade)) {
+    return subjectsByGrade.upper;
+  }
+
+  return [];
+};
+
+const availableSubjects = getSubjectsByGrade(formData.grade);
   return (
     <Box sx={{ bgcolor: COLORS.bgLight, minHeight: "100vh", py:5 }}>
       <Container maxWidth="md">
@@ -173,9 +222,21 @@ setFormData({
                 <SectionTitle icon={AssignmentIcon} title="Configuración General" />
                 <Grid container spacing={3}>
                   <Grid item xs={12} sm={6}>
-                    <TextField select fullWidth label="Asignatura" name="subject" value={formData.subject} onChange={handleChange}>
-                      {["Comunicación","Matemáticas","Medio Natural y Salud","Guaraní","Educación Física","Educación Artística","Vida Social y Trabajo"].map(a => <MenuItem key={a} value={a}>{a}</MenuItem>)}
-                    </TextField>
+<TextField
+  select
+  fullWidth
+  label="Asignatura"
+  name="subject"
+  value={formData.subject}
+  onChange={handleChange}
+  disabled={!formData.grade}
+>
+  {availableSubjects.map((subject) => (
+    <MenuItem key={subject} value={subject}>
+      {subject}
+    </MenuItem>
+  ))}
+</TextField>
                   </Grid>
                   <Grid item xs={12} sm={6}>
                     <TextField select fullWidth label="Grado" name="grade" value={formData.grade} onChange={handleChange}>
