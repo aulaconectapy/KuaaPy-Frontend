@@ -111,26 +111,68 @@ export default function TasksPage() {
   const isTeacher = user?.role?.toLowerCase() === "docente";
   const isAdmin = ["director/a", "secretario/a", "secretaria", "administrador"].includes(user?.role?.toLowerCase());
 
-  const filteredTasks = useMemo(() => {
-    if (!user) return [];
-    return tasks.filter(task => {
-      const matchesSearch = task.topic.toLowerCase().includes(searchTerm.toLowerCase());
-      const matchesSubject = filterSubject ? task.subject === filterSubject : true;
-      const matchesGrade = filterGrade ? task.grade === filterGrade : true;
+const filteredTasks = useMemo(() => {
+  if (!user) return [];
+
+  return tasks
+    .filter(task => {
+      const matchesSearch = task.topic
+        .toLowerCase()
+        .includes(searchTerm.toLowerCase());
+
+      const matchesSubject = filterSubject
+        ? task.subject === filterSubject
+        : true;
+
+      const matchesGrade = filterGrade
+        ? task.grade === filterGrade
+        : true;
 
       let accessGranted = false;
+
       if (isAdmin) {
         accessGranted = true;
       } else if (isTeacher) {
-        const sameGrade = Array.isArray(user.grades) && user.grades.includes(task.grade);
-        const taskInstId = task.institution?._id || task.institution;
-        const userInstId = user.institution?._id || user.institution;
-        accessGranted = sameGrade && String(taskInstId) === String(userInstId);
-      }
-      return matchesSearch && matchesSubject && matchesGrade && accessGranted;
-    });
-  }, [tasks, searchTerm, filterSubject, filterGrade, user, isAdmin, isTeacher]);
+        const sameGrade =
+          Array.isArray(user.grades) &&
+          user.grades.includes(task.grade);
 
+        const taskInstId =
+          task.institution?._id || task.institution;
+
+        const userInstId =
+          user.institution?._id || user.institution;
+
+        accessGranted =
+          sameGrade &&
+          String(taskInstId) === String(userInstId);
+      }
+
+      return (
+        matchesSearch &&
+        matchesSubject &&
+        matchesGrade &&
+        accessGranted
+      );
+    })
+
+    // ORDENAR POR FECHA
+    .sort((a, b) => {
+      const dateA = new Date(a.dueDate || a.createdAt);
+      const dateB = new Date(b.dueDate || b.createdAt);
+
+      return dateB - dateA;
+    });
+
+}, [
+  tasks,
+  searchTerm,
+  filterSubject,
+  filterGrade,
+  user,
+  isAdmin,
+  isTeacher
+]);
   const uniqueSubjects = useMemo(() => Array.from(new Set(tasks.map(t => t.subject))), [tasks]);
   const uniqueGrades = useMemo(() => Array.from(new Set(tasks.map(t => t.grade))), [tasks]);
 
