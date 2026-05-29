@@ -4,10 +4,10 @@ import { useEffect, useState, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { getTaskById, getStudentTasksByGrade, updateStudentTask } from "@/services/api";
 import { useAuth } from "@/context/AuthContext";
-import { generateTaskPDF } from "@/components/teacher/TaskReportPDF"; 
+import { generateTaskPDF } from "@/components/teacher/TaskReportPDF";
 
 import {
-  Box, Typography, CircularProgress, Paper, Stack, Button, Container, 
+  Box, Typography, CircularProgress, Paper, Stack, Button, Container,
   Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
   Chip, IconButton, TextField, Grid, ToggleButton, ToggleButtonGroup,
   Tooltip, Menu, MenuItem
@@ -41,7 +41,7 @@ export default function TaskSubmissionsPage() {
   const { id } = useParams();
   const router = useRouter();
   const { user } = useAuth();
-  
+
   const [submissions, setSubmissions] = useState([]);
   const [taskInfo, setTaskInfo] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -50,6 +50,7 @@ export default function TaskSubmissionsPage() {
   const [lastSaved, setLastSaved] = useState(null);
   const [selectedMoment, setSelectedMoment] = useState(3);
   const [anchorEl, setAnchorEl] = useState(null);
+  const [focusedCell, setFocusedCell] = useState(null);
 
   const isRubrica = taskInfo?.instrumentType === 'rubrica';
 
@@ -64,11 +65,11 @@ export default function TaskSubmissionsPage() {
         setTaskInfo(taskData);
 
         const studentTasks = await getStudentTasksByGrade(taskData.grade);
-        
-        const filtered = studentTasks.filter(st => 
+
+        const filtered = studentTasks.filter(st =>
           (st.task?._id || st.task) === id && st.student !== null
         );
-        
+
         setSubmissions(filtered);
       } catch (error) {
         console.error("Error:", error);
@@ -93,15 +94,14 @@ export default function TaskSubmissionsPage() {
 
     setSubmissions(prev => prev.map(sub => {
       if (sub._id !== submissionId) return sub;
-      
+
       const currentScores = isRubrica ? (sub.rubricScores || []) : (sub.indicatorScores || []);
-      
+
       const existingScore = currentScores.find(s => {
         const sId = s.indicatorId?._id || s.indicatorId || s._id;
         return isRubrica ? sId === criterionId : (sId === criterionId && s.moment === selectedMoment);
       });
 
-      // En rúbrica se mantiene el comportamiento de marcar/desmarcar.
       if (isRubrica && existingScore && Number(existingScore.points) === Number(points)) {
         const clearedScores = currentScores.filter(s => {
           const sId = s.indicatorId?._id || s.indicatorId || s._id;
@@ -130,8 +130,8 @@ export default function TaskSubmissionsPage() {
 
       newScores.push(newEntry);
 
-      return { 
-        ...sub, 
+      return {
+        ...sub,
         [isRubrica ? 'rubricScores' : 'indicatorScores']: newScores,
         score: calculateInstantScore(newScores)
       };
@@ -155,7 +155,7 @@ export default function TaskSubmissionsPage() {
 
     setSubmissions(prev => prev.map(sub => {
       const currentScores = isRubrica ? (sub.rubricScores || []) : (sub.indicatorScores || []);
-      
+
       const filteredScores = currentScores.filter(s => {
         const sId = s.indicatorId?._id || s.indicatorId || s._id;
         return isRubrica ? sId !== criterionId : !(sId === criterionId && s.moment === selectedMoment);
@@ -219,10 +219,70 @@ export default function TaskSubmissionsPage() {
     setAnchorEl(null);
   };
 
+  const handleStudentToggle = (submissionId) => {
+    setHasChanges(true);
+
+    setSubmissions(prev => prev.map(sub => {
+      if (sub._id !== submissionId) return sub;
+
+      const currentScores = isRubrica ? (sub.rubricScores || []) : (sub.indicatorScores || []);
+
+      let allMarked = false;
+      let newScores = [];
+
+      if (isRubrica) {
+        allMarked = taskInfo.rubricCriteria.every(crit => {
+          const maxPoints = Math.max(...crit.levels.map(l => Number(l.points) || 0));
+
+          return currentScores.some(s => {
+            const sId = s.indicatorId?._id || s.indicatorId || s._id;
+            return sId === crit._id && Number(s.points) === maxPoints;
+          });
+        });
+
+        newScores = allMarked
+          ? []
+          : taskInfo.rubricCriteria.map(crit => ({
+              _id: crit._id,
+              points: Math.max(...crit.levels.map(l => Number(l.points) || 0)),
+              moment: 1
+            }));
+      } else {
+        allMarked = taskInfo.indicators.every(ind => {
+          const maxPoints = getIndicatorMaxPoints(ind);
+
+          return currentScores.some(s => {
+            const sId = s.indicatorId?._id || s.indicatorId || s._id;
+            return sId === ind._id && s.moment === selectedMoment && Number(s.points) === maxPoints;
+          });
+        });
+
+        const otherMomentScores = currentScores.filter(s => s.moment !== selectedMoment);
+
+        newScores = allMarked
+          ? otherMomentScores
+          : [
+              ...otherMomentScores,
+              ...taskInfo.indicators.map(ind => ({
+                indicatorId: ind._id,
+                points: getIndicatorMaxPoints(ind),
+                moment: selectedMoment
+              }))
+            ];
+      }
+
+      return {
+        ...sub,
+        [isRubrica ? 'rubricScores' : 'indicatorScores']: newScores,
+        score: calculateInstantScore(newScores)
+      };
+    }));
+  };
+
   const handleCommentChange = (submissionId, text) => {
     setHasChanges(true);
 
-    setSubmissions(prev => prev.map(sub => 
+    setSubmissions(prev => prev.map(sub =>
       sub._id === submissionId ? { ...sub, comments: text } : sub
     ));
   };
@@ -274,7 +334,7 @@ export default function TaskSubmissionsPage() {
   return (
     <Box sx={{ bgcolor: COLORS.bgLight, minHeight: '100vh', py: 4 }}>
       <Container maxWidth="xl">
-        
+
         <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
           <Button
             startIcon={<ArrowBackIcon />}
@@ -458,7 +518,7 @@ export default function TaskSubmissionsPage() {
                     OBSERVACIONES
                   </TableCell>
                 </TableRow>
-                
+
                 {isRubrica && (
                   <>
                     <TableRow>
@@ -499,7 +559,24 @@ export default function TaskSubmissionsPage() {
                 {submissions.map((sub) => (
                   <TableRow key={sub._id} hover>
                     <TableCell sx={{ fontWeight: 700, fontSize: '0.8rem' }}>
-                      {sub.student?.lastName?.toUpperCase() || 'S/A'}, {sub.student?.firstName || 'Eliminado'}
+                      <Stack direction="row" spacing={1} alignItems="center">
+                        <Tooltip title="Marcar todo o poner en cero a este alumno">
+                          <IconButton
+                            size="small"
+                            onClick={() => handleStudentToggle(sub._id)}
+                            sx={{ color: COLORS.primary }}
+                          >
+                            <DoneAllIcon fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
+
+                        <Box
+                          onClick={() => handleStudentToggle(sub._id)}
+                          sx={{ cursor: 'pointer' }}
+                        >
+                          {sub.student?.lastName?.toUpperCase() || 'S/A'}, {sub.student?.firstName || 'Eliminado'}
+                        </Box>
+                      </Stack>
                     </TableCell>
 
                     {isRubrica ? (
@@ -545,16 +622,20 @@ export default function TaskSubmissionsPage() {
                         });
 
                         const currentValue = score?.points ?? 0;
+                        const cellKey = `${sub._id}-${ind._id}`;
 
                         return (
-                          <TableCell key={`${sub._id}-${ind._id}`} align="center">
+                          <TableCell key={cellKey} align="center">
                             <TextField
                               type="number"
                               size="small"
-                              value={currentValue}
+                              value={focusedCell === cellKey && currentValue === 0 ? "" : currentValue}
+                              onFocus={() => setFocusedCell(cellKey)}
+                              onBlur={() => setFocusedCell(null)}
                               onChange={(e) => {
                                 let value = Number(e.target.value);
 
+                                if (e.target.value === "") value = 0;
                                 if (Number.isNaN(value)) value = 0;
                                 if (value < 0) value = 0;
                                 if (value > maxPoints) value = maxPoints;
@@ -564,7 +645,6 @@ export default function TaskSubmissionsPage() {
                               inputProps={{
                                 min: 0,
                                 max: maxPoints,
-                                step: 0.5,
                                 style: {
                                   textAlign: "center",
                                   width: "55px",
