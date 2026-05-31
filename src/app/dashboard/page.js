@@ -345,6 +345,13 @@ const Dashboard = ({ docentesList }) => {
                   color="#F57C00"
                   href="/reportes/mis-reportes"
                 />
+                                <DashCard
+                  title="Planilla de Puntajes"
+                  desc="Ver planilla general de puntajes"
+                  icon={MenuBook}
+                  color="#7D0F15"
+                  href="/taskReport/taskReportStudent"
+                />
               </>
             )}
 

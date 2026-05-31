@@ -298,7 +298,21 @@ export const getGeneralTaskReport = (grade, institutionId = null) => {
 
   return api.get(url).then(res => res.data);
 };
+//Para el reporte de proceso del estudiante (histórico de tareas, no solo el resumen)
+export const getStudentProcessReport = async (studentId, institutionId) => {
+  let url = `/api/tasks/report/student-process`;
 
+  const params = new URLSearchParams();
 
+  if (studentId) params.append("studentId", studentId);
+  if (institutionId) params.append("institutionId", institutionId);
+
+  if (params.toString()) {
+    url += `?${params.toString()}`;
+  }
+
+  const res = await api.get(url);
+  return res.data;
+};
 
 export default api;
