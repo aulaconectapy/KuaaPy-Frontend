@@ -452,6 +452,13 @@ const Dashboard = ({ docentesList }) => {
                   color="#F57C00"
                   href="/reportes"
                 />
+                <DashCard
+                  title="Instituciones"
+                  desc="Administrar instituciones"
+                  icon={AdminPanelSettings}
+                  color="#673ab7"
+                  href="/Institution/seeInstitution"
+                />
               </>
             )}
           </Grid>

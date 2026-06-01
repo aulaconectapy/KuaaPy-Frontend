@@ -1,6 +1,6 @@
 'use client';
+
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
 import {
   Box,
   Button,
@@ -13,8 +13,23 @@ import {
   InputLabel,
   Chip,
   OutlinedInput,
+  Paper,
+  Stack,
+  Avatar,
+  Container,
+  Divider,
+  Alert,
 } from '@mui/material';
-import { useRouter } from 'next/navigation'; // Usa la API correcta
+import {
+  School,
+  Save,
+  ArrowBack,
+  LocationOn,
+  Phone,
+  Person,
+  Badge,
+} from '@mui/icons-material';
+import { useRouter } from 'next/navigation';
 import { createInstitution, updateInstitution } from '@/services/api';
 import FileUploader from '@/components/FileUploader';
 
@@ -31,13 +46,13 @@ const InstitutionForm = ({ existingInstitution }) => {
   const [validationError, setValidationError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
 
-  const router = useRouter(); // Ahora usamos el hook directamente
+  const router = useRouter();
 
   useEffect(() => {
     if (existingInstitution) {
-      setName(existingInstitution.name);
-      setNumber(existingInstitution.number);
-      setAddress(existingInstitution.address);
+      setName(existingInstitution.name || '');
+      setNumber(existingInstitution.number || '');
+      setAddress(existingInstitution.address || '');
       setPhoneNumber(existingInstitution.phoneNumber || '');
       setDirector(existingInstitution.director || '');
       setSecretary(existingInstitution.secretary || '');
@@ -54,10 +69,12 @@ const InstitutionForm = ({ existingInstitution }) => {
     e.preventDefault();
 
     if (!name || !address || !number || grades.length === 0) {
-      setValidationError('Los campos "Nombre", "Número", "Dirección" y "Grados" son obligatorios.');
+      setValidationError('Los campos Nombre, Número, Dirección y Grados son obligatorios.');
       return;
     }
+
     setValidationError('');
+    setError(null);
 
     const institutionData = {
       name,
@@ -76,124 +93,307 @@ const InstitutionForm = ({ existingInstitution }) => {
       } else {
         await createInstitution(institutionData);
       }
-      setSuccessMessage('Institución guardada con éxito.');
 
-      // Redirigir después de guardar
-      setTimeout(() => router.push('/Institution/seeInstitution'), 2000);
+      setSuccessMessage('Institución guardada con éxito.');
+      setTimeout(() => router.push('/Institution/seeInstitution'), 1800);
     } catch (err) {
-      setError(err.response ? err.response.data.message : 'Hubo un error.');
+      setError(err.response ? err.response.data.message : 'Hubo un error al guardar la institución.');
     }
   };
 
+  const inputStyle = {
+    '& .MuiOutlinedInput-root': {
+      borderRadius: 3,
+      backgroundColor: '#FFFFFF',
+      '&:hover fieldset': {
+        borderColor: '#0038A8',
+      },
+      '&.Mui-focused fieldset': {
+        borderColor: '#0038A8',
+      },
+    },
+    '& .MuiInputLabel-root.Mui-focused': {
+      color: '#0038A8',
+    },
+  };
+
+  const gradesList = [
+    '1° grado',
+    '2° grado',
+    '3° grado',
+    '4° grado',
+    '5° grado',
+    '6° grado',
+    '7° grado',
+    '8° grado',
+    '9° grado',
+    '1er año',
+    '2do año',
+    '3er año',
+  ];
+
   return (
-    <Box sx={{ maxWidth: 600, margin: 'auto', mt: 5, p: 3, boxShadow: 3, borderRadius: 2 }}>
-      <Typography variant="h4" component="h1" gutterBottom>
-        {existingInstitution ? 'Editar Institución' : 'Crear Institución'}
-      </Typography>
-      {error && <Typography color="error">{error}</Typography>}
-      {validationError && <Typography color="error">{validationError}</Typography>}
+    <Box
+      sx={{
+        minHeight: '100vh',
+        py: 5,
+        background: 'linear-gradient(135deg, #EFF6FF 0%, #FFFFFF 45%, #FFF1F2 100%)',
+      }}
+    >
+      <Container maxWidth="md">
+        <Paper
+          elevation={0}
+          sx={{
+            borderRadius: 5,
+            overflow: 'hidden',
+            border: '1px solid #DBEAFE',
+            boxShadow: '0 20px 45px rgba(15, 23, 42, 0.08)',
+          }}
+        >
+          <Box
+            sx={{
+              height: 10,
+              background: 'linear-gradient(90deg, #D90429 0%, #FFFFFF 50%, #0038A8 100%)',
+            }}
+          />
 
-      <form onSubmit={handleSubmit}>
-        <TextField
-          label="Nombre"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          fullWidth
-          margin="normal"
-          required
-          error={!name && validationError}
-        />
-        <TextField
-          label="Número"
-          value={number}
-          onChange={(e) => setNumber(e.target.value)}
-          fullWidth
-          margin="normal"
-          required
-          error={!number && validationError}
-        />
-        <TextField
-          label="Dirección"
-          value={address}
-          onChange={(e) => setAddress(e.target.value)}
-          fullWidth
-          margin="normal"
-          required
-          error={!address && validationError}
-        />
-        <TextField
-          label="Teléfono"
-          value={phoneNumber}
-          onChange={(e) => setPhoneNumber(e.target.value)}
-          fullWidth
-          margin="normal"
-        />
-        <TextField
-          label="Director/a"
-          value={director}
-          onChange={(e) => setDirector(e.target.value)}
-          fullWidth
-          margin="normal"
-        />
-        <TextField
-          label="Secretaria/o"
-          value={secretary}
-          onChange={(e) => setSecretary(e.target.value)}
-          fullWidth
-          margin="normal"
-        />
+          <Box sx={{ p: { xs: 3, sm: 4 } }}>
+            <Stack
+              direction={{ xs: 'column', sm: 'row' }}
+              spacing={2}
+              justifyContent="space-between"
+              alignItems={{ xs: 'flex-start', sm: 'center' }}
+              sx={{ mb: 3 }}
+            >
+              <Stack direction="row" spacing={2} alignItems="center">
+                <Avatar
+                  sx={{
+                    width: 68,
+                    height: 68,
+                    bgcolor: '#0038A8',
+                    boxShadow: '0 12px 25px rgba(0, 56, 168, 0.25)',
+                  }}
+                >
+                  <School sx={{ fontSize: 38 }} />
+                </Avatar>
 
-        <FormControl fullWidth margin="normal">
-          <InputLabel>Grados</InputLabel>
-          <Select
-            multiple
-            value={grades}
-            onChange={(e) => setGrades(e.target.value)}
-            input={<OutlinedInput label="Grados" />}
-            renderValue={(selected) => (
-              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                {selected.map((value) => (
-                  <Chip key={value} label={value} />
-                ))}
-              </Box>
+                <Box>
+                  <Typography
+                    variant="h4"
+                    sx={{
+                      fontWeight: 900,
+                      color: '#102A43',
+                      lineHeight: 1.1,
+                    }}
+                  >
+                    {existingInstitution ? 'Editar Institución' : 'Crear Institución'}
+                  </Typography>
+
+                  <Typography variant="body2" sx={{ color: '#64748B', mt: 0.5 }}>
+                    Registro de datos institucionales del centro educativo.
+                  </Typography>
+                </Box>
+              </Stack>
+
+              <Button
+                startIcon={<ArrowBack />}
+                onClick={() => router.push('/Institution/seeInstitution')}
+                sx={{
+                  borderRadius: 3,
+                  textTransform: 'none',
+                  fontWeight: 800,
+                  color: '#0038A8',
+                }}
+              >
+                Volver
+              </Button>
+            </Stack>
+
+            <Divider sx={{ mb: 3, borderStyle: 'dashed' }} />
+
+            {error && (
+              <Alert severity="error" sx={{ mb: 2, borderRadius: 3 }}>
+                {error}
+              </Alert>
             )}
-            required
-            error={grades.length === 0 && validationError}
-          >
-            {[
-              '1° grado',
-              '2° grado',
-              '3° grado',
-              '4° grado',
-              '5° grado',
-              '6° grado',
-              '7° grado',
-              '8° grado',
-              '9° grado',
-              '1er año',
-              '2do año',
-              '3er año',
-            ].map((grade) => (
-              <MenuItem key={grade} value={grade}>
-                {grade}
-              </MenuItem>
-            ))}
-          </Select>
-        </FormControl>
 
-        <FileUploader onUpload={handleLogoUpload} existingImageUrl={logoUrl} />
+            {validationError && (
+              <Alert severity="warning" sx={{ mb: 2, borderRadius: 3 }}>
+                {validationError}
+              </Alert>
+            )}
 
-        <Button type="submit" variant="contained" color="primary" fullWidth sx={{ mt: 3 }}>
-          {existingInstitution ? 'Actualizar Institución' : 'Crear Institución'}
-        </Button>
-      </form>
+            <form onSubmit={handleSubmit}>
+              <Stack spacing={2.2}>
+                <TextField
+                  label="Nombre de la institución"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  fullWidth
+                  required
+                  error={!name && !!validationError}
+                  sx={inputStyle}
+                  InputProps={{
+                    startAdornment: <School sx={{ color: '#0038A8', mr: 1 }} />,
+                  }}
+                />
 
-      <Snackbar
-        open={!!successMessage}
-        autoHideDuration={3000}
-        onClose={() => setSuccessMessage('')}
-        message={successMessage}
-      />
+                <TextField
+                  label="Número de institución"
+                  value={number}
+                  onChange={(e) => setNumber(e.target.value)}
+                  fullWidth
+                  required
+                  error={!number && !!validationError}
+                  sx={inputStyle}
+                  InputProps={{
+                    startAdornment: <Badge sx={{ color: '#D90429', mr: 1 }} />,
+                  }}
+                />
+
+                <TextField
+                  label="Dirección"
+                  value={address}
+                  onChange={(e) => setAddress(e.target.value)}
+                  fullWidth
+                  required
+                  error={!address && !!validationError}
+                  sx={inputStyle}
+                  InputProps={{
+                    startAdornment: <LocationOn sx={{ color: '#0038A8', mr: 1 }} />,
+                  }}
+                />
+
+                <TextField
+                  label="Teléfono"
+                  value={phoneNumber}
+                  onChange={(e) => setPhoneNumber(e.target.value)}
+                  fullWidth
+                  sx={inputStyle}
+                  InputProps={{
+                    startAdornment: <Phone sx={{ color: '#D90429', mr: 1 }} />,
+                  }}
+                />
+
+                <TextField
+                  label="Director/a"
+                  value={director}
+                  onChange={(e) => setDirector(e.target.value)}
+                  fullWidth
+                  sx={inputStyle}
+                  InputProps={{
+                    startAdornment: <Person sx={{ color: '#0038A8', mr: 1 }} />,
+                  }}
+                />
+
+                <TextField
+                  label="Secretaria/o"
+                  value={secretary}
+                  onChange={(e) => setSecretary(e.target.value)}
+                  fullWidth
+                  sx={inputStyle}
+                  InputProps={{
+                    startAdornment: <Person sx={{ color: '#D90429', mr: 1 }} />,
+                  }}
+                />
+
+                <FormControl fullWidth error={grades.length === 0 && !!validationError}>
+                  <InputLabel>Grados habilitados</InputLabel>
+
+                  <Select
+                    multiple
+                    value={grades}
+                    onChange={(e) => setGrades(e.target.value)}
+                    input={<OutlinedInput label="Grados habilitados" />}
+                    sx={{
+                      borderRadius: 3,
+                      backgroundColor: '#FFFFFF',
+                      '&:hover .MuiOutlinedInput-notchedOutline': {
+                        borderColor: '#0038A8',
+                      },
+                      '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                        borderColor: '#0038A8',
+                      },
+                    }}
+                    renderValue={(selected) => (
+                      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.7 }}>
+                        {selected.map((value) => (
+                          <Chip
+                            key={value}
+                            label={value}
+                            sx={{
+                              borderRadius: 2,
+                              fontWeight: 800,
+                              bgcolor: '#EFF6FF',
+                              color: '#0038A8',
+                              border: '1px solid #BFDBFE',
+                            }}
+                          />
+                        ))}
+                      </Box>
+                    )}
+                  >
+                    {gradesList.map((grade) => (
+                      <MenuItem key={grade} value={grade}>
+                        {grade}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+
+                <Paper
+                  elevation={0}
+                  sx={{
+                    p: 2,
+                    borderRadius: 4,
+                    border: '1px dashed #CBD5E1',
+                    bgcolor: '#F8FAFC',
+                  }}
+                >
+                  <Typography sx={{ fontWeight: 800, color: '#334155', mb: 1 }}>
+                    Logo institucional
+                  </Typography>
+
+                  <Typography variant="body2" sx={{ color: '#64748B', mb: 2 }}>
+                    Podés subir el escudo o logo de la institución.
+                  </Typography>
+
+                  <FileUploader onUpload={handleLogoUpload} existingImageUrl={logoUrl} />
+                </Paper>
+
+                <Button
+                  type="submit"
+                  variant="contained"
+                  fullWidth
+                  startIcon={<Save />}
+                  sx={{
+                    mt: 2,
+                    py: 1.4,
+                    borderRadius: 3,
+                    textTransform: 'none',
+                    fontWeight: 900,
+                    fontSize: '1rem',
+                    bgcolor: '#D90429',
+                    boxShadow: '0 12px 25px rgba(217, 4, 41, 0.25)',
+                    '&:hover': {
+                      bgcolor: '#B80024',
+                    },
+                  }}
+                >
+                  {existingInstitution ? 'Actualizar Institución' : 'Crear Institución'}
+                </Button>
+              </Stack>
+            </form>
+          </Box>
+        </Paper>
+
+        <Snackbar
+          open={!!successMessage}
+          autoHideDuration={3000}
+          onClose={() => setSuccessMessage('')}
+          message={successMessage}
+        />
+      </Container>
     </Box>
   );
 };
