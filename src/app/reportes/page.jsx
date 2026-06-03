@@ -57,15 +57,9 @@ export default function ReportsPage() {
       let data = [];
       const role = user.role?.toLowerCase();
 
-      if (role === 'docente') {
-        const grade = user.grades?.[0];
-        if (!grade) {
-          setReports([]);
-          setLoading(false);
-          return;
-        }
-        data = await getReportsByGrade(grade);
-      } 
+if (role === 'docente') {
+  data = await getReportsByGrade();
+}
       else if (role === 'director/a' || role === 'secretario/a') {
         data = await getAllDisciplineReports();
       }
