@@ -146,6 +146,15 @@ export default function PlanificacionPage() {
   };
 
   const pendientes = plans.filter(p => p.estado === 'Enviado').length;
+  const formatDate = (date) => {
+  const d = new Date(date);
+
+  const day = String(d.getUTCDate()).padStart(2, "0");
+  const month = String(d.getUTCMonth() + 1).padStart(2, "0");
+  const year = d.getUTCFullYear();
+
+  return `${day}/${month}/${year}`;
+};
 
   return (
     <Container maxWidth="lg" sx={{ py: { xs: 2, md: 4 } }}>
@@ -238,9 +247,9 @@ export default function PlanificacionPage() {
             ) : (
               plans.map((plan) => (
                 <TableRow key={plan._id} hover>
-                  <TableCell sx={{ fontWeight: 500 }}>
-                    {new Date(plan.fechaInicio).toLocaleDateString()}
-                  </TableCell>
+<TableCell sx={{ fontWeight: 500 }}>
+  {`${formatDate(plan.fechaInicio)} - ${formatDate(plan.fechaFin)}`}
+</TableCell>
                   <TableCell>{plan.grado}</TableCell>
                   {isDirectivo && (
                     <TableCell>{plan.profesor?.lastName}, {plan.profesor?.firstName?.charAt(0)}.</TableCell>
@@ -276,12 +285,22 @@ export default function PlanificacionPage() {
 
       {/* MODAL FORMULARIO */}
       <Dialog open={openForm} onClose={handleCloseForm} fullScreen maxWidth="lg">
-        <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <Typography variant="h6" fontWeight="bold">
-            {selectedPlan ? `Planificación - ${selectedPlan.grado}` : "Nueva Planificación"}
-          </Typography>
-          <IconButton onClick={handleCloseForm}><Close /></IconButton>
-        </DialogTitle>
+<DialogTitle
+  sx={{
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    fontWeight: 'bold'
+  }}
+>
+  <Box component="span">
+    {selectedPlan ? `Planificación - ${selectedPlan.grado}` : "Nueva Planificación"}
+  </Box>
+
+  <IconButton onClick={handleCloseForm}>
+    <Close />
+  </IconButton>
+</DialogTitle>
         <DialogContent sx={{ p: { xs: 1, md: 3 }, bgcolor: '#f4f6f8' }}>
           <PlanificacionForm initialData={selectedPlan} onSubmit={handleSave} isReadOnly={selectedPlan && (selectedPlan.estado !== 'Borrador' && !isDirectivo)} />
         </DialogContent>
