@@ -66,11 +66,25 @@ export default function TaskSubmissionsPage() {
 
         const studentTasks = await getStudentTasksByGrade(taskData.grade);
 
-        const filtered = studentTasks.filter(st =>
-          (st.task?._id || st.task) === id && st.student !== null
-        );
+const filtered = studentTasks
+  .filter(st =>
+    (st.task?._id || st.task) === id && st.student !== null
+  )
+  .sort((a, b) => {
+    const apellidoA = (a.student?.lastName || "").toUpperCase();
+    const apellidoB = (b.student?.lastName || "").toUpperCase();
 
-        setSubmissions(filtered);
+    if (apellidoA < apellidoB) return -1;
+    if (apellidoA > apellidoB) return 1;
+
+    const nombreA = (a.student?.firstName || "").toUpperCase();
+    const nombreB = (b.student?.firstName || "").toUpperCase();
+
+    return nombreA.localeCompare(nombreB);
+  });
+
+setSubmissions(filtered);
+
       } catch (error) {
         console.error("Error:", error);
       } finally {
