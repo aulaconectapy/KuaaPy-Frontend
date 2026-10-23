@@ -262,7 +262,7 @@ const Dashboard = ({ docentesList }) => {
         <Grid item xs={12} md={8}>
           <Box sx={{ mb: 4, textAlign: isMobile ? 'center' : 'left' }}>
             <Typography variant={isMobile ? "h5" : "h4"} fontWeight={900} sx={{ letterSpacing: '-0.03em' }}>
-              ¡Qué bueno verte, {user.firstName}! 👋
+              ¡Qué bueno verte por aquí, {user.firstName}! 👋
             </Typography>
             <Typography color="text.secondary" sx={{ fontWeight: 500, mt: 0.5 }}>
               Panel de gestión y control escolar en KuaaPy
