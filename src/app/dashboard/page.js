@@ -37,13 +37,14 @@ const Dashboard = ({ docentesList }) => {
   const [reports, setReports] = useState([]);
   const [loadingReports, setLoadingReports] = useState(false);
 
-  // --- PALETA INSTITUCIONAL ---
+  // --- PALETA INSTITUCIONAL KUAAPY ---
   const COLORS = {
-    primary: "#7D0F15", // Granate María Auxiliadora
-    primaryDark: "#4A080C",
-    secondary: "#D4AF37", // Dorado
-    textMain: "#1E293B",
-    textSecondary: "#64748B",
+    primary: "#0038A8", // Azul principal KuaaPy
+    primaryDark: "#00257A",
+    red: "#D52B1E",     // Acento rojo
+    secondary: "#F59E0B", // Ámbar / Dorado de contraste
+    textMain: "#0F172A",
+    textSecondary: "#475569",
     bgLight: "#F8FAFC"
   };
 
@@ -116,15 +117,15 @@ const Dashboard = ({ docentesList }) => {
           sx={{
             p: isMobile ? 2 : 3,
             height: '100%',
-            borderRadius: 4,
-            border: '1px solid #eef2f6',
+            borderRadius: '20px',
+            border: '1px solid #E2E8F0',
             bgcolor: '#fff',
-            transition: '0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+            transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
             display: 'flex',
             alignItems: 'center',
             cursor: 'pointer',
             '&:hover': {
-              boxShadow: '0 10px 20px rgba(125, 15, 21, 0.1)',
+              boxShadow: '0 15px 30px rgba(0, 56, 168, 0.08)',
               transform: isMobile ? 'none' : 'translateY(-4px)',
               borderColor: COLORS.primary
             },
@@ -136,16 +137,16 @@ const Dashboard = ({ docentesList }) => {
             color, 
             width: isMobile ? 48 : 52, 
             height: isMobile ? 48 : 52,
-            borderRadius: 3,
+            borderRadius: '14px',
             mr: 2
           }}>
             <Icon fontSize={isMobile ? "small" : "medium"} />
           </Avatar>
           <Box>
-            <Typography fontWeight={700} variant={isMobile ? "body1" : "h6"} sx={{ color: COLORS.textMain, lineHeight: 1.2 }}>
+            <Typography fontWeight={800} variant={isMobile ? "body1" : "h6"} sx={{ color: COLORS.textMain, lineHeight: 1.2 }}>
               {title}
             </Typography>
-            <Typography variant="body2" color="text.secondary">
+            <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500, mt: 0.5 }}>
               {desc}
             </Typography>
           </Box>
@@ -167,11 +168,11 @@ const Dashboard = ({ docentesList }) => {
               elevation={0}
               sx={{
                 p: 4,
-                borderRadius: 5,
+                borderRadius: '24px',
                 background: `linear-gradient(135deg, ${COLORS.primary} 0%, ${COLORS.primaryDark} 100%)`,
                 color: 'white',
                 position: 'relative',
-                boxShadow: '0 12px 24px rgba(125, 15, 21, 0.2)'
+                boxShadow: '0 15px 35px rgba(0, 56, 168, 0.2)'
               }}
             >
               <Box
@@ -197,7 +198,7 @@ const Dashboard = ({ docentesList }) => {
                 {user.firstName?.charAt(0)}
               </Avatar>
 
-              <Typography variant="h5" fontWeight={800} textAlign="center">
+              <Typography variant="h5" fontWeight={900} textAlign="center">
                 {user.firstName} {user.lastName}
               </Typography>
 
@@ -205,46 +206,46 @@ const Dashboard = ({ docentesList }) => {
                 <Chip
                   label={user.role?.toUpperCase()}
                   size="small"
-                  sx={{ bgcolor: COLORS.secondary, color: '#000', fontWeight: 700 }}
+                  sx={{ bgcolor: COLORS.red, color: '#fff', fontWeight: 800, borderRadius: '8px' }}
                 />
 
                 {user.email && (
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, opacity: 0.9 }}>
                     <Email fontSize="small" />
                     <Typography variant="body2">{user.email}</Typography>
                   </Box>
                 )}
 
                 {user.role === "estudiante" && (
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, opacity: 0.9 }}>
                     <Class fontSize="small" />
                     <Typography variant="body2">{user.grades?.[0]}</Typography>
                   </Box>
                 )}
 
                 {user.institution?.name && (
-                  <Typography variant="body2" sx={{ opacity: 0.9 }}>
+                  <Typography variant="body2" sx={{ opacity: 0.8, textAlign: 'center', mt: 0.5 }}>
                     {user.institution?.name}
                   </Typography>
                 )}
               </Stack>
             </Paper>
 
-            <Paper elevation={0} sx={{ p: 3, borderRadius: 5, border: '1px solid #e0e6ed' }}>
-              <Typography variant="subtitle2" fontWeight={700} color="text.secondary">
+            <Paper elevation={0} sx={{ p: 3, borderRadius: '24px', border: '1px solid #E2E8F0' }}>
+              <Typography variant="subtitle2" fontWeight={800} color="text.secondary" sx={{ letterSpacing: '0.05em' }}>
                 INFORMACIÓN ACADÉMICA
               </Typography>
               <Divider sx={{ my: 2 }} />
               <Stack spacing={2}>
-                <Box sx={{ display: 'flex', gap: 2 }}>
+                <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
                   <Settings sx={{ color: COLORS.primary }} />
                   <Box>
                     <Typography variant="caption" color="text.secondary">Institución</Typography>
-                    <Typography fontWeight={700}>{user.institution?.name}</Typography>
+                    <Typography fontWeight={700}>{user.institution?.name || 'KuaaPy Institución'}</Typography>
                   </Box>
                 </Box>
                 {user.role === 'estudiante' && (
-                  <Box sx={{ display: 'flex', gap: 2 }}>
+                  <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
                     <Class sx={{ color: COLORS.primary }} />
                     <Box>
                       <Typography variant="caption" color="text.secondary">Grado</Typography>
@@ -260,11 +261,11 @@ const Dashboard = ({ docentesList }) => {
         {/* SECCIÓN ACCIONES (Derecha) */}
         <Grid item xs={12} md={8}>
           <Box sx={{ mb: 4, textAlign: isMobile ? 'center' : 'left' }}>
-            <Typography variant={isMobile ? "h5" : "h4"} fontWeight={900}>
-              ¡Qué bueno verte! 👋
+            <Typography variant={isMobile ? "h5" : "h4"} fontWeight={900} sx={{ letterSpacing: '-0.03em' }}>
+              ¡Qué bueno verte, {user.firstName}! 👋
             </Typography>
-            <Typography color="text.secondary">
-              Accesos rápidos del Colegio María Auxiliadora
+            <Typography color="text.secondary" sx={{ fontWeight: 500, mt: 0.5 }}>
+              Panel de gestión y control escolar en KuaaPy
             </Typography>
           </Box>
 
@@ -275,27 +276,27 @@ const Dashboard = ({ docentesList }) => {
               sx={{
                 p: 3,
                 mb: 4,
-                borderRadius: 4,
+                borderRadius: '24px',
                 display: 'flex',
                 flexDirection: isMobile ? 'column' : 'row',
                 alignItems: 'center',
                 justifyContent: 'space-between',
                 gap: 2,
-                background: `linear-gradient(90deg, #FFF9E6 0%, #FFF3CD 100%)`,
-                border: `2px dashed ${COLORS.secondary}`,
-                boxShadow: '0 4px 12px rgba(212, 175, 55, 0.15)'
+                background: `linear-gradient(90deg, #EFF6FF 0%, #DBEAFE 100%)`,
+                border: `2px dashed ${COLORS.primary}`,
+                boxShadow: '0 4px 12px rgba(0, 56, 168, 0.08)'
               }}
             >
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, textAlign: isMobile ? 'center' : 'left', flexDirection: isMobile ? 'column' : 'row' }}>
-                <Avatar sx={{ bgcolor: COLORS.secondary, color: '#000', width: 48, height: 48 }}>
+                <Avatar sx={{ bgcolor: COLORS.primary, color: '#fff', width: 48, height: 48, borderRadius: '14px' }}>
                   <EventNote />
                 </Avatar>
                 <Box>
-                  <Typography fontWeight={800} variant="h6" sx={{ color: COLORS.primaryDark }}>
+                  <Typography fontWeight={900} variant="h6" sx={{ color: COLORS.primaryDark }}>
                     ¡Atención! Cronograma de Exámenes
                   </Typography>
-                  <Typography variant="body2" sx={{ color: "#7A5A00" }}>
-                    Ya se encuentran disponibles las fechas oficiales de la Primera Etapa.
+                  <Typography variant="body2" sx={{ color: COLORS.textSecondary, fontWeight: 500 }}>
+                    Ya se encuentran disponibles las fechas oficiales de evaluación.
                   </Typography>
                 </Box>
               </Box>
@@ -305,12 +306,12 @@ const Dashboard = ({ docentesList }) => {
                 sx={{
                   bgcolor: COLORS.primary,
                   color: '#fff',
-                  fontWeight: 700,
+                  fontWeight: 800,
                   px: 3,
-                  py: 1,
-                  borderRadius: 3,
+                  py: 1.2,
+                  borderRadius: '12px',
                   textTransform: 'none',
-                  boxShadow: '0 4px 10px rgba(125, 15, 21, 0.3)',
+                  boxShadow: '0 4px 10px rgba(0, 56, 168, 0.25)',
                   '&:hover': { bgcolor: COLORS.primaryDark }
                 }}
               >
@@ -322,34 +323,34 @@ const Dashboard = ({ docentesList }) => {
           <Grid container spacing={3}>
             <DashCard
               title="Mi Perfil"
-              desc="Editar mis datos"
+              desc="Editar mis datos personales"
               icon={AccountCircle}
               color="#0288d1"
               onClick={() => setProfileOpen(true)}
             />
 
-            {/* SECCIÓN PARA ESTUDIANTES (Sin la tarjeta duplicada del horario) */}
+            {/* SECCIÓN PARA ESTUDIANTES */}
             {currentRole === 'estudiante' && (
               <>
                 <DashCard
                   title="Mis Tareas"
                   desc="Ver tareas asignadas"
                   icon={MenuBook}
-                  color="#4CAF50"
+                  color="#059669"
                   href="/teacher/classes/tasks/studentTask"
                 />
                 <DashCard
-                  title="Mis reportes"
-                  desc="Ver mis reportes"
+                  title="Mis Reportes"
+                  desc="Ver mis reportes disciplinarios"
                   icon={Badge}
-                  color="#F57C00"
+                  color="#D52B1E"
                   href="/reportes/mis-reportes"
                 />
-                                <DashCard
+                <DashCard
                   title="Planilla de Puntajes"
-                  desc="Ver planilla general de puntajes"
+                  desc="Ver planilla general de notas"
                   icon={MenuBook}
-                  color="#7D0F15"
+                  color={COLORS.primary}
                   href="/taskReport/taskReportStudent"
                 />
               </>
@@ -369,35 +370,35 @@ const Dashboard = ({ docentesList }) => {
                   title="Reporte de Tareas"
                   desc="Ver planilla general de puntajes"
                   icon={MenuBook}
-                  color="#7D0F15"
+                  color={COLORS.primary}
                   href="/taskReport"
                 />
                 <DashCard
                   title="Planificaciones"
                   desc="Gestión de planes semanales"
                   icon={EventNote}
-                  color={COLORS.primary}
+                  color="#059669"
                   href="/teacher/planificacion"
                 />
                 <DashCard
                   title="Horario de Exámenes"
                   desc="Consultar cronograma institucional"
                   icon={EventNote}
-                  color="#D4AF37"
+                  color="#F59E0B"
                   onClick={() => setExamsOpen(true)}
                 />
                 <DashCard
                   title="Ver Estudiantes"
-                  desc="Listado de estudiantes"
+                  desc="Listado de estudiantes a cargo"
                   icon={People}
                   color="#0288d1"
                   href="/user/students"
                 />
                 <DashCard
                   title="Reportes Disciplinarios"
-                  desc="Ver reportes de estudiantes"
+                  desc="Ver reportes de alumnos"
                   icon={Badge}
-                  color="#F57C00"
+                  color="#D52B1E"
                   href="/reportes"
                 />
               </>
@@ -419,42 +420,42 @@ const Dashboard = ({ docentesList }) => {
                       title="Planificaciones"
                       desc="Revisar planes docentes"
                       icon={EventNote}
-                      color={COLORS.primary}
+                      color="#059669"
                       href="/teacher/planificacion"
                     />
                   </>
                 )}
                 <DashCard
                   title="Listado de Alumnos"
-                  desc="Base de estudiantes"
+                  desc="Base general de estudiantes"
                   icon={People}
                   color="#0288d1"
                   href="/user/students"
                 />
                 <DashCard
                   title="Nuevo Estudiante"
-                  desc="Registrar estudiante"
+                  desc="Registrar estudiante en el sistema"
                   icon={AccountCircle}
-                  color="#ed6c02"
+                  color="#D52B1E"
                   href="/pages/students/nuevo"
                 />
                 <DashCard
                   title="Usuarios"
-                  desc="Administrar roles"
+                  desc="Administrar cuentas y roles"
                   icon={AdminPanelSettings}
                   color="#673ab7"
                   href="/user"
                 />
                 <DashCard
                   title="Reportes"
-                  desc="Ver todos los reportes"
+                  desc="Ver todos los reportes del sistema"
                   icon={Badge}
-                  color="#F57C00"
+                  color="#F59E0B"
                   href="/reportes"
                 />
                 <DashCard
                   title="Instituciones"
-                  desc="Administrar instituciones"
+                  desc="Administrar instituciones educativas"
                   icon={AdminPanelSettings}
                   color="#673ab7"
                   href="/Institution/seeInstitution"
@@ -473,11 +474,11 @@ const Dashboard = ({ docentesList }) => {
         fullWidth
         fullScreen={isMobile}
         PaperProps={{
-          sx: { borderRadius: isMobile ? 0 : 4 }
+          sx: { borderRadius: isMobile ? 0 : '24px' }
         }}
       >
-        <Box sx={{ p: 1, display: 'flex', justifyContent: 'space-between', alignItems: 'center', bgcolor: COLORS.bgLight }}>
-          <Typography variant="h5" fontWeight={800} color={COLORS.primary} sx={{ ml: 2 }}>
+        <Box sx={{ p: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center', bgcolor: COLORS.bgLight }}>
+          <Typography variant="h5" fontWeight={900} color={COLORS.primary} sx={{ ml: 1 }}>
             Mi Perfil
           </Typography>
           <IconButton onClick={() => setProfileOpen(false)}>
@@ -493,7 +494,7 @@ const Dashboard = ({ docentesList }) => {
         </Box>
       </Dialog>
 
-      {/* NUEVO DIÁLOGO FLOTANTE PARA EL HORARIO DE EXÁMENES */}
+      {/* DIÁLOGO FLOTANTE PARA EL HORARIO DE EXÁMENES */}
       <HorarioExamenDialog 
         open={examsOpen} 
         onClose={() => setExamsOpen(false)} 

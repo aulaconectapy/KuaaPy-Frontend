@@ -11,30 +11,30 @@ import Image from "next/image";
 import { useRouter, usePathname } from "next/navigation";
 import { ThemeProvider, createTheme } from "@mui/material/styles";
 import { useAuth } from "@/context/AuthContext";
-import { useNotifications } from "@/context/NotificationContext"; // Importamos el contexto
+import { useNotifications } from "@/context/NotificationContext";
 import { markAsRead } from "@/services/api";
 
-// PALETA INSTITUCIONAL C.P.M.A.
+// PALETA INSTITUCIONAL KUAAPY
 const theme = createTheme({
   palette: {
     primary: { 
-      main: "#7D0F15", 
-      light: "#A61D24", 
-      dark: "#4A080C",
+      main: "#0038A8", 
+      light: "#2563EB", 
+      dark: "#002270",
       contrastText: "#FFFFFF" 
     },
-    secondary: { main: "#D4AF37" },
-    background: { default: "#F9F7F2", paper: "#FFFFFF" },
-    text: { primary: "#2D2D2D", secondary: "#6B7280" },
-    error: { main: "#B91C1C" },
+    secondary: { main: "#D52B1E" },
+    background: { default: "#F8FAFC", paper: "#FFFFFF" },
+    text: { primary: "#0F172A", secondary: "#475569" },
+    error: { main: "#D52B1E" },
     warning: { main: "#F59E0B" },
-    success: { main: "#15803D" }
+    success: { main: "#059669" }
   },
   typography: { 
     fontFamily: '"Inter", "Roboto", "Helvetica", sans-serif',
     h6: { fontWeight: 700 }
   },
-  shape: { borderRadius: 8 }
+  shape: { borderRadius: 12 }
 });
 
 export default function Layout({ children }) {
@@ -57,7 +57,7 @@ export default function Layout({ children }) {
   const openMenu = Boolean(anchorEl);
   const [pulse, setPulse] = useState(false);
 
-  // Efecto visual de pulso cuando llega una notificación (opcional)
+  // Efecto visual de pulso cuando llega una notificación
   useEffect(() => {
     if (pendingReports > 0 && user?.role === "director/a") {
       setPulse(true);
@@ -79,7 +79,6 @@ export default function Layout({ children }) {
   const handleMarkAsRead = async (id, link) => {
     try {
       await markAsRead(id);
-      // Actualizamos el estado global desde aquí
       setNotifications(prev => prev.map(n => n._id === id ? { ...n, read: true } : n));
       setPendingReports(prev => Math.max(0, prev - 1));
       if (link) router.push(link);
@@ -90,42 +89,44 @@ export default function Layout({ children }) {
   };
 
   const isAuthPage = pathname.includes("/auth");
-const unreadCount = Array.isArray(notifications) 
-  ? notifications.filter(n => !n.read).length 
-  : 0;
+  const unreadCount = Array.isArray(notifications) 
+    ? notifications.filter(n => !n.read).length 
+    : 0;
+
   return (
     <ThemeProvider theme={theme}>
       <Box sx={{ display: "flex", flexDirection: "column", minHeight: "100vh", backgroundColor: "background.default" }}>
 
-        <AppBar position="sticky" elevation={1} sx={{ bgcolor: "white", borderBottom: `3px solid ${theme.palette.primary.main}`, zIndex: 1100 }}>
-          <Toolbar sx={{ justifyContent: "space-between", px: { xs: 1.5, sm: 2 }, minHeight: { xs: 64, sm: 70 } }}>
+        {/* ENCABEZADO */}
+        <AppBar position="sticky" elevation={0} sx={{ bgcolor: "rgba(255,255,255,0.92)", color: "text.primary", backdropFilter: "blur(16px)", borderBottom: `1px solid #E2E8F0`, zIndex: 1100 }}>
+          <Toolbar sx={{ justifyContent: "space-between", px: { xs: 2, sm: 3 }, minHeight: { xs: 70, sm: 80 } }}>
 
-            {/* LOGO */}
-            <Box onClick={() => router.push("/dashboard")} sx={{ display: "flex", alignItems: "center", cursor: "pointer", gap: 1.5 }}>
-              <Box sx={{ p: 0.5, borderRadius: "50%", display: "flex", border: `1px solid ${theme.palette.primary.main}`, backgroundColor: "#fff" }}>
-                <Image src="/logo.png" alt="Logo C.P.M.A" width={isMobile ? 32 : 40} height={isMobile ? 32 : 40} priority style={{ borderRadius: '50%' }} />
+            {/* LOGO Y MARCA */}
+            <Box onClick={() => router.push(user ? "/dashboard" : "/")} sx={{ display: "flex", alignItems: "center", cursor: "pointer", gap: 1.5 }}>
+              <Box sx={{ p: 0.5, borderRadius: "12px", display: "flex", bgcolor: "#EFF6FF", border: `1px solid #DBEAFE` }}>
+                <Image src="/logo.png" alt="Logo KuaaPy" width={isMobile ? 32 : 38} height={isMobile ? 32 : 38} priority style={{ borderRadius: '8px', objectFit: 'contain' }} />
               </Box>
               <Box>
-                <Typography sx={{ fontWeight: 800, fontSize: { xs: '0.85rem', sm: '1.1rem' }, color: "primary.main", letterSpacing: '-0.5px' }}>
-                  María Auxiliadora
+                <Typography sx={{ fontWeight: 900, fontSize: { xs: '1.1rem', sm: '1.3rem' }, color: "text.primary", letterSpacing: '-0.03em' }}>
+                  Kuaa<span style={{ color: "#D52B1E" }}>Py</span>
                 </Typography>
-                <Typography sx={{ fontSize: '0.7rem', fontWeight: 600, color: "text.secondary", letterSpacing: '1px' }}>
-                  COLEGIO PRIVADO
+                <Typography sx={{ fontSize: '0.68rem', fontWeight: 700, color: "text.secondary", letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+                  Gestión Escolar
                 </Typography>
               </Box>
             </Box>
 
-            {/* ACCIONES */}
-            <Box sx={{ display: "flex", alignItems: "center", gap: { xs: 0.5, sm: 1.5 } }}>
+            {/* ACCIONES DE USUARIO */}
+            <Box sx={{ display: "flex", alignItems: "center", gap: { xs: 1, sm: 2 } }}>
               {loading ? (
-                <Skeleton variant="circular" width={35} height={35} />
+                <Skeleton variant="circular" width={40} height={40} />
               ) : user ? (
                 <>
                   <Box sx={{ display: { xs: "none", sm: "block" }, textAlign: "right", mr: 1 }}>
-                    <Typography sx={{ color: "primary.main", fontSize: "0.65rem", fontWeight: 800, textTransform: "uppercase" }}>
-                      {user?.role === 'administrador' ? '✨ Gestión' : '📍 Campus Virtual'}
+                    <Typography sx={{ color: "primary.main", fontSize: "0.68rem", fontWeight: 800, textTransform: "uppercase", letterSpacing: '0.05em' }}>
+                      {user?.role === 'administrador' ? '✨ Panel de Gestión' : '📍 Campus Docente'}
                     </Typography>
-                    <Typography sx={{ color: "#1E293B", fontWeight: 600, fontSize: "0.85rem" }}>
+                    <Typography sx={{ color: "text.primary", fontWeight: 700, fontSize: "0.9rem" }}>
                       {user?.firstName || ""}
                     </Typography>
                   </Box>
@@ -133,35 +134,35 @@ const unreadCount = Array.isArray(notifications)
                   <IconButton 
                     onClick={user.role === 'director/a' ? handleMenuOpen : () => router.push("/reportes/mis-reportes")} 
                     size="small"
-                    sx={{ animation: pulse ? 'pulse 1.5s infinite' : 'none' }}
+                    sx={{ bgcolor: '#F1F5F9', p: 1, animation: pulse ? 'pulse 1.5s infinite' : 'none' }}
                   >
-                    <Badge badgeContent={user.role === 'director/a' ? unreadCount : pendingReports} color="primary">
-                      <NotificationsIcon sx={{ color: "primary.main" }} />
+                    <Badge badgeContent={user.role === 'director/a' ? unreadCount : pendingReports} color="error">
+                      <NotificationsIcon sx={{ color: "primary.main", fontSize: 20 }} />
                     </Badge>
                   </IconButton>
 
                   {user.role === 'director/a' && (
-                    <Menu anchorEl={anchorEl} open={openMenu} onClose={handleMenuClose} PaperProps={{ style: { maxHeight: 400, width: 300, marginTop: '10px' } }}>
-                      {notifications.length === 0 && <MenuItem disabled>No hay notificaciones</MenuItem>}
+                    <Menu anchorEl={anchorEl} open={openMenu} onClose={handleMenuClose} PaperProps={{ style: { maxHeight: 400, width: 320, marginTop: '10px', borderRadius: '16px' } }}>
+                      {notifications.length === 0 && <MenuItem disabled>No hay notificaciones nuevas</MenuItem>}
                       {notifications.map(n => (
-                        <MenuItem key={n._id} onClick={() => handleMarkAsRead(n._id, "/reportes")} sx={{ bgcolor: n.read ? 'white' : '#FFF5F5', mb: 0.5 }}>
+                        <MenuItem key={n._id} onClick={() => handleMarkAsRead(n._id, "/reportes")} sx={{ bgcolor: n.read ? 'white' : '#F8FAFC', mb: 0.5, borderBottom: '1px solid #F1F5F9' }}>
                           <ListItemText primary={n.message} secondary={n.student ? `Alumno: ${n.student.firstName} ${n.student.lastName}` : null} />
                         </MenuItem>
                       ))}
                     </Menu>
                   )}
 
-                  <Avatar sx={{ width: { xs: 35, sm: 40 }, height: { xs: 35, sm: 40 }, bgcolor: "primary.main", border: '2px solid #fff' }}>
+                  <Avatar sx={{ width: { xs: 38, sm: 42 }, height: { xs: 38, sm: 42 }, bgcolor: "primary.main", fontWeight: 800, fontSize: '1rem', boxShadow: '0 4px 12px rgba(0,56,168,0.2)' }}>
                     {user?.firstName?.charAt(0) || "?"}
                   </Avatar>
 
-                  <IconButton onClick={logout} size="small" sx={{ color: "text.secondary", ml: 0.5 }}>
+                  <IconButton onClick={logout} size="small" sx={{ color: "text.secondary", bgcolor: '#F1F5F9', p: 1, ml: 0.5, '&:hover': { bgcolor: '#FEE2E2', color: '#B91C1C' } }}>
                     <Logout fontSize="small" />
                   </IconButton>
                 </>
               ) : (
                 !isAuthPage && (
-                  <Button onClick={() => router.push("/auth/login")} variant="contained" sx={{ textTransform: 'none', fontWeight: 600 }}>
+                  <Button onClick={() => router.push("/auth/login")} variant="contained" sx={{ textTransform: 'none', fontWeight: 800, borderRadius: '10px', px: 2.5, py: 1 }}>
                     Ingresar
                   </Button>
                 )
@@ -170,6 +171,7 @@ const unreadCount = Array.isArray(notifications)
           </Toolbar>
         </AppBar>
 
+        {/* CONTENIDO PRINCIPAL */}
         <Box component="main" sx={{ flexGrow: 1, p: { xs: 2, sm: 3, md: 4 } }}>
           <Container maxWidth="lg" disableGutters={isMobile}>
             {children}
@@ -177,24 +179,27 @@ const unreadCount = Array.isArray(notifications)
         </Box>
 
         {/* FOOTER */}
-        <Box component="footer" sx={{ py: 4, px: 2, backgroundColor: "white", borderTop: `3px solid ${theme.palette.primary.main}`, mt: 'auto' }}>
+        <Box component="footer" sx={{ py: 4, px: 2, backgroundColor: "white", borderTop: `1px solid #E2E8F0`, mt: 'auto' }}>
           <Container maxWidth="lg">
-            <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1 }}>
-              <Typography variant="body2" sx={{ fontWeight: 700 }}>COLEGIO PRIVADO MARÍA AUXILIADORA</Typography>
-              <Typography variant="caption" color="text.secondary">
-                © {new Date().getFullYear()} - Desarrollado por Ezequiel Vargas
+            <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0.8, textAlign: 'center' }}>
+              <Typography variant="body2" sx={{ fontWeight: 800, color: "text.primary" }}>
+                KUAAPY · Sistema de Gestión Escolar
+              </Typography>
+              <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>
+                © {new Date().getFullYear()} KuaaPy · Desarrollado por Ezequiel Vargas
               </Typography>
             </Box>
           </Container>
         </Box>
 
+        {/* SNACKBAR DE ALERTAS */}
         <Snackbar 
           open={snackbar.open} 
           autoHideDuration={4000} 
           onClose={() => setSnackbar({ ...snackbar, open: false })}
           anchorOrigin={{ vertical: "top", horizontal: "right" }}
         >
-          <Alert severity={snackbar.severity} variant="filled" sx={{ borderRadius: 2 }}>
+          <Alert severity={snackbar.severity} variant="filled" sx={{ borderRadius: '12px', fontWeight: 700 }}>
             {snackbar.message}
           </Alert>
         </Snackbar>
@@ -204,7 +209,7 @@ const unreadCount = Array.isArray(notifications)
       <style jsx global>{`
         @keyframes pulse {
           0% { transform: scale(1); }
-          50% { transform: scale(1.2); }
+          50% { transform: scale(1.15); }
           100% { transform: scale(1); }
         }
       `}</style>

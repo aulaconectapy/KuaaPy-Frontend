@@ -2,293 +2,614 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { 
-  Box, Button, Typography, Container, Paper, Stack, 
-  AppBar, Toolbar, Grid, Divider, Chip, List, ListItem, ListItemIcon, ListItemText,
-  Avatar, Card, CardContent
+import {
+  AppBar,
+  Avatar,
+  Box,
+  Button,
+  Card,
+  CardContent,
+  Chip,
+  Container,
+  Grid,
+  Stack,
+  Toolbar,
+  Typography,
 } from '@mui/material';
-import { 
-  CheckCircle as CheckIcon, 
-  Email as EmailIcon, 
-  LocationOn as LocationIcon, 
-  Phone as PhoneIcon,
-  Groups as GroupsIcon,
-  HistoryEdu as HistoryIcon,
-  Gavel as GavelIcon,
-  School as SchoolIcon,
-  Star as StarIcon
+import {
+  AssignmentTurnedIn,
+  CalendarMonth,
+  Checklist,
+  ArrowForward,
+  Groups,
+  Insights,
+  School,
+  EventAvailable,
+  PhoneAndroid,
+  ShieldOutlined,
+  AutoAwesome,
+  VerifiedUser,
+  Speed,
 } from '@mui/icons-material';
-import Image from 'next/image';
 
-const COLORS = {
-  primary: "#7D0F15", // Granate Institucional
-  secondary: "#D4AF37", // Dorado
-  text: "#1E293B",
-  textLight: "#64748B",
-  bgLight: "#F8FAFC",
-  white: "#FFFFFF"
+const C = {
+  blue: '#0038A8',
+  red: '#D52B1E',
+  white: '#FFFFFF',
+  ink: '#0F172A',
+  muted: '#475569',
+  bg: '#F8FAFC',
+  line: '#E2E8F0',
 };
+
+const features = [
+  {
+    icon: <CalendarMonth />,
+    title: 'Planificación docente',
+    description:
+      'Organizá tus clases, unidades, capacidades e indicadores con agilidad y orden profesional.',
+    color: C.blue,
+    tint: '#EEF2FF',
+  },
+  {
+    icon: <Checklist />,
+    title: 'Lista de asistencia',
+    description:
+      'Controlá presentes, ausentes y llegadas tardías al instante desde cualquier dispositivo.',
+    color: C.red,
+    tint: '#FEF2F2',
+  },
+  {
+    icon: <AssignmentTurnedIn />,
+    title: 'Planillas y evaluación',
+    description:
+      'Mantené al día los registros de calificaciones y el seguimiento detallado del curso.',
+    color: '#059669',
+    tint: '#ECFDF5',
+  },
+  {
+    icon: <Insights />,
+    title: 'Seguimiento académico',
+    description:
+      'Detectá áreas de mejora y acompañá de cerca el proceso de aprendizaje de cada estudiante.',
+    color: '#7C3AED',
+    tint: '#F5F3FF',
+  },
+];
 
 export default function HomePage() {
   const router = useRouter();
   const [hasToken, setHasToken] = useState(false);
 
   useEffect(() => {
-    const token = localStorage.getItem('token');
-    setHasToken(!!(token && token !== 'null' && token !== 'undefined'));
+    const token = window.localStorage.getItem('token');
+    setHasToken(Boolean(token && token !== 'null' && token !== 'undefined'));
   }, []);
 
+  const goToApp = () => {
+    router.push(hasToken ? '/dashboard' : '/auth/login');
+  };
+
   return (
-    <Box sx={{ bgcolor: COLORS.white, minHeight: '100vh' }}>
-      
-      {/* NAVBAR */}
-      <AppBar position="sticky" sx={{ bgcolor: 'rgba(255, 255, 255, 0.95)', backdropFilter: 'blur(10px)', borderBottom: `2px solid ${COLORS.primary}` }}>
+    <Box
+      sx={{
+        minHeight: '100vh',
+        bgcolor: C.white,
+        color: C.ink,
+        overflowX: 'hidden',
+        fontFamily: 'inherit',
+      }}
+    >
+      {/* ENCABEZADO VANGUARDISTA */}
+      <AppBar
+        position="sticky"
+        elevation={0}
+        sx={{
+          bgcolor: 'rgba(255, 255, 255, 0.85)',
+          color: C.ink,
+          backdropFilter: 'blur(20px)',
+          borderBottom: `1px solid ${C.line}`,
+        }}
+      >
         <Container maxWidth="lg">
-          <Toolbar sx={{ justifyContent: 'space-between', py: 1 }}>
-            <Stack direction="row" alignItems="center" spacing={2} sx={{ cursor: 'pointer' }} onClick={() => router.push('/')}>
-              <Image src="/logo.png" alt="Logo CPMA" width={45} height={45} priority />
-              <Box>
-                <Typography variant="h6" sx={{ fontWeight: 900, color: COLORS.primary, lineHeight: 1, fontSize: '1.2rem' }}>
-                  CPMA
+          <Toolbar
+            disableGutters
+            sx={{
+              minHeight: { xs: 70, sm: 80 },
+              justifyContent: 'space-between',
+              gap: 2,
+            }}
+          >
+            <Stack direction="row" alignItems="center" spacing={1.5} sx={{ minWidth: 0 }}>
+              <Box
+                component="img"
+                src="/logo.png"
+                alt="Logo de KuaaPy"
+                sx={{
+                  width: 44,
+                  height: 44,
+                  objectFit: 'contain',
+                  flexShrink: 0,
+                  filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.08))',
+                }}
+              />
+              <Box sx={{ minWidth: 0 }}>
+                <Typography
+                  sx={{
+                    fontSize: { xs: '1.25rem', sm: '1.45rem' },
+                    fontWeight: 900,
+                    lineHeight: 1.1,
+                    letterSpacing: '-.03em',
+                  }}
+                >
+                  Kuaa<span style={{ color: C.red }}>Py</span>
                 </Typography>
-                <Typography variant="caption" sx={{ color: COLORS.text, fontWeight: 600, display: { xs: 'none', sm: 'block' } }}>
-                  María Auxiliadora
+                <Typography
+                  sx={{
+                    color: C.muted,
+                    fontSize: '.72rem',
+                    fontWeight: 700,
+                    textTransform: 'uppercase',
+                    letterSpacing: '.08em',
+                    display: { xs: 'none', sm: 'block' },
+                  }}
+                >
+                  Gestión escolar inteligente
                 </Typography>
               </Box>
             </Stack>
-            
-            <Stack direction="row" spacing={1}>
-              <Button 
-                variant="contained" 
-                onClick={() => router.push(hasToken ? '/dashboard' : '/auth/login')}
-                sx={{ 
-                  bgcolor: COLORS.primary, 
-                  borderRadius: '20px', 
-                  fontWeight: 700, 
+
+            <Stack direction="row" spacing={1.5} alignItems="center">
+              <Button
+                onClick={goToApp}
+                variant="contained"
+                endIcon={<ArrowForward />}
+                sx={{
+                  bgcolor: C.blue,
+                  borderRadius: '12px',
+                  px: { xs: 2.2, sm: 3 },
+                  py: 1.2,
                   textTransform: 'none',
-                  px: 3,
-                  '&:hover': { bgcolor: '#5a0a0f' }
+                  fontWeight: 800,
+                  fontSize: '.92rem',
+                  boxShadow: '0 8px 20px rgba(0,56,168,0.22)',
+                  '&:hover': {
+                    bgcolor: '#002B85',
+                    boxShadow: '0 10px 25px rgba(0,56,168,0.3)',
+                  },
                 }}
               >
-                {hasToken ? "Panel de Control" : "Acceso Usuarios"}
+                {hasToken ? 'Mi panel' : 'Acceder al sistema'}
               </Button>
             </Stack>
           </Toolbar>
         </Container>
       </AppBar>
 
-      {/* HERO SECTION */}
-      <Box sx={{ 
-        background: `linear-gradient(135deg, ${COLORS.primary} 0%, #4A080C 100%)`, 
-        color: 'white', 
-        py: { xs: 10, md: 15 },
-        position: 'relative',
-        overflow: 'hidden'
-      }}>
-        <Container maxWidth="lg" sx={{ position: 'relative', zIndex: 2 }}>
-          <Grid container spacing={4} alignItems="center">
+      {/* PORTADA PRINCIPAL (HERO) */}
+      <Box
+        sx={{
+          position: 'relative',
+          background:
+            'radial-gradient(circle at 90% 10%, rgba(0,56,168,0.06), transparent 35%), radial-gradient(circle at 10% 80%, rgba(213,43,30,0.05), transparent 35%), linear-gradient(180deg, #FFFFFF 0%, #F8FAFC 100%)',
+          pt: { xs: 6, md: 10 },
+          pb: { xs: 8, md: 14 },
+        }}
+      >
+        <Container maxWidth="lg">
+          <Grid container spacing={{ xs: 6, md: 8 }} alignItems="center">
             <Grid item xs={12} md={7}>
-              <Chip label="Desde 1985" sx={{ mb: 2, color: 'white', borderColor: 'white', fontWeight: 700 }} variant="outlined" />
-              <Typography variant="h1" sx={{ fontWeight: 900, mb: 2, fontSize: { xs: '2.8rem', md: '4rem' }, lineHeight: 1.1 }}>
-                Colegio Privado <br/>
-                <span style={{ color: COLORS.secondary }}>María Auxiliadora</span>
+              <Chip
+                icon={<AutoAwesome sx={{ color: `${C.blue} !important` }} />}
+                label="Innovación para la labor docente y administrativa"
+                sx={{
+                  mb: 3,
+                  px: 1.5,
+                  py: 2.2,
+                  borderRadius: '999px',
+                  bgcolor: '#EFF6FF',
+                  color: C.blue,
+                  fontWeight: 800,
+                  fontSize: '.85rem',
+                  border: '1px solid #DBEAFE',
+                }}
+              />
+
+              <Typography
+                component="h1"
+                sx={{
+                  fontSize: { xs: '2.5rem', sm: '3.4rem', md: '4.1rem' },
+                  lineHeight: { xs: 1.1, md: 1.05 },
+                  fontWeight: 950,
+                  letterSpacing: '-.045em',
+                  color: C.ink,
+                }}
+              >
+                Simplificá tu gestión escolar.{' '}
+                <Box component="span" sx={{ color: C.blue }}>
+                  Potenciá
+                </Box>{' '}
+                el aprendizaje.
               </Typography>
-              <Typography variant="h5" sx={{ mb: 4, fontWeight: 300, opacity: 0.9 }}>
-                Formando ciudadanos competentes, éticos y emprendedores en el corazón de Itapúa.
+
+              <Typography
+                sx={{
+                  mt: 2.5,
+                  color: C.muted,
+                  fontSize: { xs: '1.05rem', md: '1.18rem' },
+                  lineHeight: 1.75,
+                  maxWidth: 630,
+                }}
+              >
+                KuaaPy centraliza la planificación, la asistencia y los registros
+                pedagógicos en una interfaz moderna, ágil y diseñada para
+                fortalecer el vínculo entre docentes, directivos y familias.
               </Typography>
-  
+
+              <Stack
+                direction={{ xs: 'column', sm: 'row' }}
+                spacing={2}
+                sx={{ mt: 4, maxWidth: { xs: '100%', sm: 'none' } }}
+              >
+                <Button
+                  onClick={goToApp}
+                  variant="contained"
+                  endIcon={<ArrowForward />}
+                  sx={{
+                    py: 1.6,
+                    px: 3.5,
+                    borderRadius: '14px',
+                    bgcolor: C.blue,
+                    textTransform: 'none',
+                    fontSize: '1.02rem',
+                    fontWeight: 800,
+                    boxShadow: '0 12px 30px rgba(0,56,168,0.25)',
+                    '&:hover': { bgcolor: '#002B85' },
+                  }}
+                >
+                  {hasToken ? 'Ir a mi panel' : 'Comenzar ahora'}
+                </Button>
+
+                <Button
+                  component="a"
+                  href="#modulos"
+                  variant="outlined"
+                  sx={{
+                    py: 1.6,
+                    px: 3.5,
+                    borderRadius: '14px',
+                    borderColor: C.line,
+                    color: C.ink,
+                    textTransform: 'none',
+                    fontSize: '1.02rem',
+                    fontWeight: 800,
+                    bgcolor: C.white,
+                    '&:hover': {
+                      borderColor: C.blue,
+                      bgcolor: '#F8FAFC',
+                    },
+                  }}
+                >
+                  Explorar módulos
+                </Button>
+              </Stack>
+
+              {/* Badges de confianza */}
+              <Stack
+                direction="row"
+                spacing={3}
+                sx={{ mt: 5, pt: 3, borderTop: `1px solid ${C.line}` }}
+              >
+                <Stack direction="row" spacing={1} alignItems="center">
+                  <VerifiedUser sx={{ color: '#059669', fontSize: 20 }} />
+                  <Typography sx={{ fontSize: '.85rem', fontWeight: 700, color: C.muted }}>
+                    Datos seguros y privados
+                  </Typography>
+                </Stack>
+                <Stack direction="row" spacing={1} alignItems="center">
+                  <Speed sx={{ color: C.blue, fontSize: 20 }} />
+                  <Typography sx={{ fontSize: '.85rem', fontWeight: 700, color: C.muted }}>
+                    Acceso rápido y fluido
+                  </Typography>
+                </Stack>
+              </Stack>
             </Grid>
-            <Grid item xs={12} md={5} sx={{ display: 'flex', justifyContent: 'center' }}>
-              <Box sx={{ filter: 'drop-shadow(0px 20px 30px rgba(0,0,0,0.3))' }}>
-                <Image src="/logo.png" alt="Escudo Institucional" width={300} height={300} />
+
+            {/* TARJETA INTERACTIVA ILUSTRATIVA */}
+            <Grid item xs={12} md={5}>
+              <Box sx={{ maxWidth: 420, mx: 'auto', position: 'relative' }}>
+                <Box
+                  sx={{
+                    position: 'absolute',
+                    inset: '-6% -6% 6% 6%',
+                    background: 'linear-gradient(135deg, rgba(0,56,168,0.1), rgba(213,43,30,0.08))',
+                    borderRadius: '32px',
+                    filter: 'blur(10px)',
+                    zIndex: 0,
+                  }}
+                />
+
+                <Card
+                  elevation={0}
+                  sx={{
+                    position: 'relative',
+                    borderRadius: '24px',
+                    border: `1px solid ${C.line}`,
+                    boxShadow: '0 25px 50px -12px rgba(15, 23, 42, 0.12)',
+                    bgcolor: C.white,
+                    zIndex: 1,
+                    overflow: 'hidden',
+                  }}
+                >
+                  <Box
+                    sx={{
+                      p: 3,
+                      background: `linear-gradient(135deg, ${C.blue}, #00257A)`,
+                      color: C.white,
+                    }}
+                  >
+                    <Stack direction="row" justifyContent="space-between" alignItems="center">
+                      <Box>
+                        <Typography sx={{ fontSize: '.75rem', opacity: 0.8, fontWeight: 800, letterSpacing: '.1em' }}>
+                          PANEL INSTITUCIONAL
+                        </Typography>
+                        <Typography sx={{ fontSize: '1.25rem', fontWeight: 900, mt: 0.5 }}>
+                          KuaaPy Workspace
+                        </Typography>
+                      </Box>
+                      <Avatar sx={{ bgcolor: 'rgba(255,255,255,0.2)', color: C.white, width: 42, height: 42 }}>
+                        <School />
+                      </Avatar>
+                    </Stack>
+                  </Box>
+
+                  <CardContent sx={{ p: 3 }}>
+                    <Typography sx={{ color: C.muted, fontSize: '.78rem', fontWeight: 800, mb: 2, letterSpacing: '.05em' }}>
+                      MÓDULOS ACTIVOS
+                    </Typography>
+
+                    <Stack spacing={1.5}>
+                      {[
+                        { title: 'Planificación Semanal', desc: 'Validada por dirección', icon: <CalendarMonth />, color: C.blue, bg: '#EEF2FF' },
+                        { title: 'Control de Asistencia', desc: 'Registro diario al día', icon: <EventAvailable />, color: C.red, bg: '#FEF2F2' },
+                        { title: 'Evaluaciones y Notas', desc: 'Planillas automáticas', icon: <AssignmentTurnedIn />, color: '#059669', bg: '#ECFDF5' },
+                      ].map((m) => (
+                        <Stack
+                          key={m.title}
+                          direction="row"
+                          spacing={2}
+                          alignItems="center"
+                          sx={{
+                            p: 1.5,
+                            borderRadius: '14px',
+                            border: `1px solid ${C.line}`,
+                            bgcolor: '#FAFAFA',
+                          }}
+                        >
+                          <Avatar variant="rounded" sx={{ bgcolor: m.bg, color: m.color, width: 40, height: 40, borderRadius: '10px' }}>
+                            {m.icon}
+                          </Avatar>
+                          <Box sx={{ flex: 1 }}>
+                            <Typography sx={{ fontWeight: 800, fontSize: '.9rem' }}>{m.title}</Typography>
+                            <Typography sx={{ color: C.muted, fontSize: '.75rem' }}>{m.desc}</Typography>
+                          </Box>
+                        </Stack>
+                      ))}
+                    </Stack>
+                  </CardContent>
+                </Card>
               </Box>
             </Grid>
           </Grid>
         </Container>
       </Box>
 
-      {/* SECCIÓN IDENTIDAD (MISIÓN/VISIÓN) */}
-      <Container maxWidth="lg" sx={{ py: 10 }}>
-        <Grid container spacing={4}>
-          <Grid item xs={12} md={4}>
-            <Card sx={{ height: '100%', borderTop: `5px solid ${COLORS.primary}`, boxShadow: '0 10px 30px rgba(0,0,0,0.05)' }}>
-              <CardContent sx={{ textAlign: 'center', p: 4 }}>
-                <StarIcon sx={{ fontSize: 50, color: COLORS.primary, mb: 2 }} />
-                <Typography variant="h5" sx={{ fontWeight: 800, mb: 2 }}>Misión</Typography>
-                <Typography variant="body1" color="text.secondary">
-                  Ofrecer a todos los estudiantes una educación de calidad que permita lograr el pleno desarrollo de sus capacidades personales, laborales y sociales.
-                </Typography>
-              </CardContent>
-            </Card>
-          </Grid>
-          <Grid item xs={12} md={4}>
-            <Card sx={{ height: '100%', borderTop: `5px solid ${COLORS.secondary}`, boxShadow: '0 10px 30px rgba(0,0,0,0.05)' }}>
-              <CardContent sx={{ textAlign: 'center', p: 4 }}>
-                <SchoolIcon sx={{ fontSize: 50, color: COLORS.secondary, mb: 2 }} />
-                <Typography variant="h5" sx={{ fontWeight: 800, mb: 2 }}>Visión</Typography>
-                <Typography variant="body1" color="text.secondary">
-                  Ser una Institución referente que brinda servicios educativos de calidad, formando ciudadanos éticos y comprometidos con el progreso del país.
-                </Typography>
-              </CardContent>
-            </Card>
-          </Grid>
-          <Grid item xs={12} md={4}>
-            <Card sx={{ height: '100%', borderTop: `5px solid ${COLORS.primary}`, boxShadow: '0 10px 30px rgba(0,0,0,0.05)' }}>
-              <CardContent sx={{ p: 4 }}>
-                <Typography variant="h5" sx={{ fontWeight: 800, mb: 2, textAlign: 'center' }}>Nuestros Valores</Typography>
-                <Grid container spacing={1}>
-                  {['Respeto', 'Gratitud', 'Resiliencia', 'Honestidad', 'Patriotismo', 'Cooperación'].map((v) => (
-                    <Grid item xs={6} key={v}>
-                      <Chip label={v} sx={{ width: '100%', fontWeight: 600 }} />
-                    </Grid>
-                  ))}
-                </Grid>
-              </CardContent>
-            </Card>
-          </Grid>
+      {/* SECCIÓN DE MÓDULOS / HERRAMIENTAS */}
+      <Container id="modulos" maxWidth="lg" sx={{ py: { xs: 8, md: 12 }, scrollMarginTop: '80px' }}>
+        <Stack alignItems="center" textAlign="center" sx={{ mb: { xs: 6, md: 8 } }}>
+          <Typography
+            sx={{
+              color: C.red,
+              fontWeight: 900,
+              fontSize: '.82rem',
+              letterSpacing: '.15em',
+              textTransform: 'uppercase',
+            }}
+          >
+            Tecnología al servicio de la educación
+          </Typography>
+          <Typography
+            component="h2"
+            sx={{
+              mt: 1.5,
+              fontSize: { xs: '2.1rem', md: '2.8rem' },
+              fontWeight: 950,
+              letterSpacing: '-.03em',
+            }}
+          >
+            Todo lo administrativo, resuelto con elegancia.
+          </Typography>
+          <Typography
+            sx={{
+              mt: 2,
+              color: C.muted,
+              maxWidth: 620,
+              fontSize: '1.05rem',
+              lineHeight: 1.7,
+            }}
+          >
+            Herramientas intuitivas diseñadas específicamente para optimizar el tiempo del docente y facilitar el seguimiento institucional.
+          </Typography>
+        </Stack>
+
+        <Grid container spacing={3}>
+          {features.map((feature) => (
+            <Grid item xs={12} sm={6} md={3} key={feature.title}>
+              <Card
+                elevation={0}
+                sx={{
+                  height: '100%',
+                  border: `1px solid ${C.line}`,
+                  borderRadius: '20px',
+                  bgcolor: C.white,
+                  transition: 'all 0.25s ease',
+                  '&:hover': {
+                    transform: 'translateY(-6px)',
+                    boxShadow: '0 20px 40px -15px rgba(15, 23, 42, 0.08)',
+                    borderColor: '#93C5FD',
+                  },
+                }}
+              >
+                <CardContent sx={{ p: 3.5 }}>
+                  <Avatar
+                    variant="rounded"
+                    sx={{
+                      width: 52,
+                      height: 52,
+                      bgcolor: feature.tint,
+                      color: feature.color,
+                      borderRadius: '14px',
+                      mb: 2.5,
+                    }}
+                  >
+                    {feature.icon}
+                  </Avatar>
+                  <Typography component="h3" sx={{ fontSize: '1.15rem', fontWeight: 900, mb: 1 }}>
+                    {feature.title}
+                  </Typography>
+                  <Typography sx={{ color: C.muted, lineHeight: 1.7, fontSize: '.92rem' }}>
+                    {feature.description}
+                  </Typography>
+                </CardContent>
+              </Card>
+            </Grid>
+          ))}
         </Grid>
       </Container>
 
-      {/* HISTORIA */}
-      <Box sx={{ bgcolor: COLORS.bgLight, py: 10 }}>
-        <Container maxWidth="md">
-          <Stack alignItems="center" spacing={2} sx={{ mb: 6 }}>
-            <HistoryIcon sx={{ fontSize: 40, color: COLORS.primary }} />
-            <Typography variant="h3" sx={{ fontWeight: 900, textAlign: 'center' }}>Nuestra Historia</Typography>
-            <Divider sx={{ width: 80, height: 4, bgcolor: COLORS.primary, borderRadius: 2 }} />
+      {/* SECCIÓN ROLES: DOCENTES Y FAMILIAS */}
+      <Box sx={{ bgcolor: '#F8FAFC', py: { xs: 8, md: 12 }, borderTop: `1px solid ${C.line}` }}>
+        <Container maxWidth="lg">
+          <Stack alignItems="center" textAlign="center" sx={{ mb: { xs: 6, md: 8 } }}>
+            <Typography sx={{ color: C.blue, fontWeight: 900, fontSize: '.82rem', letterSpacing: '.15em', textTransform: 'uppercase' }}>
+              Colaboración activa
+            </Typography>
+            <Typography component="h2" sx={{ mt: 1.5, fontSize: { xs: '2.1rem', md: '2.8rem' }, fontWeight: 950, letterSpacing: '-.03em' }}>
+              Conectando a toda la comunidad escolar.
+            </Typography>
           </Stack>
-          
-          <Paper sx={{ p: { xs: 3, md: 5 }, borderRadius: 4 }}>
-            <Typography variant="body1" sx={{ lineHeight: 1.8, mb: 3, textAlign: 'justify' }}>
-              La <strong>Escuela Básica Nº 2614</strong> nació el 9 de marzo de 1985 con solo 22 alumnos, bajo la dirección de la Prof. Celia Cristina Galeano. Este fue el cimiento para que en 1991 se fundara el <strong>Colegio Privado María Auxiliadora</strong>.
-            </Typography>
-            <Typography variant="body1" sx={{ lineHeight: 1.8, mb: 3, textAlign: 'justify' }}>
-              En sus inicios, las clases se desarrollaban a la luz de <strong>faroles a gas</strong>, demostrando el espíritu resiliente de nuestra comunidad. Hoy, somos pioneros en el distrito implementando el <strong>Bachillerato Técnico en Contabilidad</strong>.
-            </Typography>
-            <Box sx={{ bgcolor: COLORS.primary, color: 'white', p: 2, borderRadius: 2, textAlign: 'center' }}>
-              <Typography variant="h6" sx={{ fontWeight: 700 }}>Primera Promoción de Bachilleres: 1996</Typography>
-              <Typography variant="caption">Denominada "Fundadores"</Typography>
-            </Box>
-          </Paper>
-        </Container>
-      </Box>
 
-      {/* ORGANIZACIÓN Y EQUIPO */}
-      <Container maxWidth="lg" sx={{ py: 10 }}>
-        <Typography variant="h4" sx={{ fontWeight: 900, mb: 5, textAlign: 'center', color: COLORS.primary }}>Liderazgo y Organización</Typography>
-        <Grid container spacing={4}>
-          <Grid item xs={12} md={6}>
-            <Stack spacing={2}>
-              <Paper sx={{ p: 3, display: 'flex', alignItems: 'center', gap: 3, borderLeft: `6px solid ${COLORS.primary}` }}>
-                <Avatar sx={{ bgcolor: COLORS.primary, width: 56, height: 56 }}>CG</Avatar>
-                <Box>
-                  <Typography variant="subtitle2" color="primary" sx={{ fontWeight: 800 }}>DIRECTORA GENERAL</Typography>
-                  <Typography variant="h6" sx={{ fontWeight: 700 }}>Lic. Celia María Villalba Galeano</Typography>
-                </Box>
-              </Paper>
-              <Paper sx={{ p: 3, display: 'flex', alignItems: 'center', gap: 3, borderLeft: `6px solid ${COLORS.secondary}` }}>
-                <Avatar sx={{ bgcolor: COLORS.secondary, width: 56, height: 56 }}>CV</Avatar>
-                <Box>
-                  <Typography variant="subtitle2" sx={{ fontWeight: 800, color: '#9a7d1a' }}>Secretaria</Typography>
-                  <Typography variant="h6" sx={{ fontWeight: 700 }}>Prof. Claudia Villalba Galeano</Typography>
-                </Box>
-              </Paper>
-            </Stack>
-          </Grid>
-          <Grid item xs={12} md={6}>
-            <Typography variant="h6" sx={{ fontWeight: 800, mb: 2 }}>Estamentos Institucionales</Typography>
-            <List>
-              <ListItem>
-                <ListItemIcon><GroupsIcon color="primary"/></ListItemIcon>
-                <ListItemText primary="ACE (Asociación de Padres)" secondary="Presidenta 2024: Sra. Sirley Ludwig" />
-              </ListItem>
-              <ListItem>
-                <ListItemIcon><SchoolIcon color="primary"/></ListItemIcon>
-                <ListItemText primary="Centro de Estudiantes" secondary="Presidenta: Celena Espínola" />
-              </ListItem>
-              <ListItem>
-                <ListItemIcon><GroupsIcon color="primary"/></ListItemIcon>
-                <ListItemText primary="Mutual de Docentes" secondary="Presidenta: Prof. María Mendoza" />
-              </ListItem>
-            </List>
-          </Grid>
-        </Grid>
-      </Container>
-
-      {/* NORMAS Y COMPROMISO */}
-      <Box sx={{ bgcolor: COLORS.primary, color: 'white', py: 10 }}>
-        <Container maxWidth="lg">
-          <Grid container spacing={6} alignItems="center">
+          <Grid container spacing={4}>
             <Grid item xs={12} md={6}>
-              <GavelIcon sx={{ fontSize: 60, mb: 2, color: COLORS.secondary }} />
-              <Typography variant="h3" sx={{ fontWeight: 900, mb: 3 }}>Normas de Convivencia</Typography>
-              <Typography variant="body1" sx={{ opacity: 0.9, mb: 4, fontSize: '1.1rem' }}>
-                La matriculación implica el compromiso de conocer y respetar nuestra identidad institucional. 
-                Buscamos garantizar la asistencia puntual, el uso correcto del uniforme y la formación integral.
-              </Typography>
-              <Button variant="outlined" sx={{ color: 'white', borderColor: 'white', fontWeight: 700, px: 4 }}>
-                Descargar Reglamento
-              </Button>
+              <Card elevation={0} sx={{ height: '100%', border: `1px solid ${C.line}`, borderRadius: '24px', p: 2, bgcolor: C.white }}>
+                <CardContent sx={{ p: { xs: 2, md: 3 } }}>
+                  <Avatar variant="rounded" sx={{ width: 56, height: 56, bgcolor: '#EEF2FF', color: C.blue, borderRadius: '16px', mb: 3 }}>
+                    <School sx={{ fontSize: 28 }} />
+                  </Avatar>
+                  <Typography component="h3" sx={{ fontSize: '1.4rem', fontWeight: 900, mb: 1.5 }}>
+                    Para Docentes y Directivos
+                  </Typography>
+                  <Typography sx={{ color: C.muted, lineHeight: 1.75, mb: 3, fontSize: '1rem' }}>
+                    Automatizá la burocracia administrativa. Reducí el tiempo en planillas de papel, lleva el control riguroso de asistencia y genera reportes listos para la supervisión.
+                  </Typography>
+                  <Stack spacing={1.5}>
+                    {['Planificación semanal y gestión de contenidos', 'Registro de asistencia y retardos', 'Reportes de evaluación transparentes'].map((item) => (
+                      <Stack key={item} direction="row" spacing={1.5} alignItems="center">
+                        <Box sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: C.blue }} />
+                        <Typography sx={{ fontSize: '.92rem', fontWeight: 700 }}>{item}</Typography>
+                      </Stack>
+                    ))}
+                  </Stack>
+                </CardContent>
+              </Card>
             </Grid>
+
             <Grid item xs={12} md={6}>
-              <Paper sx={{ p: 4, bgcolor: 'rgba(255,255,255,0.1)', backdropFilter: 'blur(10px)', color: 'white' }}>
-                <Typography variant="h6" sx={{ fontWeight: 800, mb: 2 }}>Compromiso del Tutor</Typography>
-                <Stack spacing={2}>
-                  <Stack direction="row" spacing={2}>
-                    <CheckIcon sx={{ color: COLORS.secondary }} />
-                    <Typography variant="body2">Garantizar la asistencia puntual y buena conducta.</Typography>
+              <Card elevation={0} sx={{ height: '100%', border: `1px solid ${C.line}`, borderRadius: '24px', p: 2, bgcolor: C.white }}>
+                <CardContent sx={{ p: { xs: 2, md: 3 } }}>
+                  <Avatar variant="rounded" sx={{ width: 56, height: 56, bgcolor: '#FEF2F2', color: C.red, borderRadius: '16px', mb: 3 }}>
+                    <Groups sx={{ fontSize: 28 }} />
+                  </Avatar>
+                  <Typography component="h3" sx={{ fontSize: '1.4rem', fontWeight: 900, mb: 1.5 }}>
+                    Para Familias y Tutores
+                  </Typography>
+                  <Typography sx={{ color: C.muted, lineHeight: 1.75, mb: 3, fontSize: '1rem' }}>
+                    Acompañá de cerca la trayectoria escolar de tus hijos. Consultá calificaciones, revisa la asistencia y mantén comunicación directa con los avances habilitados por la escuela.
+                  </Typography>
+                  <Stack spacing={1.5}>
+                    {['Seguimiento del progreso académico', 'Control de asistencia en tiempo real', 'Acceso seguro desde el celular o PC'].map((item) => (
+                      <Stack key={item} direction="row" spacing={1.5} alignItems="center">
+                        <Box sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: C.red }} />
+                        <Typography sx={{ fontSize: '.92rem', fontWeight: 700 }}>{item}</Typography>
+                      </Stack>
+                    ))}
                   </Stack>
-                  <Stack direction="row" spacing={2}>
-                    <CheckIcon sx={{ color: COLORS.secondary }} />
-                    <Typography variant="body2">Participar activamente en reuniones y jornadas.</Typography>
-                  </Stack>
-                  <Stack direction="row" spacing={2}>
-                    <CheckIcon sx={{ color: COLORS.secondary }} />
-                    <Typography variant="body2">Mantener al día las obligaciones administrativas.</Typography>
-                  </Stack>
-                </Stack>
-              </Paper>
+                </CardContent>
+              </Card>
             </Grid>
           </Grid>
         </Container>
       </Box>
 
-      {/* FOOTER / CONTACTO */}
-      <Box sx={{ bgcolor: COLORS.white, pt: 10, pb: 5 }}>
+      {/* LLAMADO A LA ACCIÓN FINAL */}
+      <Box sx={{ px: 2, py: { xs: 8, md: 12 }, bgcolor: C.white }}>
         <Container maxWidth="lg">
-          <Grid container spacing={4} sx={{ mb: 5 }}>
-            <Grid item xs={12} md={4}>
-              <Image src="/logo.png" alt="Logo" width={60} height={60} />
-              <Typography variant="h6" sx={{ mt: 2, fontWeight: 900, color: COLORS.primary }}>CPMA</Typography>
-              <Typography variant="body2" color="text.secondary">
-                Gral. Bernardino Caballero y Mcal. F. S. López<br/>
-                Barrio San Juan, María Auxiliadora<br/>
-                Itapúa - Paraguay
-              </Typography>
-            </Grid>
-            <Grid item xs={12} md={4}>
-              <Typography variant="h6" sx={{ fontWeight: 800, mb: 2 }}>Contacto</Typography>
-              <Stack spacing={1}>
-                <Stack direction="row" spacing={1} alignItems="center">
-                  <PhoneIcon fontSize="small" color="primary" />
-                  <Typography variant="body2">+595 XXX XXX XXX</Typography>
-                </Stack>
-                <Stack direction="row" spacing={1} alignItems="center">
-                  <EmailIcon fontSize="small" color="primary" />
-                  <Typography variant="body2"></Typography>
-                </Stack>
-              </Stack>
-            </Grid>
-            <Grid item xs={12} md={4}>
-              <Typography variant="h6" sx={{ fontWeight: 800, mb: 2 }}>Síguenos</Typography>
-              <Stack direction="row" spacing={2}>
-                <Button variant="outlined" component="a" href="https://www.facebook.com/cpma.mariaauxiliadora/" target="_blank">Facebook</Button>
-                <Button variant="outlined" component="a" href="https://www.instagram.com/cpma.itapua/" target="_blank">Instagram</Button>
-              </Stack>
-            </Grid>
-          </Grid>
-          <Divider sx={{ mb: 4 }} />
-
+          <Box
+            sx={{
+              p: { xs: 4, md: 7 },
+              borderRadius: '32px',
+              background: `linear-gradient(135deg, ${C.blue}, #001F66)`,
+              color: C.white,
+              textAlign: 'center',
+              position: 'relative',
+              overflow: 'hidden',
+              boxShadow: '0 25px 50px -12px rgba(0, 56, 168, 0.35)',
+            }}
+          >
+            <Typography
+              sx={{
+                fontSize: { xs: '1.8rem', md: '2.6rem' },
+                fontWeight: 950,
+                letterSpacing: '-.03em',
+                mb: 2,
+                maxWidth: 700,
+                mx: 'auto',
+              }}
+            >
+              Llevá tu institución educativa al siguiente nivel tecnológico.
+            </Typography>
+            <Typography
+              sx={{
+                color: 'rgba(255,255,255,0.85)',
+                fontSize: '1.1rem',
+                mb: 4,
+                maxWidth: 550,
+                mx: 'auto',
+                lineHeight: 1.7,
+              }}
+            >
+              Accedé a tu cuenta para gestionar clases, alumnos y planificaciones de forma moderna y eficiente con KuaaPy.
+            </Typography>
+            <Button
+              onClick={goToApp}
+              variant="contained"
+              endIcon={<ArrowForward />}
+              sx={{
+                py: 1.8,
+                px: 4.5,
+                bgcolor: C.white,
+                color: C.blue,
+                borderRadius: '14px',
+                textTransform: 'none',
+                fontWeight: 900,
+                fontSize: '1.05rem',
+                boxShadow: '0 10px 25px rgba(0,0,0,0.15)',
+                '&:hover': { bgcolor: '#F1F5F9' },
+              }}
+            >
+              {hasToken ? 'Abrir mi panel' : 'Ingresar a KuaaPy'}
+            </Button>
+          </Box>
         </Container>
       </Box>
     </Box>
