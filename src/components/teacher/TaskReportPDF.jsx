@@ -8,7 +8,7 @@ export const generateTaskPDF = async (taskInfo, submissions, user) => {
     format: 'a4'
   });
 
-  const PRIMARY_COLOR = [125, 15, 21];
+  const PRIMARY_COLOR = [0, 56, 168]; // Azul institucional KuaaPy (#0038A8)
 
   const isRSA = taskInfo?.instrumentType === 'rsa';
   const isRubrica = taskInfo?.instrumentType === 'rubrica';
@@ -44,21 +44,24 @@ export const generateTaskPDF = async (taskInfo, submissions, user) => {
   };
 
   // -----------------------------
-  // LOGO
+  // LOGO DINÁMICO DESDE LA INSTITUCIÓN
   // -----------------------------
   const loadImage = (url) => {
     return new Promise((resolve) => {
       const img = new Image();
-
       img.src = url;
       img.crossOrigin = 'Anonymous';
-
       img.onload = () => resolve(img);
       img.onerror = () => resolve(null);
     });
   };
 
-  const logo = await loadImage('/logo.png');
+  // Extraer la URL del logo de la institución o del usuario
+  const logoUrl = user?.institution?.logoUrl || taskInfo?.institution?.logoUrl || '/logo.png';
+  const logo = await loadImage(logoUrl);
+
+  // Nombre de la institución
+  const institutionName = user?.institution?.name || taskInfo?.institution?.name || 'KuaaPy Institución';
 
   // -----------------------------
   // ENCABEZADO
@@ -79,10 +82,7 @@ export const generateTaskPDF = async (taskInfo, submissions, user) => {
         { content: '', rowSpan: 3 },
 
         {
-          content: (
-            user?.institution?.name ||
-            'INSTITUCIÓN EDUCATIVA'
-          ).toUpperCase(),
+          content: institutionName.toUpperCase(),
           styles: {
             fontSize: 14,
             fontStyle: 'bold',
@@ -209,7 +209,7 @@ export const generateTaskPDF = async (taskInfo, submissions, user) => {
       },
 
       headStyles: {
-        fillColor: [80, 80, 80]
+        fillColor: [0, 56, 168]
       },
 
       columnStyles: {
@@ -358,8 +358,6 @@ export const generateTaskPDF = async (taskInfo, submissions, user) => {
           ? Number(score.points) || 0
           : 0;
 
-        // CAMBIO IMPORTANTE:
-        // Mostrar puntaje real
         row.push(p);
       }
     });

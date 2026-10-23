@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useMemo, useState } from 'react';
-
+import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { getGeneralTaskReport } from '@/services/api';
 
@@ -30,11 +30,14 @@ import {
 
 import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
 
+// CONSTANTES DE ESTILO KUAAPY
 const COLORS = {
-  primary: '#7D0F15',
-  primaryDark: '#5c080d',
+  primary: '#0038A8',     // Azul principal KuaaPy
+  primaryDark: '#00257A', // Azul oscuro
+  red: '#D52B1E',         // Acento rojo
   bg: '#F8FAFC',
   border: '#E2E8F0',
+  gradient: 'linear-gradient(135deg, #0038A8 0%, #00257A 100%)'
 };
 
 export default function CalificacionesPage() {
@@ -111,49 +114,44 @@ export default function CalificacionesPage() {
     }, {});
   }, [report]);
 
-const calculateGrade = (obtained, total) => {
-  if (!total || total <= 0) return 1;
+  const calculateGrade = (obtained, total) => {
+    if (!total || total <= 0) return 1;
 
-  // Límite para nota 2: 70% redondeado hacia abajo
-  const minimumPass = Math.floor(total * 0.7);
+    const minimumPass = Math.floor(total * 0.7);
 
-  // Si no llega al mínimo, nota 1
-  if (obtained < minimumPass) return 1;
+    if (obtained < minimumPass) return 1;
+    if (obtained === minimumPass) return 2;
 
-  // Si llega justo al mínimo, nota 2
-  if (obtained === minimumPass) return 2;
+    const start = minimumPass + 1;
+    const upperLimit = total;
 
-  // Desde el punto siguiente al mínimo se reparten notas 3, 4 y 5
-  const start = minimumPass + 1;
-  const upperLimit = total;
+    const range = upperLimit - start + 1;
+    const baseInterval = Math.floor(range / 3);
+    const remainder = range % 3;
 
-  const range = upperLimit - start + 1;
-  const baseInterval = Math.floor(range / 3);
-  const remainder = range % 3;
+    let currentStart = start;
 
-  let currentStart = start;
+    for (let grade = 3; grade <= 5; grade++) {
+      const extra = grade > 5 - remainder ? 1 : 0;
 
-  for (let grade = 3; grade <= 5; grade++) {
-    // El sobrante se agrega a las notas superiores
-    const extra = grade > 5 - remainder ? 1 : 0;
+      const intervalSize = baseInterval + extra;
+      const currentEnd = currentStart + intervalSize - 1;
 
-    const intervalSize = baseInterval + extra;
-    const currentEnd = currentStart + intervalSize - 1;
+      if (obtained >= currentStart && obtained <= currentEnd) {
+        return grade;
+      }
 
-    if (obtained >= currentStart && obtained <= currentEnd) {
-      return grade;
+      currentStart = currentEnd + 1;
     }
 
-    currentStart = currentEnd + 1;
-  }
-
-  return 5;
-};
+    return 5;
+  };
 
   if (loading || loadingReport) {
     return (
-      <Box sx={{ p: 4, textAlign: 'center' }}>
+      <Box sx={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', height: '80vh' }}>
         <CircularProgress sx={{ color: COLORS.primary }} />
+        <Typography sx={{ mt: 2, fontWeight: 600, color: '#64748B' }}>Cargando calificaciones...</Typography>
       </Box>
     );
   }
@@ -161,7 +159,7 @@ const calculateGrade = (obtained, total) => {
   if (error) {
     return (
       <Box sx={{ p: 3 }}>
-        <Alert severity="error">{error}</Alert>
+        <Alert severity="error" sx={{ borderRadius: '12px' }}>{error}</Alert>
       </Box>
     );
   }
@@ -173,20 +171,26 @@ const calculateGrade = (obtained, total) => {
   return (
     <Box
       sx={{
-        p: 3,
+        p: { xs: 2, md: 4 },
         backgroundColor: COLORS.bg,
         minHeight: '100vh',
       }}
     >
+      {/* Tarjeta de Encabezado Institucional */}
       <Paper
-        elevation={3}
+        elevation={0}
         sx={{
-          p: 3,
-          mb: 3,
-          borderRadius: 3,
-          borderTop: `8px solid ${COLORS.primary}`,
+          p: { xs: 3, md: 4 },
+          mb: 4,
+          borderRadius: '24px',
+          border: `1px solid ${COLORS.border}`,
+          bgcolor: '#fff',
+          position: 'relative',
+          overflow: 'hidden'
         }}
       >
+        <Box sx={{ position: 'absolute', top: 0, left: 0, width: '8px', height: '100%', background: COLORS.gradient }} />
+
         <Box
           sx={{
             display: 'flex',
@@ -200,32 +204,39 @@ const calculateGrade = (obtained, total) => {
             src="/logo.png"
             alt="Logo institucional"
             sx={{
-              width: 95,
-              height: 95,
+              width: 80,
+              height: 80,
               objectFit: 'contain',
-              borderRadius: '50%',
+              borderRadius: '20px',
+              bgcolor: '#F1F5F9',
+              p: 1
             }}
           />
 
           <Box sx={{ flex: 1 }}>
             <Typography
-              variant="h5"
+              variant="subtitle2"
               sx={{
-                fontWeight: 'bold',
+                fontWeight: 800,
                 color: COLORS.primary,
+                letterSpacing: '0.05em',
                 textTransform: 'uppercase',
+                mb: 0.5
               }}
             >
               {user?.institution?.name ||
                 user?.institution?.institutionName ||
                 user?.docente?.institution?.name ||
-                'Colegio Privado María Auxiliadora'}
+                'KuaaPy Institución'}
             </Typography>
 
             <Typography
-              variant="h6"
+              variant="h4"
               sx={{
-                fontWeight: 600,
+                fontWeight: 900,
+                color: '#0F172A',
+                letterSpacing: '-0.02em',
+                mb: 1.5
               }}
             >
               Planilla General de Calificaciones
@@ -233,18 +244,19 @@ const calculateGrade = (obtained, total) => {
 
             <Box
               sx={{
-                mt: 1,
                 display: 'flex',
-                gap: 1,
+                gap: 1.5,
                 flexWrap: 'wrap',
+                mb: 2.5,
               }}
             >
               <Chip
                 label={`Grado: ${selectedGrade}`}
                 sx={{
-                  backgroundColor: COLORS.primary,
-                  color: '#fff',
-                  fontWeight: 'bold',
+                  backgroundColor: `${COLORS.primary}12`,
+                  color: COLORS.primary,
+                  fontWeight: 800,
+                  borderRadius: '8px'
                 }}
               />
 
@@ -254,24 +266,22 @@ const calculateGrade = (obtained, total) => {
                 sx={{
                   borderColor: COLORS.primary,
                   color: COLORS.primary,
-                  fontWeight: 'bold',
+                  fontWeight: 800,
+                  borderRadius: '8px'
                 }}
               />
             </Box>
 
             <Box
               sx={{
-                mt: 2,
                 display: 'flex',
                 gap: 2,
                 flexWrap: 'wrap',
                 alignItems: 'center',
               }}
             >
-              <FormControl sx={{ minWidth: 250 }}>
-                <InputLabel>
-                  Seleccionar grado
-                </InputLabel>
+              <FormControl size="small" sx={{ minWidth: 220 }}>
+                <InputLabel>Seleccionar grado</InputLabel>
 
                 <Select
                   value={selectedGrade}
@@ -279,6 +289,7 @@ const calculateGrade = (obtained, total) => {
                   onChange={(e) =>
                     setSelectedGrade(e.target.value)
                   }
+                  sx={{ borderRadius: '12px', bgcolor: '#fff' }}
                 >
                   {availableGrades.map((grade) => (
                     <MenuItem
@@ -303,9 +314,12 @@ const calculateGrade = (obtained, total) => {
                 }
                 sx={{
                   backgroundColor: COLORS.primary,
-                  fontWeight: 'bold',
-                  height: 56,
-
+                  borderRadius: '12px',
+                  fontWeight: 800,
+                  textTransform: 'none',
+                  px: 3,
+                  height: 40,
+                  boxShadow: '0 8px 20px rgba(0,56,168,0.2)',
                   '&:hover': {
                     backgroundColor: COLORS.primaryDark,
                   },
@@ -318,11 +332,14 @@ const calculateGrade = (obtained, total) => {
         </Box>
       </Paper>
 
+      {/* Tabla de Calificaciones Generales */}
       <Paper
-        elevation={2}
+        elevation={0}
         sx={{
-          borderRadius: 3,
+          borderRadius: '24px',
+          border: `1px solid ${COLORS.border}`,
           overflowX: 'auto',
+          bgcolor: '#fff'
         }}
       >
         <Table
@@ -337,12 +354,13 @@ const calculateGrade = (obtained, total) => {
                 rowSpan={2}
                 sx={{
                   color: '#fff',
-                  fontWeight: 'bold',
-                  border: '1px solid #fff',
+                  fontWeight: 900,
+                  border: '1px solid rgba(255,255,255,0.2)',
                   minWidth: 250,
+                  p: 2
                 }}
               >
-                Alumno
+                ALUMNO
               </TableCell>
 
               {Object.entries(groupedSubjects).map(
@@ -353,8 +371,9 @@ const calculateGrade = (obtained, total) => {
                     align="center"
                     sx={{
                       color: '#fff',
-                      fontWeight: 'bold',
-                      border: '1px solid #fff',
+                      fontWeight: 900,
+                      border: '1px solid rgba(255,255,255,0.2)',
+                      p: 2
                     }}
                   >
                     {subject}
@@ -382,8 +401,10 @@ const calculateGrade = (obtained, total) => {
                         align="center"
                         sx={{
                           color: '#fff',
-                          fontWeight: 'bold',
-                          border: '1px solid #fff',
+                          fontWeight: 800,
+                          border: '1px solid rgba(255,255,255,0.2)',
+                          fontSize: '0.8rem',
+                          py: 1.5
                         }}
                       >
                         {totalPoints} pts
@@ -393,8 +414,10 @@ const calculateGrade = (obtained, total) => {
                         align="center"
                         sx={{
                           color: '#fff',
-                          fontWeight: 'bold',
-                          border: '1px solid #fff',
+                          fontWeight: 800,
+                          border: '1px solid rgba(255,255,255,0.2)',
+                          fontSize: '0.8rem',
+                          py: 1.5
                         }}
                       >
                         Calif.
@@ -408,12 +431,14 @@ const calculateGrade = (obtained, total) => {
 
           <TableBody>
             {report.rows.map((student) => (
-              <TableRow key={student.studentId}>
+              <TableRow key={student.studentId} hover>
                 <TableCell
                   sx={{
                     border: `1px solid ${COLORS.border}`,
-                    fontWeight: 600,
+                    fontWeight: 700,
+                    color: '#0F172A',
                     whiteSpace: 'nowrap',
+                    p: 2
                   }}
                 >
                   {student.studentName}
@@ -453,6 +478,9 @@ const calculateGrade = (obtained, total) => {
                           align="center"
                           sx={{
                             border: `1px solid ${COLORS.border}`,
+                            color: '#475569',
+                            fontWeight: 600,
+                            p: 2
                           }}
                         >
                           {obtainedPoints}
@@ -462,9 +490,10 @@ const calculateGrade = (obtained, total) => {
                           align="center"
                           sx={{
                             border: `1px solid ${COLORS.border}`,
-                            fontWeight: 'bold',
+                            fontWeight: 900,
                             color: COLORS.primary,
                             fontSize: '1rem',
+                            p: 2
                           }}
                         >
                           {grade}
@@ -475,6 +504,16 @@ const calculateGrade = (obtained, total) => {
                 )}
               </TableRow>
             ))}
+
+            {report.rows.length === 0 && (
+              <TableRow>
+                <TableCell colSpan={Object.keys(groupedSubjects).length * 2 + 1} align="center" sx={{ py: 6 }}>
+                  <Typography sx={{ color: '#64748B', fontWeight: 600 }}>
+                    No hay estudiantes registrados para este grado.
+                  </Typography>
+                </TableCell>
+              </TableRow>
+            )}
           </TableBody>
         </Table>
       </Paper>

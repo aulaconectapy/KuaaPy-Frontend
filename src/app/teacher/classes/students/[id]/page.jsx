@@ -12,18 +12,22 @@ import {
   EventNote as TaskIcon 
 } from '@mui/icons-material';
 import { getStudentTasksByStudentId } from "@/services/api";
-import { useAuth } from "@/context/AuthContext"; // Importamos el contexto de Auth
+import { useAuth } from "@/context/AuthContext";
 
+// CONSTANTES DE ESTILO KUAAPY
 const COLORS = {
-  primary: "#7D0F15",
+  primary: "#0038A8",     // Azul principal KuaaPy
+  primaryDark: "#00257A", // Azul oscuro
+  red: "#D52B1E",         // Acento rojo
   bgLight: "#F8FAFC",
-  border: "#E2E8F0"
+  border: "#E2E8F0",
+  gradient: "linear-gradient(135deg, #0038A8 0%, #00257A 100%)"
 };
 
 export default function StudentDetailPage() {
   const { id } = useParams();
   const router = useRouter();
-  const { user, loading: authLoading } = useAuth(); // Obtenemos user y estado de carga
+  const { user, loading: authLoading } = useAuth();
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [studentInfo, setStudentInfo] = useState(null);
@@ -82,7 +86,7 @@ export default function StudentDetailPage() {
   }
 
   return (
-    <Box sx={{ bgcolor: COLORS.bgLight, minHeight: '100vh', py: 4 }}>
+    <Box sx={{ bgcolor: COLORS.bgLight, minHeight: '100vh', py: { xs: 3, md: 5 } }}>
       <Container maxWidth="lg">
         
         <Button 
@@ -93,59 +97,59 @@ export default function StudentDetailPage() {
           Volver al Resumen
         </Button>
 
-        <Paper sx={{ p: { xs: 2, md: 4 }, borderRadius: 4, border: `1px solid ${COLORS.border}`, boxShadow: 'none' }}>
+        <Paper elevation={0} sx={{ p: { xs: 3, md: 4 }, borderRadius: '24px', border: `1px solid ${COLORS.border}`, bgcolor: '#fff' }}>
           
           <Stack direction={{ xs: 'column', md: 'row' }} justifyContent="space-between" alignItems={{ md: 'center' }} spacing={2}>
             <Box>
-              <Typography variant="h4" sx={{ fontWeight: 900, color: '#1E293B' }}>
+              <Typography variant="h4" sx={{ fontWeight: 900, color: '#0F172A', letterSpacing: '-0.02em', mb: 0.5 }}>
                 {studentInfo?.lastName?.toUpperCase()}, {studentInfo?.firstName}
               </Typography>
               <Stack direction="row" spacing={1} alignItems="center" sx={{ mt: 1 }}>
-                <Chip label={studentInfo?.grade} size="small" sx={{ fontWeight: 700, bgcolor: '#E2E8F0' }} />
-                <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 600 }}>
-                  Historial Académico Detallado
+                <Chip label={studentInfo?.grade} size="small" sx={{ fontWeight: 700, bgcolor: '#EFF6FF', color: COLORS.primary, borderRadius: '6px' }} />
+                <Typography variant="body2" sx={{ color: '#64748B', fontWeight: 500 }}>
+                  Historial Académico Detallado - KuaaPy
                 </Typography>
               </Stack>
             </Box>
             
             <Box sx={{ textAlign: { md: 'right' } }}>
-              <Typography variant="caption" sx={{ fontWeight: 800, color: '#64748B' }}>
+              <Typography variant="caption" sx={{ fontWeight: 800, color: '#64748B', letterSpacing: '0.05em' }}>
                 TAREAS REGISTRADAS
               </Typography>
-              <Typography variant="h5" sx={{ fontWeight: 900, color: COLORS.primary }}>
+              <Typography variant="h4" sx={{ fontWeight: 900, color: COLORS.primary }}>
                 {tasks.length}
               </Typography>
             </Box>
           </Stack>
           
-          <Divider sx={{ my: 4 }} />
+          <Divider sx={{ my: 4, borderColor: '#F1F5F9' }} />
 
           <TableContainer>
             <Table>
               <TableHead sx={{ bgcolor: '#F8FAFC' }}>
                 <TableRow>
-                  <TableCell sx={{ fontWeight: 900 }}>MATERIA / TEMA</TableCell>
-                  <TableCell align="center" sx={{ fontWeight: 900 }}>INSTRUMENTO</TableCell>
-                  <TableCell align="center" sx={{ fontWeight: 900 }}>ESTADO</TableCell>
-                  <TableCell align="center" sx={{ fontWeight: 900 }}>LOGRO</TableCell>
-                  <TableCell align="center" sx={{ fontWeight: 900 }}>PUNTAJE</TableCell>
+                  <TableCell sx={{ fontWeight: 900, color: '#0F172A' }}>MATERIA / TEMA</TableCell>
+                  <TableCell align="center" sx={{ fontWeight: 900, color: '#0F172A' }}>INSTRUMENTO</TableCell>
+                  <TableCell align="center" sx={{ fontWeight: 900, color: '#0F172A' }}>ESTADO</TableCell>
+                  <TableCell align="center" sx={{ fontWeight: 900, color: '#0F172A' }}>LOGRO</TableCell>
+                  <TableCell align="center" sx={{ fontWeight: 900, color: '#0F172A' }}>PUNTAJE</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
                 {tasks.map((st) => {
                   const maxPts = getMaxPoints(st.task);
                   return (
-                    <TableRow key={st._id} hover>
+                    <TableRow key={st._id} hover sx={{ '&:last-child td': { border: 0 } }}>
                       <TableCell>
                         <Stack direction="row" spacing={2} alignItems="center">
-                          <Box sx={{ p: 1, bgcolor: '#F1F5F9', borderRadius: 2 }}>
-                            <TaskIcon sx={{ color: '#64748B', fontSize: 20 }} />
+                          <Box sx={{ p: 1, bgcolor: '#EFF6FF', borderRadius: '12px', color: COLORS.primary, display: 'flex' }}>
+                            <TaskIcon sx={{ fontSize: 20 }} />
                           </Box>
                           <Box>
-                            <Typography variant="subtitle2" sx={{ fontWeight: 700, color: '#1E293B' }}>
+                            <Typography variant="subtitle2" sx={{ fontWeight: 700, color: '#0F172A' }}>
                               {st.task?.subject || 'Sin Materia'}
                             </Typography>
-                            <Typography variant="body2" color="text.secondary">
+                            <Typography variant="body2" sx={{ color: '#64748B', fontWeight: 500 }}>
                               {st.task?.topic || 'Sin Tema'}
                             </Typography>
                           </Box>
@@ -157,7 +161,7 @@ export default function StudentDetailPage() {
                           label={st.task?.instrumentType?.toUpperCase().replace('_', ' ')} 
                           size="small" 
                           variant="outlined" 
-                          sx={{ fontWeight: 700, fontSize: '0.65rem', color: '#64748B' }}
+                          sx={{ fontWeight: 700, fontSize: '0.65rem', color: '#64748B', borderColor: '#E2E8F0', borderRadius: '6px' }}
                         />
                       </TableCell>
 
@@ -169,6 +173,7 @@ export default function StudentDetailPage() {
                             fontWeight: 800,
                             textTransform: 'uppercase',
                             fontSize: '0.7rem',
+                            borderRadius: '6px',
                             bgcolor: st.status === 'corregido' ? '#DCFCE7' : '#FEF2F2',
                             color: st.status === 'corregido' ? '#166534' : '#991B1B',
                           }} 
@@ -176,10 +181,10 @@ export default function StudentDetailPage() {
                       </TableCell>
 
                       <TableCell align="center">
-                        <Typography variant="body2" sx={{ fontWeight: 700 }}>
+                        <Typography variant="body2" sx={{ fontWeight: 700, color: '#0F172A' }}>
                           {st.score || 0} / {maxPts}
                         </Typography>
-                        <Typography variant="caption" color="text.secondary">
+                        <Typography variant="caption" sx={{ color: '#64748B', fontWeight: 500 }}>
                           Indicadores
                         </Typography>
                       </TableCell>
@@ -190,8 +195,9 @@ export default function StudentDetailPage() {
                           px: 2, py: 0.5, 
                           bgcolor: COLORS.primary, 
                           color: 'white', 
-                          borderRadius: 2,
-                          fontWeight: 900
+                          borderRadius: '8px',
+                          fontWeight: 900,
+                          fontSize: '0.85rem'
                         }}>
                           {st.score || 0} pts
                         </Box>
@@ -203,7 +209,7 @@ export default function StudentDetailPage() {
                 {tasks.length === 0 && (
                   <TableRow>
                     <TableCell colSpan={5} align="center" sx={{ py: 8 }}>
-                      <Typography color="text.secondary" sx={{ fontWeight: 600 }}>
+                      <Typography sx={{ color: '#64748B', fontWeight: 600 }}>
                         Este estudiante aún no tiene tareas registradas.
                       </Typography>
                     </TableCell>

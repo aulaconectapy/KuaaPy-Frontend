@@ -17,17 +17,14 @@ import {
   Lock as LockIcon
 } from "@mui/icons-material";
 
-const gradeMapping = {
-  "1": "1° grado", "2": "2° grado", "3": "3° grado", "4": "4° grado",
-  "5": "5° grado", "6": "6° grado", "7": "7° grado", "8": "8° grado",
-  "9": "9° grado", "1a": "1er año", "2a": "2do año", "3a": "3er año"
-};
-
+// CONSTANTES DE ESTILO KUAAPY
 const COLORS = {
-  primary: "#7D0F15",
-  primaryLight: "#a31a20",
+  primary: "#0038A8",     // Azul principal KuaaPy
+  primaryDark: "#00257A", // Azul oscuro
+  red: "#D52B1E",         // Acento rojo
   bgLight: "#F8FAFC",
-  border: "#E2E8F0"
+  border: "#E2E8F0",
+  gradient: "linear-gradient(135deg, #0038A8 0%, #00257A 100%)"
 };
 
 const StudentForm = ({ studentId, onSuccess }) => {
@@ -180,7 +177,6 @@ const StudentForm = ({ studentId, onSuccess }) => {
       });
       onSuccess?.();
     } catch (error) {
-      // ⚡ Captura el mensaje de error específico del backend
       const errorMessage = error?.response?.data?.message || "Error al guardar.";
       const backendErrors = error?.response?.data?.errors || {};
       
@@ -190,11 +186,11 @@ const StudentForm = ({ studentId, onSuccess }) => {
   };
 
   const SectionTitle = ({ icon: Icon, title }) => (
-    <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 2, mt: 1 }}>
-      <Avatar sx={{ bgcolor: `${COLORS.primary}10`, color: COLORS.primary, width: 32, height: 32 }}>
+    <Stack direction="row" spacing={1.5} alignItems="center" sx={{ mb: 2, mt: 1 }}>
+      <Avatar sx={{ bgcolor: `${COLORS.primary}12`, color: COLORS.primary, width: 36, height: 36, borderRadius: '10px' }}>
         <Icon fontSize="small" />
       </Avatar>
-      <Typography variant="subtitle1" fontWeight="800" color="#1E293B" sx={{ textTransform: 'uppercase', letterSpacing: 0.5, fontSize: '0.85rem' }}>
+      <Typography variant="subtitle1" sx={{ fontWeight: 800, color: '#0F172A', textTransform: 'uppercase', letterSpacing: '0.05em', fontSize: '0.85rem' }}>
         {title}
       </Typography>
     </Stack>
@@ -209,32 +205,65 @@ const StudentForm = ({ studentId, onSuccess }) => {
   }
 
   return (
-    <Box sx={{ bgcolor: COLORS.bgLight, minHeight: '100vh', py: 4, px: 2 }}>
+    <Box sx={{ bgcolor: COLORS.bgLight, minHeight: '100vh', py: { xs: 3, md: 5 }, px: 2 }}>
       <Container maxWidth="md">
-        <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 4 }}>
-            <Button startIcon={<ArrowBack />} onClick={() => router.back()} sx={{ color: '#64748B', fontWeight: 700 }}>Volver</Button>
-            <Button startIcon={<Dashboard />} variant="outlined" onClick={() => router.push("/dashboard")} sx={{ borderRadius: 3, borderColor: COLORS.border, color: '#1E293B', fontWeight: 700 }}>Dashboard</Button>
+        <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 3 }}>
+            <Button startIcon={<ArrowBack />} onClick={() => router.back()} sx={{ color: '#64748B', fontWeight: 700, textTransform: 'none' }}>Volver</Button>
+            <Button startIcon={<Dashboard />} variant="outlined" onClick={() => router.push("/dashboard")} sx={{ borderRadius: '12px', borderColor: COLORS.border, color: '#1E293B', fontWeight: 700, textTransform: 'none' }}>Dashboard</Button>
         </Stack>
 
-        <Paper elevation={0} sx={{ p: { xs: 3, md: 5 }, borderRadius: 6, border: `1px solid ${COLORS.border}`, boxShadow: '0 4px 6px -1px rgba(0,0,0,0.02)' }}>
+        <Paper elevation={0} sx={{ p: { xs: 3, md: 5 }, borderRadius: '24px', border: `1px solid ${COLORS.border}`, bgcolor: '#fff' }}>
           <Box sx={{ mb: 4, textAlign: 'center' }}>
-            <Typography variant="h4" sx={{ fontWeight: 900, color: COLORS.primary, letterSpacing: '-1px' }}>
+            <Typography variant="h4" sx={{ fontWeight: 900, color: COLORS.primary, letterSpacing: '-0.02em', mb: 0.5 }}>
               {studentId ? "Editar Perfil" : "Registro Estudiantil"}
             </Typography>
-            <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
-              Información oficial para la gestión académica institucional.
+            <Typography variant="body2" sx={{ color: '#64748B', fontWeight: 500 }}>
+              Información oficial para la gestión académica institucional en KuaaPy.
             </Typography>
           </Box>
 
           <form onSubmit={handleSubmit} autoComplete="off">
             <Grid container spacing={3}>
               <Grid item xs={12}><SectionTitle icon={PersonIcon} title="Información Personal" /></Grid>
-              <Grid item xs={12} sm={6}><TextField label="Nombre" name="firstName" value={student.firstName} onChange={handleChange} fullWidth required error={!!errors.firstName} helperText={errors.firstName} variant="outlined" InputProps={{ sx: { borderRadius: 3 } }} inputProps={{ autoComplete: 'none' }} /></Grid>
-              <Grid item xs={12} sm={6}><TextField label="Apellido" name="lastName" value={student.lastName} onChange={handleChange} fullWidth required error={!!errors.lastName} helperText={errors.lastName} variant="outlined" InputProps={{ sx: { borderRadius: 3 } }} inputProps={{ autoComplete: 'none' }} /></Grid>
+              
               <Grid item xs={12} sm={6}>
-                <FormControl fullWidth>
+                <TextField 
+                  label="Nombre" 
+                  name="firstName" 
+                  value={student.firstName} 
+                  onChange={handleChange} 
+                  fullWidth 
+                  required 
+                  size="small"
+                  error={!!errors.firstName} 
+                  helperText={errors.firstName} 
+                  variant="outlined" 
+                  InputProps={{ sx: { borderRadius: '12px' } }} 
+                  inputProps={{ autoComplete: 'none' }} 
+                />
+              </Grid>
+
+              <Grid item xs={12} sm={6}>
+                <TextField 
+                  label="Apellido" 
+                  name="lastName" 
+                  value={student.lastName} 
+                  onChange={handleChange} 
+                  fullWidth 
+                  required 
+                  size="small"
+                  error={!!errors.lastName} 
+                  helperText={errors.lastName} 
+                  variant="outlined" 
+                  InputProps={{ sx: { borderRadius: '12px' } }} 
+                  inputProps={{ autoComplete: 'none' }} 
+                />
+              </Grid>
+
+              <Grid item xs={12} sm={6}>
+                <FormControl fullWidth size="small">
                   <InputLabel>Sexo</InputLabel>
-                  <Select name="sex" value={student.sex} onChange={handleChange} label="Sexo" sx={{ borderRadius: 3 }}>
+                  <Select name="sex" value={student.sex} onChange={handleChange} label="Sexo" sx={{ borderRadius: '12px' }}>
                     <MenuItem value="Masculino">Masculino</MenuItem>
                     <MenuItem value="Femenino">Femenino</MenuItem>
                   </Select>
@@ -249,34 +278,60 @@ const StudentForm = ({ studentId, onSuccess }) => {
                   onChange={handleChange} 
                   fullWidth 
                   required
+                  size="small"
                   error={!!errors.cedula} 
                   helperText={errors.cedula || "Mínimo 6 números"} 
                   variant="outlined" 
-                  InputProps={{ sx: { borderRadius: 3 } }} 
+                  InputProps={{ sx: { borderRadius: '12px' } }} 
                   inputProps={{ autoComplete: 'none' }}
                 />
               </Grid>
               
-              <Grid item xs={12}><TextField label="Fecha de Nacimiento" type="date" name="birthDate" value={student.birthDate} onChange={handleChange} fullWidth InputLabelProps={{ shrink: true }} error={!!errors.birthDate} helperText={errors.birthDate} required variant="outlined" InputProps={{ sx: { borderRadius: 3 } }} /></Grid>
+              <Grid item xs={12}>
+                <TextField 
+                  label="Fecha de Nacimiento" 
+                  type="date" 
+                  name="birthDate" 
+                  value={student.birthDate} 
+                  onChange={handleChange} 
+                  fullWidth 
+                  size="small"
+                  InputLabelProps={{ shrink: true }} 
+                  error={!!errors.birthDate} 
+                  helperText={errors.birthDate} 
+                  required 
+                  variant="outlined" 
+                  InputProps={{ sx: { borderRadius: '12px' } }} 
+                />
+              </Grid>
 
-              <Grid item xs={12} sx={{ mt: 2 }}><SectionTitle icon={SchoolIcon} title="Ubicación Académica" /></Grid>
+              <Grid item xs={12} sx={{ mt: 1 }}><SectionTitle icon={SchoolIcon} title="Ubicación Académica" /></Grid>
+              
               <Grid item xs={12} sm={6}>
-                <FormControl fullWidth required error={!!errors.institution}>
+                <FormControl fullWidth size="small" required error={!!errors.institution}>
                   <InputLabel>Institución</InputLabel>
-                  <Select name="institution" value={student.institution} onChange={handleChange} label="Institución" sx={{ borderRadius: 3 }} disabled={["director/a","secretario/a","secretaria","docente"].includes(currentUser?.role?.toLowerCase())}>
+                  <Select 
+                    name="institution" 
+                    value={student.institution} 
+                    onChange={handleChange} 
+                    label="Institución" 
+                    sx={{ borderRadius: '12px' }} 
+                    disabled={["director/a","secretario/a","secretaria","docente"].includes(currentUser?.role?.toLowerCase())}
+                  >
                     {institutions.map(inst => <MenuItem key={inst._id} value={inst._id}>{inst.name}</MenuItem>)}
                   </Select>
                 </FormControl>
               </Grid>
+
               <Grid item xs={12} sm={6}>
-                <FormControl fullWidth required error={!!errors.grade}>
+                <FormControl fullWidth size="small" required error={!!errors.grade}>
                   <InputLabel>Grado / Curso</InputLabel>
                   <Select
                     name="grade"
                     multiple={currentUser?.role?.toLowerCase() === "docente" && grades.length > 1}
                     value={student.grade}
                     onChange={handleChange}
-                    input={<OutlinedInput label="Grado / Curso" sx={{ borderRadius: 3 }} />}
+                    input={<OutlinedInput label="Grado / Curso" sx={{ borderRadius: '12px' }} />}
                     renderValue={(selected) => Array.isArray(selected) ? selected.join(", ") : selected}
                   >
                     {grades.map(g => (
@@ -289,23 +344,25 @@ const StudentForm = ({ studentId, onSuccess }) => {
                 </FormControl>
               </Grid>
 
-              <Grid item xs={12} sx={{ mt: 2 }}><SectionTitle icon={FamilyIcon} title="Información Familiar" /></Grid>
-              <Grid item xs={12} sm={4}><TextField label="Padre (Nombres)" name="father.firstName" value={student.father.firstName} onChange={handleChange} fullWidth variant="outlined" InputProps={{ sx: { borderRadius: 3 } }} inputProps={{ autoComplete: 'none' }} /></Grid>
-              <Grid item xs={12} sm={4}><TextField label="Padre (Apellidos)" name="father.lastName" value={student.father.lastName} onChange={handleChange} fullWidth variant="outlined" InputProps={{ sx: { borderRadius: 3 } }} inputProps={{ autoComplete: 'none' }} /></Grid>
-              <Grid item xs={12} sm={4}><TextField label="Padre (Tel)" name="father.phone" value={student.father.phone} onChange={handleChange} fullWidth variant="outlined" InputProps={{ sx: { borderRadius: 3 } }} inputProps={{ autoComplete: 'none' }} /></Grid>
+              <Grid item xs={12} sx={{ mt: 1 }}><SectionTitle icon={FamilyIcon} title="Información Familiar" /></Grid>
+              
+              <Grid item xs={12} sm={4}><TextField size="small" label="Padre (Nombres)" name="father.firstName" value={student.father.firstName} onChange={handleChange} fullWidth variant="outlined" InputProps={{ sx: { borderRadius: '12px' } }} inputProps={{ autoComplete: 'none' }} /></Grid>
+              <Grid item xs={12} sm={4}><TextField size="small" label="Padre (Apellidos)" name="father.lastName" value={student.father.lastName} onChange={handleChange} fullWidth variant="outlined" InputProps={{ sx: { borderRadius: '12px' } }} inputProps={{ autoComplete: 'none' }} /></Grid>
+              <Grid item xs={12} sm={4}><TextField size="small" label="Padre (Tel)" name="father.phone" value={student.father.phone} onChange={handleChange} fullWidth variant="outlined" InputProps={{ sx: { borderRadius: '12px' } }} inputProps={{ autoComplete: 'none' }} /></Grid>
 
-              <Grid item xs={12} sm={4}><TextField label="Madre (Nombres)" name="mother.firstName" value={student.mother.firstName} onChange={handleChange} fullWidth variant="outlined" InputProps={{ sx: { borderRadius: 3 } }} inputProps={{ autoComplete: 'none' }} /></Grid>
-              <Grid item xs={12} sm={4}><TextField label="Madre (Apellidos)" name="mother.lastName" value={student.mother.lastName} onChange={handleChange} fullWidth variant="outlined" InputProps={{ sx: { borderRadius: 3 } }} inputProps={{ autoComplete: 'none' }} /></Grid>
-              <Grid item xs={12} sm={4}><TextField label="Madre (Tel)" name="mother.phone" value={student.mother.phone} onChange={handleChange} fullWidth variant="outlined" InputProps={{ sx: { borderRadius: 3 } }} inputProps={{ autoComplete: 'none' }} /></Grid>
+              <Grid item xs={12} sm={4}><TextField size="small" label="Madre (Nombres)" name="mother.firstName" value={student.mother.firstName} onChange={handleChange} fullWidth variant="outlined" InputProps={{ sx: { borderRadius: '12px' } }} inputProps={{ autoComplete: 'none' }} /></Grid>
+              <Grid item xs={12} sm={4}><TextField size="small" label="Madre (Apellidos)" name="mother.lastName" value={student.mother.lastName} onChange={handleChange} fullWidth variant="outlined" InputProps={{ sx: { borderRadius: '12px' } }} inputProps={{ autoComplete: 'none' }} /></Grid>
+              <Grid item xs={12} sm={4}><TextField size="small" label="Madre (Tel)" name="mother.phone" value={student.mother.phone} onChange={handleChange} fullWidth variant="outlined" InputProps={{ sx: { borderRadius: '12px' } }} inputProps={{ autoComplete: 'none' }} /></Grid>
 
-              <Grid item xs={12} sx={{ mt: 2 }}><SectionTitle icon={HealthIcon} title="Salud y Adaptaciones" /></Grid>
-              <Grid item xs={12} md={6}><TextField label="Alergias" name="allergies" value={student.allergies} onChange={handleChange} fullWidth multiline rows={2} variant="outlined" InputProps={{ sx: { borderRadius: 4 } }} inputProps={{ autoComplete: 'none' }} /></Grid>
-              <Grid item xs={12} md={6}><TextField label="Problemas de Salud" name="healthIssues" value={student.healthIssues} onChange={handleChange} fullWidth multiline rows={2} variant="outlined" InputProps={{ sx: { borderRadius: 4 } }} inputProps={{ autoComplete: 'none' }} /></Grid>
-              <Grid item xs={12}><TextField label="Ajustes Razonables" name="reasonableAdjustments" value={student.reasonableAdjustments} onChange={handleChange} fullWidth multiline rows={2} variant="outlined" InputProps={{ sx: { borderRadius: 4 } }} inputProps={{ autoComplete: 'none' }} /></Grid>
+              <Grid item xs={12} sx={{ mt: 1 }}><SectionTitle icon={HealthIcon} title="Salud y Adaptaciones" /></Grid>
+              <Grid item xs={12} md={6}><TextField size="small" label="Alergias" name="allergies" value={student.allergies} onChange={handleChange} fullWidth multiline rows={2} variant="outlined" InputProps={{ sx: { borderRadius: '12px' } }} inputProps={{ autoComplete: 'none' }} /></Grid>
+              <Grid item xs={12} md={6}><TextField size="small" label="Problemas de Salud" name="healthIssues" value={student.healthIssues} onChange={handleChange} fullWidth multiline rows={2} variant="outlined" InputProps={{ sx: { borderRadius: '12px' } }} inputProps={{ autoComplete: 'none' }} /></Grid>
+              <Grid item xs={12}><TextField size="small" label="Ajustes Razonables" name="reasonableAdjustments" value={student.reasonableAdjustments} onChange={handleChange} fullWidth multiline rows={2} variant="outlined" InputProps={{ sx: { borderRadius: '12px' } }} inputProps={{ autoComplete: 'none' }} /></Grid>
 
-              <Grid item xs={12} sx={{ mt: 2 }}><SectionTitle icon={LockIcon} title="Credenciales" /></Grid>
+              <Grid item xs={12} sx={{ mt: 1 }}><SectionTitle icon={LockIcon} title="Credenciales" /></Grid>
               <Grid item xs={12}>
                 <TextField
+                  size="small"
                   label={studentId ? "Cambiar Contraseña" : "Contraseña de Acceso"}
                   type="password"
                   name="password"
@@ -317,7 +374,7 @@ const StudentForm = ({ studentId, onSuccess }) => {
                   required={!studentId}
                   variant="outlined"
                   autoComplete="new-password" 
-                  InputProps={{ sx: { borderRadius: 3 } }}
+                  InputProps={{ sx: { borderRadius: '12px' } }}
                 />
               </Grid>
             </Grid>
@@ -328,19 +385,20 @@ const StudentForm = ({ studentId, onSuccess }) => {
               fullWidth 
               disabled={loading}
               sx={{ 
-                mt: 5, bgcolor: COLORS.primary, py: 2, borderRadius: 4, fontWeight: 800,
-                boxShadow: `0 8px 16px ${COLORS.primary}30`,
-                '&:hover': { bgcolor: COLORS.primaryLight }
+                mt: 4, bgcolor: COLORS.primary, py: 1.5, borderRadius: '14px', fontWeight: 800,
+                textTransform: 'none',
+                boxShadow: '0 8px 20px rgba(0,56,168,0.2)',
+                '&:hover': { bgcolor: COLORS.primaryDark }
               }}
             >
-              {loading ? <CircularProgress size={26} color="inherit" /> : (studentId ? "Actualizar Registro" : "Completar Registro")}
+              {loading ? <CircularProgress size={24} color="inherit" /> : (studentId ? "Actualizar Registro" : "Completar Registro")}
             </Button>
           </form>
         </Paper>
       </Container>
 
       <Snackbar open={snackbar.open} autoHideDuration={4000} onClose={() => setSnackbar({ ...snackbar, open: false })}>
-        <Alert severity={snackbar.success ? "success" : "error"} variant="filled" sx={{ width: '100%', borderRadius: 3, fontWeight: 700, bgcolor: snackbar.success ? COLORS.primary : '#EF4444' }}>
+        <Alert severity={snackbar.success ? "success" : "error"} variant="filled" sx={{ width: '100%', borderRadius: '12px', fontWeight: 700, bgcolor: snackbar.success ? COLORS.primary : '#EF4444' }}>
           {snackbar.message}
         </Alert>
       </Snackbar>

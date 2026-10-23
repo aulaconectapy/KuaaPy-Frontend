@@ -1,7 +1,7 @@
 'use client';
 
 import { 
-  Container, Typography, Grid, Paper, Button, Box, Avatar, Menu, MenuItem, Dialog, DialogTitle, DialogContent, Stack, Fade, useTheme, useMediaQuery
+  Container, Typography, Grid, Paper, Button, Box, Avatar, Menu, MenuItem, Dialog, DialogContent, Stack, Fade, useTheme, useMediaQuery
 } from '@mui/material';
 import { 
   School, Person, GroupAdd, AdminPanelSettings, ChevronRight 
@@ -11,12 +11,12 @@ import { useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import UserForm from '@/components/UserForm';
 
-// PALETA DE COLORES INSTITUCIONAL
+// PALETA DE COLORES INSTITUCIONAL KUAAPY
 const COLORS = {
-  primary: "#7D0F15", // Granate María Auxiliadora
-  primaryDark: "#4A080C",
-  secondary: "#D4AF37", // Dorado (opcional para detalles)
-  textMain: "#1E293B",
+  primary: "#0038A8",     // Azul principal KuaaPy
+  primaryDark: "#00257A", // Azul oscuro
+  red: "#D52B1E",         // Acento rojo
+  textMain: "#0F172A",
   textSecondary: "#64748B",
   bgLight: "#F8FAFC"
 };
@@ -56,17 +56,18 @@ const UserManagementPage = () => {
         elevation={0}
         onClick={() => router.push(path)}
         sx={{ 
-          p: isMobile ? 3 : 4, 
+          p: isMobile ? 2.5 : 3.5, 
           height: '100%',
           display: 'flex',
           flexDirection: 'column',
-          borderRadius: 5, 
-          border: '1px solid #E2E8F0',
+          borderRadius: '20px', 
+          border: `1px solid #E2E8F0`,
+          bgcolor: '#fff',
           cursor: 'pointer',
           transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
           '&:hover': { 
-            boxShadow: `0px 20px 40px rgba(125, 15, 21, 0.08)`, 
-            transform: 'translateY(-6px)',
+            boxShadow: `0px 15px 30px rgba(0, 56, 168, 0.08)`, 
+            transform: 'translateY(-4px)',
             borderColor: COLORS.primary,
             '& .arrow-icon': { transform: 'translateX(5px)', color: COLORS.primary }
           }
@@ -74,12 +75,12 @@ const UserManagementPage = () => {
       >
         <Stack direction="row" spacing={2} alignItems="center" sx={{ mb: 2 }}>
           <Avatar sx={{ 
-            bgcolor: `${color}10`, 
+            bgcolor: `${color}12`, 
             color: color, 
-            width: 52, 
-            height: 52, 
-            borderRadius: 3,
-            border: `1px solid ${color}20`
+            width: 50, 
+            height: 50, 
+            borderRadius: '14px',
+            border: `1px solid ${color}25`
           }}>
             <Icon fontSize="medium" />
           </Avatar>
@@ -88,12 +89,12 @@ const UserManagementPage = () => {
           </Typography>
         </Stack>
         
-        <Typography variant="body2" sx={{ color: COLORS.textSecondary, mb: 3, flexGrow: 1, lineHeight: 1.6 }}>
+        <Typography variant="body2" sx={{ color: COLORS.textSecondary, mb: 3, flexGrow: 1, lineHeight: 1.6, fontWeight: 500 }}>
           {description}
         </Typography>
 
         <Stack direction="row" alignItems="center" spacing={1} sx={{ mt: 'auto' }}>
-          <Typography variant="button" sx={{ color: COLORS.primary, fontWeight: 800, fontSize: '0.7rem', letterSpacing: 0.5 }}>
+          <Typography variant="button" sx={{ color: COLORS.primary, fontWeight: 800, fontSize: '0.75rem', letterSpacing: 0.5 }}>
             GESTIONAR MÓDULO
           </Typography>
           <ChevronRight className="arrow-icon" sx={{ fontSize: 18, color: '#CBD5E1', transition: '0.3s' }} />
@@ -105,20 +106,21 @@ const UserManagementPage = () => {
   return (
     <Box sx={{ py: { xs: 3, md: 6 }, bgcolor: COLORS.bgLight, minHeight: '90vh' }}>
       <Container maxWidth="lg">
-        {/* ENCABEZADO */}
+        
+        {/* ENCABEZADO ADAPTABLE */}
         <Stack 
           direction={{ xs: 'column', md: 'row' }} 
           justifyContent="space-between" 
           alignItems={{ xs: 'flex-start', md: 'center' }}
           spacing={3}
-          sx={{ mb: 6 }}
+          sx={{ mb: 5 }}
         >
           <Box>
-           <Typography variant={isMobile ? "h4" : "h3"} sx={{ fontWeight: 900, color: COLORS.primaryDark, letterSpacing: '-0.02em' }}>
+           <Typography variant={isMobile ? "h4" : "h3"} sx={{ fontWeight: 900, color: COLORS.primary, letterSpacing: '-0.02em', mb: 0.5 }}>
               Gestión de Usuarios
             </Typography>
-            <Typography variant="body1" sx={{ color: COLORS.textSecondary, mt: 0.5, maxWidth: 500 }}>
-              Administra los accesos y perfiles de la comunidad educativa del <strong>Colegio María Auxiliadora</strong>.
+            <Typography variant="body1" sx={{ color: COLORS.textSecondary, maxWidth: 500, fontWeight: 500 }}>
+              Administra los accesos y perfiles de la comunidad educativa en <strong>KuaaPy</strong>.
             </Typography>
           </Box>
 
@@ -131,14 +133,14 @@ const UserManagementPage = () => {
                 startIcon={<GroupAdd />}
                 onClick={handleClick}
                 sx={{ 
-                  borderRadius: 3, 
-                  px: 4, 
-                  py: 1.5, 
+                  borderRadius: '12px', 
+                  px: 3.5, 
+                  py: 1.4, 
                   bgcolor: COLORS.primary, 
                   textTransform: 'none', 
                   fontWeight: 800,
                   fontSize: '0.95rem',
-                  boxShadow: `0 8px 20px rgba(125, 15, 21, 0.2)`,
+                  boxShadow: `0 8px 20px rgba(0, 56, 168, 0.2)`,
                   '&:hover': { bgcolor: COLORS.primaryDark, transform: 'scale(1.02)' },
                   transition: '0.2s'
                 }}
@@ -152,14 +154,14 @@ const UserManagementPage = () => {
                 TransitionComponent={Fade}
                 PaperProps={{ 
                   sx: { 
-                    mt: 1.5, borderRadius: 3, boxShadow: '0 15px 35px rgba(0,0,0,0.12)', border: '1px solid #E2E8F0', minWidth: 200 
+                    mt: 1.5, borderRadius: '16px', boxShadow: '0 15px 35px rgba(0,0,0,0.1)', border: `1px solid #E2E8F0`, minWidth: 200 
                   } 
                 }}
               >
-                <MenuItem onClick={() => handleMenuSelect('usuario')} sx={{ py: 1.8, fontWeight: 700, color: COLORS.textMain }}>
+                <MenuItem onClick={() => handleMenuSelect('usuario')} sx={{ py: 1.5, fontWeight: 700, color: COLORS.textMain }}>
                   <Person sx={{ mr: 2, color: COLORS.primary }} fontSize="small" /> Registrar Usuario
                 </MenuItem>
-                <MenuItem onClick={() => handleMenuSelect('estudiante')} sx={{ py: 1.8, fontWeight: 700, color: COLORS.textMain }}>
+                <MenuItem onClick={() => handleMenuSelect('estudiante')} sx={{ py: 1.5, fontWeight: 700, color: COLORS.textMain }}>
                   <School sx={{ mr: 2, color: COLORS.primary }} fontSize="small" /> Registrar Estudiante
                 </MenuItem>
               </Menu>
@@ -171,7 +173,7 @@ const UserManagementPage = () => {
         <Grid container spacing={3}>
           <ActionCard 
             title="Todos los Usuarios"
-            description="Control total de cuentas, estados de actividad y roles del sistema."
+            description="Control total de cuentas, estados de actividad y roles dentro del sistema."
             icon={Person}
             color={COLORS.primary}
             path="/user/AllUsers"
@@ -195,7 +197,7 @@ const UserManagementPage = () => {
               title="Directores"
               description="Control de usuarios con privilegios de gestión institucional total."
               icon={AdminPanelSettings}
-              color={COLORS.primaryDark}
+              color={COLORS.red}
               path="/user/directores"
             />
           )}
@@ -208,15 +210,15 @@ const UserManagementPage = () => {
           fullWidth 
           maxWidth="sm" 
           fullScreen={isMobile}
-          PaperProps={{ sx: { borderRadius: isMobile ? 0 : 5, bgcolor: '#fff' } }}
+          PaperProps={{ sx: { borderRadius: isMobile ? 0 : '20px', bgcolor: '#fff' } }}
         >
           <Box sx={{ 
             p: 3, 
             background: `linear-gradient(135deg, ${COLORS.primary} 0%, ${COLORS.primaryDark} 100%)`,
             color: 'white'
           }}>
-            <Typography variant="h6" sx={{ fontWeight: 900 }}>Nuevo Usuario</Typography>
-            <Typography variant="caption" sx={{ opacity: 0.8 }}>Complete los datos para el nuevo acceso.</Typography>
+            <Typography variant="h6" sx={{ fontWeight: 900 }}>Nuevo Usuario - KuaaPy</Typography>
+            <Typography variant="caption" sx={{ opacity: 0.85, fontWeight: 500 }}>Complete los datos para habilitar el nuevo acceso.</Typography>
           </Box>
           
           <DialogContent sx={{ p: { xs: 2, md: 4 } }}>
@@ -226,7 +228,7 @@ const UserManagementPage = () => {
               fullWidth 
               variant="text" 
               onClick={() => setOpenUserModal(false)}
-              sx={{ mt: 2, color: COLORS.textSecondary, fontWeight: 700 }}
+              sx={{ mt: 2, color: COLORS.textSecondary, fontWeight: 700, textTransform: 'none' }}
             >
               Cancelar
             </Button>

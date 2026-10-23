@@ -1,8 +1,9 @@
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
-const PRIMARY_COLOR = [125, 15, 21];
+const PRIMARY_COLOR = [0, 56, 168]; // Azul institucional KuaaPy (#0038A8)
 
+// Función auxiliar para cargar el logo institucional de forma dinámica
 const loadImage = (url) => {
   return new Promise((resolve) => {
     const img = new Image();
@@ -18,7 +19,7 @@ const getUserInfo = (user) => {
     user?.institution?.name ||
     user?.institution?.institutionName ||
     user?.docente?.institution?.name ||
-    'Colegio Privado María Auxiliadora';
+    'KuaaPy Institución';
 
   const grades =
     user?.grades ||
@@ -30,13 +31,16 @@ const getUserInfo = (user) => {
 
   const teacherName = `${user?.firstName || ''} ${user?.lastName || ''}`.trim();
 
-  return { institutionName, gradesText, teacherName };
+  // URL del logo institucional
+  const logoUrl = user?.institution?.logoUrl || '/logo.png';
+
+  return { institutionName, gradesText, teacherName, logoUrl };
 };
 
 const addHeader = async (doc, user, title, subject = '') => {
-  const logo = await loadImage('/logo.png');
+  const { institutionName, gradesText, teacherName, logoUrl } = getUserInfo(user);
+  const logo = await loadImage(logoUrl);
   const now = new Date().toLocaleString();
-  const { institutionName, gradesText, teacherName } = getUserInfo(user);
 
   doc.setFontSize(6);
   doc.setTextColor(150);

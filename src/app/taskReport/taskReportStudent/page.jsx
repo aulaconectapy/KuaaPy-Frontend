@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { getStudentProcessReport } from '@/services/api';
@@ -25,11 +25,14 @@ import {
   Button,
 } from '@mui/material';
 
+// CONSTANTES DE ESTILO KUAAPY
 const COLORS = {
-  primary: '#7D0F15',
-  primaryDark: '#5c080d',
+  primary: '#0038A8',     // Azul principal KuaaPy
+  primaryDark: '#00257A', // Azul oscuro
+  red: '#D52B1E',         // Acento rojo
   bg: '#F8FAFC',
   border: '#E2E8F0',
+  gradient: 'linear-gradient(135deg, #0038A8 0%, #00257A 100%)'
 };
 
 export default function TaskReportStudentPage() {
@@ -123,9 +126,9 @@ export default function TaskReportStudentPage() {
 
   if (loading || loadingReport) {
     return (
-      <Box sx={{ p: 4, textAlign: 'center' }}>
+      <Box sx={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', height: '80vh' }}>
         <CircularProgress sx={{ color: COLORS.primary }} />
-        <Typography sx={{ mt: 2 }}>Cargando tu proceso...</Typography>
+        <Typography sx={{ mt: 2, fontWeight: 600, color: '#64748B' }}>Cargando tu proceso...</Typography>
       </Box>
     );
   }
@@ -133,7 +136,7 @@ export default function TaskReportStudentPage() {
   if (notStudent) {
     return (
       <Box sx={{ p: 3 }}>
-        <Alert severity="warning">
+        <Alert severity="warning" sx={{ borderRadius: '12px' }}>
           No eres un estudiante. Serás redirigido al dashboard.
         </Alert>
       </Box>
@@ -143,7 +146,7 @@ export default function TaskReportStudentPage() {
   if (error) {
     return (
       <Box sx={{ p: 3 }}>
-        <Alert severity="error">{error}</Alert>
+        <Alert severity="error" sx={{ borderRadius: '12px' }}>{error}</Alert>
       </Box>
     );
   }
@@ -151,82 +154,82 @@ export default function TaskReportStudentPage() {
   if (!report) {
     return (
       <Box sx={{ p: 3 }}>
-        <Alert severity="info">No hay datos para mostrar.</Alert>
+        <Alert severity="info" sx={{ borderRadius: '12px' }}>No hay datos para mostrar.</Alert>
       </Box>
     );
   }
 
   return (
-    <Box sx={{ p: 3, backgroundColor: COLORS.bg, minHeight: '100vh' }}>
+    <Box sx={{ p: { xs: 2, md: 4 }, backgroundColor: COLORS.bg, minHeight: '100vh' }}>
+      
+      {/* Tarjeta de Encabezado / Perfil del Estudiante */}
       <Paper
-        elevation={3}
+        elevation={0}
         sx={{
-          p: 3,
-          mb: 3,
-          borderRadius: 3,
-          borderTop: `8px solid ${COLORS.primary}`,
+          p: { xs: 3, md: 4 },
+          mb: 4,
+          borderRadius: '24px',
+          border: `1px solid ${COLORS.border}`,
+          bgcolor: '#fff',
+          position: 'relative',
+          overflow: 'hidden'
         }}
       >
+        <Box sx={{ position: 'absolute', top: 0, left: 0, width: '8px', height: '100%', background: COLORS.gradient }} />
+
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 3, flexWrap: 'wrap' }}>
           <Box
             component="img"
             src="/logo.png"
             alt="Logo institucional"
             sx={{
-              width: 90,
-              height: 90,
+              width: 80,
+              height: 80,
               objectFit: 'contain',
-              borderRadius: '50%',
+              borderRadius: '20px',
+              bgcolor: '#F1F5F9',
+              p: 1
             }}
           />
 
           <Box sx={{ flex: 1 }}>
             <Typography
-              variant="h5"
+              variant="subtitle2"
               sx={{
-                fontWeight: 'bold',
+                fontWeight: 800,
                 color: COLORS.primary,
+                letterSpacing: '0.05em',
                 textTransform: 'uppercase',
+                mb: 0.5
               }}
             >
-              Mi proceso académico
+              KuaaPy Institución
             </Typography>
 
-            <Typography sx={{ fontWeight: 600 }}>
+            <Typography
+              variant="h4"
+              sx={{
+                fontWeight: 900,
+                color: '#0F172A',
+                letterSpacing: '-0.02em',
+                mb: 0.5
+              }}
+            >
+              Mi Proceso Académico
+            </Typography>
+
+            <Typography variant="body1" sx={{ fontWeight: 700, color: '#475569', mb: 1.5 }}>
               Estudiante: {report.student?.studentName}
             </Typography>
 
-            <Box sx={{ mt: 1, display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-                <Box
-  sx={{
-    mt: 2,
-    display: 'flex',
-    gap: 2,
-    flexWrap: 'wrap',
-  }}
->
- {/*<Button
-    variant="contained"
-    onClick={() =>
-      router.push('/teacher/calificaciones/stutdenCalificacion')
-    }
-    sx={{
-      backgroundColor: '#1976d2',
-      fontWeight: 'bold',
-      '&:hover': {
-        backgroundColor: '#1259a7',
-      },
-    }}
-  >
-    Ver calificaciones
-  </Button>*/}
-</Box>
+            <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap' }}>
               <Chip
                 label={`Grado: ${report.student?.grade}`}
                 sx={{
-                  backgroundColor: COLORS.primary,
-                  color: '#fff',
-                  fontWeight: 'bold',
+                  backgroundColor: `${COLORS.primary}12`,
+                  color: COLORS.primary,
+                  fontWeight: 800,
+                  borderRadius: '8px'
                 }}
               />
 
@@ -236,7 +239,8 @@ export default function TaskReportStudentPage() {
                 sx={{
                   borderColor: COLORS.primary,
                   color: COLORS.primary,
-                  fontWeight: 'bold',
+                  fontWeight: 800,
+                  borderRadius: '8px'
                 }}
               />
             </Box>
@@ -244,13 +248,24 @@ export default function TaskReportStudentPage() {
         </Box>
       </Paper>
 
-      <Paper sx={{ p: 2, mb: 3, borderRadius: 3 }}>
-        <FormControl fullWidth>
+      {/* Contenedor de Filtros */}
+      <Paper
+        elevation={0}
+        sx={{
+          p: 3,
+          mb: 4,
+          borderRadius: '20px',
+          border: `1px solid ${COLORS.border}`,
+          bgcolor: '#fff'
+        }}
+      >
+        <FormControl fullWidth size="small">
           <InputLabel>Filtrar por asignatura</InputLabel>
           <Select
             value={selectedSubject}
             label="Filtrar por asignatura"
             onChange={(e) => setSelectedSubject(e.target.value)}
+            sx={{ borderRadius: '12px', bgcolor: '#fff' }}
           >
             <MenuItem value="all">Todas las asignaturas</MenuItem>
 
@@ -264,7 +279,7 @@ export default function TaskReportStudentPage() {
       </Paper>
 
       {filteredSubjects.length === 0 && (
-        <Alert severity="info">
+        <Alert severity="info" sx={{ borderRadius: '12px' }}>
           No hay tareas sumativas cargadas para mostrar.
         </Alert>
       )}
@@ -272,36 +287,40 @@ export default function TaskReportStudentPage() {
       {filteredSubjects.map(subjectGroup => (
         <Paper
           key={subjectGroup.subject}
-          elevation={2}
+          elevation={0}
           sx={{
-            p: 2,
+            p: 3,
             mb: 4,
-            borderRadius: 3,
+            borderRadius: '24px',
+            border: `1px solid ${COLORS.border}`,
             overflowX: 'auto',
+            bgcolor: '#fff'
           }}
         >
-          <Typography
-            variant="h6"
-            sx={{
-              color: COLORS.primary,
-              fontWeight: 'bold',
-              mb: 1,
-            }}
-          >
-            Asignatura: {subjectGroup.subject}
-          </Typography>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 2, mb: 1.5 }}>
+            <Typography
+              variant="h6"
+              sx={{
+                color: COLORS.primary,
+                fontWeight: 900,
+                letterSpacing: '-0.01em'
+              }}
+            >
+              Asignatura: {subjectGroup.subject}
+            </Typography>
 
-          <Chip
-            label={`Total: ${subjectGroup.totalScore} / ${subjectGroup.totalMaxPoints} pts`}
-            sx={{
-              backgroundColor: COLORS.primary,
-              color: '#fff',
-              fontWeight: 'bold',
-              mb: 2,
-            }}
-          />
+            <Chip
+              label={`Total: ${subjectGroup.totalScore} / ${subjectGroup.totalMaxPoints} pts`}
+              sx={{
+                backgroundColor: `${COLORS.primary}12`,
+                color: COLORS.primary,
+                fontWeight: 800,
+                borderRadius: '8px'
+              }}
+            />
+          </Box>
 
-          <Divider sx={{ mb: 2 }} />
+          <Divider sx={{ mb: 3, borderColor: '#F1F5F9' }} />
 
           <Table
             size="small"
@@ -312,15 +331,15 @@ export default function TaskReportStudentPage() {
           >
             <TableHead>
               <TableRow sx={{ backgroundColor: COLORS.primary }}>
-                <TableCell sx={{ color: '#fff', fontWeight: 'bold' }}>N°</TableCell>
-                <TableCell sx={{ color: '#fff', fontWeight: 'bold' }}>Tema</TableCell>
-                <TableCell align="center" sx={{ color: '#fff', fontWeight: 'bold' }}>
+                <TableCell sx={{ color: '#fff', fontWeight: 900, p: 2 }}>N°</TableCell>
+                <TableCell sx={{ color: '#fff', fontWeight: 900, p: 2 }}>Tema</TableCell>
+                <TableCell align="center" sx={{ color: '#fff', fontWeight: 900, p: 2 }}>
                   Puntaje
                 </TableCell>
-                <TableCell align="center" sx={{ color: '#fff', fontWeight: 'bold' }}>
+                <TableCell align="center" sx={{ color: '#fff', fontWeight: 900, p: 2 }}>
                   Estado
                 </TableCell>
-                <TableCell sx={{ color: '#fff', fontWeight: 'bold' }}>
+                <TableCell sx={{ color: '#fff', fontWeight: 900, p: 2 }}>
                   Observación
                 </TableCell>
               </TableRow>
@@ -329,14 +348,16 @@ export default function TaskReportStudentPage() {
             <TableBody>
               {subjectGroup.tasks.map((task, index) => (
                 <TableRow key={task.taskId} hover>
-                  <TableCell sx={{ border: `1px solid ${COLORS.border}` }}>
+                  <TableCell sx={{ border: `1px solid ${COLORS.border}`, p: 2, fontWeight: 600 }}>
                     {index + 1}
                   </TableCell>
 
                   <TableCell
                     sx={{
                       border: `1px solid ${COLORS.border}`,
-                      fontWeight: 600,
+                      fontWeight: 700,
+                      color: '#0F172A',
+                      p: 2
                     }}
                   >
                     {task.topic}
@@ -346,14 +367,15 @@ export default function TaskReportStudentPage() {
                     align="center"
                     sx={{
                       border: `1px solid ${COLORS.border}`,
-                      fontWeight: 'bold',
+                      fontWeight: 900,
                       color: COLORS.primary,
+                      p: 2
                     }}
                   >
                     {task.score} / {task.maxPoints}
                   </TableCell>
 
-                  <TableCell align="center" sx={{ border: `1px solid ${COLORS.border}` }}>
+                  <TableCell align="center" sx={{ border: `1px solid ${COLORS.border}`, p: 2 }}>
                     <Chip
                       size="small"
                       label={
@@ -365,19 +387,16 @@ export default function TaskReportStudentPage() {
                               ? 'Pendiente'
                               : 'Sin registro'
                       }
-                      color={
-                        task.status === 'corregido'
-                          ? 'success'
-                          : task.status === 'entregada'
-                            ? 'info'
-                            : task.status === 'pendiente'
-                              ? 'warning'
-                              : 'default'
-                      }
+                      sx={{
+                        fontWeight: 800,
+                        borderRadius: '6px',
+                        bgcolor: task.status === 'corregido' ? '#DCFCE7' : task.status === 'entregada' ? '#E0F2FE' : '#FEF3C7',
+                        color: task.status === 'corregido' ? '#166534' : task.status === 'entregada' ? '#0369A1' : '#B45309'
+                      }}
                     />
                   </TableCell>
 
-                  <TableCell sx={{ border: `1px solid ${COLORS.border}` }}>
+                  <TableCell sx={{ border: `1px solid ${COLORS.border}`, p: 2, color: '#475569', fontWeight: 500 }}>
                     {task.comments || '-'}
                   </TableCell>
                 </TableRow>

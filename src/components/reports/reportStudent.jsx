@@ -2,13 +2,15 @@ import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
 const COLORS = {
-  primary: [125, 15, 21],
+  primary: [0, 56, 168],      // Azul institucional KuaaPy (#0038A8)
   text: [31, 41, 55],
   lightGrey: [248, 250, 252],
   secondary: [100, 116, 139]
 };
 
-// Función auxiliar para cargar el logo (misma lógica que usas en tareas)
+// ==========================================
+// FUNCIÓN AUXILIAR PARA CARGAR EL LOGO DINÁMICO
+// ==========================================
 const loadImage = (url) => {
   return new Promise((resolve) => {
     const img = new Image();
@@ -30,10 +32,12 @@ const formatDate = (date) => {
 // FUNCIÓN DE ENCABEZADO INSTITUCIONAL ÚNICO
 // ==========================================
 const drawInstitutionalHeader = async (doc, title, subtitle, user, reportData) => {
-  const logo = await loadImage('/logo.png');
+  const logoUrl = user?.institution?.logoUrl || reportData?.institution?.logoUrl || '/logo.png';
+  const logo = await loadImage(logoUrl);
   
+  const institutionName = user?.institution?.name || reportData?.institution?.name || 'KuaaPy Institución';
   const docenteNombre = `${user?.firstName || ''} ${user?.lastName || ''}`;
-  const grado = reportData?.grade || 'N/A';
+  const grado = reportData?.grade || reportData?.[0]?.grade || 'N/A';
 
   autoTable(doc, {
     startY: 10,
@@ -43,7 +47,7 @@ const drawInstitutionalHeader = async (doc, title, subtitle, user, reportData) =
     body: [
       [
         { content: '', rowSpan: 3 },
-        { content: (user?.institution?.name || 'INSTITUCIÓN EDUCATIVA').toUpperCase(), styles: { fontSize: 14, fontStyle: 'bold', textColor: COLORS.primary } },
+        { content: institutionName.toUpperCase(), styles: { fontSize: 14, fontStyle: 'bold', textColor: COLORS.primary } },
         { content: `Fecha Impresión: ${new Date().toLocaleDateString()}`, styles: { fontSize: 8, textColor: [100, 100, 100] } }
       ],
       [
@@ -63,6 +67,7 @@ const drawInstitutionalHeader = async (doc, title, subtitle, user, reportData) =
   });
   return doc.lastAutoTable.finalY + 10;
 };
+
 // ==========================================
 // 1. REPORTE INDIVIDUAL (ACTA ÚNICA)
 // ==========================================
@@ -125,13 +130,15 @@ export const generateIndividualPDF = async (report, user) => {
 export const generateGeneralPDF = async (reports, user, filterName = "") => {
   const doc = new jsPDF('landscape');
   
-  // Aquí pasamos el grado "Múltiples" si es general
+  // Extraer el grado del primer reporte filtrado (si existe) o mostrar el grado real
+  const detectedGrade = reports.length > 0 && reports[0]?.grade ? reports[0].grade : 'Múltiples';
+
   const currentY = await drawInstitutionalHeader(
     doc, 
     "RESUMEN DISCIPLINARIO GENERAL", 
     filterName ? `Filtro: ${filterName}` : "Todos los registros", 
     user, 
-    { grade: 'Múltiples' } 
+    { grade: detectedGrade } 
   );
 
   autoTable(doc, {
@@ -155,40 +162,31 @@ export const generateGeneralPDF = async (reports, user, filterName = "") => {
 // ==========================================
 // 3. EXPEDIENTE COMPLETO (HISTORIAL DETALLADO)
 // ==========================================
-// ==========================================
-// 3. EXPEDIENTE COMPLETO (HISTORIAL DETALLADO)
-// ==========================================
 export const generateFullStudentHistoryPDF = async (allReports, student, user) => {
   const doc = new jsPDF();
   const studentFullName = `${student?.lastName || ''}, ${student?.firstName || ''}`;
   
-  // Título y Subtítulo para el encabezado
   const title = "EXPEDIENTE DISCIPLINARIO ACUMULATIVO";
   const subtitle = `Historial Completo: ${studentFullName}`;
 
-  // Primera página: Dibujamos el encabezado institucional
   let currentY = await drawInstitutionalHeader(
     doc, 
     title, 
     subtitle, 
     user, 
-    allReports[0] // Grado del reporte más reciente
+    allReports[0]
   );
 
-  // Ordenar reportes por fecha (más recientes primero)
   const sortedReports = [...allReports].sort((a, b) => new Date(b.date) - new Date(a.date));
 
   for (let index = 0; index < sortedReports.length; index++) {
     const report = sortedReports[index];
 
-    // Control de salto de página: si el contenido va a superar el margen inferior (aprox 250)
     if (currentY > 230) {
       doc.addPage();
-      // En la nueva página, reiniciamos el encabezado institucional para mantener la formalidad
       currentY = await drawInstitutionalHeader(doc, title, subtitle, user, allReports[0]);
     }
 
-    // Dibujar franja gris de título de incidente
     doc.setFillColor(245, 245, 245);
     doc.rect(14, currentY, 182, 8, 'F');
     
@@ -196,14 +194,13 @@ export const generateFullStudentHistoryPDF = async (allReports, student, user) =
     doc.setFontSize(10);
     doc.setFont("helvetica", "bold");
     doc.text(
-      `INCIDENTE #${sortedReports.length - index} - FECHA: ${formatDate(report.date)}`, 
+      `INCIDENTE #${sortedReports.length - index}   |   FECHA: ${formatDate(report.date)}`, 
       18, 
       currentY + 6
     );
     
     currentY += 14;
     
-    // Detalles del reporte
     doc.setTextColor(0, 0, 0);
     doc.setFontSize(9);
     doc.setFont("helvetica", "bold");
@@ -212,25 +209,21 @@ export const generateFullStudentHistoryPDF = async (allReports, student, user) =
     
     currentY += 7;
     
-    // Descripción con ajuste de texto (Multi-línea)
     doc.setFont("helvetica", "normal");
     const descLines = doc.splitTextToSize(`Descripción: ${report.description || 'Sin descripción detallada.'}`, 175);
     doc.text(descLines, 14, currentY);
     
     currentY += (descLines.length * 5) + 3;
     
-    // Acción tomada con ajuste de texto (Multi-línea)
     const actionLines = doc.splitTextToSize(`Acción: ${report.actionTaken || 'No registrada.'}`, 175);
     doc.text(actionLines, 14, currentY);
     
-    // Espaciado y línea divisoria final de incidente
     currentY += (actionLines.length * 5) + 8;
     doc.setDrawColor(200, 200, 200);
     doc.line(14, currentY - 4, 196, currentY - 4);
     currentY += 5;
   }
 
-  // Guardar archivo
   const fileName = `Expediente_${studentFullName.replace(/\s+/g, '_')}.pdf`;
   doc.save(fileName);
 };

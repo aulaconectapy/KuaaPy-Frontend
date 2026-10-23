@@ -6,6 +6,11 @@ import { useAuth } from '@/context/AuthContext';
 import { getGeneralTaskReport } from '@/services/api';
 
 import {
+  generateAllTaskReportPDF,
+  generateTaskReportBySubjectPDF,
+} from '@/components/teacher/taksReportPdf';
+
+import {
   Box,
   Paper,
   Typography,
@@ -27,16 +32,14 @@ import {
 
 import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
 
-import {
-  generateAllTaskReportPDF,
-  generateTaskReportBySubjectPDF,
-} from '@/components/teacher/taksReportPdf';
-
+// CONSTANTES DE ESTILO KUAAPY
 const COLORS = {
-  primary: '#7D0F15',
-  primaryDark: '#5c080d',
+  primary: '#0038A8',     // Azul principal KuaaPy
+  primaryDark: '#00257A', // Azul oscuro
+  red: '#D52B1E',         // Acento rojo
   bg: '#F8FAFC',
   border: '#E2E8F0',
+  gradient: 'linear-gradient(135deg, #0038A8 0%, #00257A 100%)'
 };
 
 const ALLOWED_ROLES = [
@@ -57,10 +60,10 @@ export default function TaskReportPage() {
   const [selectedSubject, setSelectedSubject] = useState('all');
   const [selectedGrade, setSelectedGrade] = useState('');
 
-  const isAllowed = user?.role && ALLOWED_ROLES.includes(user.role);
+  const isAllowed = user?.role && ALLOWED_ROLES.includes(user.role.toLowerCase());
 
   const userGrades =
-    user?.role === 'docente'
+    user?.role?.toLowerCase() === 'docente'
       ? user?.grades || user?.assignedGrade || user?.docente?.grades || ''
       : user?.grades || user?.assignedGrade || user?.docente?.grades || [];
 
@@ -106,12 +109,14 @@ export default function TaskReportPage() {
           return;
         }
 
+        console.log("🔍 Cargando reporte para Grado:", selectedGrade, "Institución:", institutionId);
         const data = await getGeneralTaskReport(selectedGrade, institutionId);
+        console.log("📊 Datos recibidos del reporte:", data);
 
         setReport(data);
         setSelectedSubject('all');
       } catch (err) {
-        console.error(err);
+        console.error("❌ Error cargando reporte general:", err);
 
         const backendMessage =
           err?.response?.data?.message ||
@@ -131,7 +136,7 @@ export default function TaskReportPage() {
     user?.institution?.name ||
     user?.institution?.institutionName ||
     user?.docente?.institution?.name ||
-    'Colegio Privado María Auxiliadora';
+    'KuaaPy Institución';
 
   const userName = `${user?.firstName || ''} ${user?.lastName || ''}`.trim();
 
@@ -176,18 +181,18 @@ export default function TaskReportPage() {
 
   if (loading || loadingReport) {
     return (
-      <Box sx={{ p: 4, textAlign: 'center' }}>
+      <Box sx={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', height: '80vh' }}>
         <CircularProgress sx={{ color: COLORS.primary }} />
-        <Typography sx={{ mt: 2 }}>Cargando reporte...</Typography>
+        <Typography sx={{ mt: 2, fontWeight: 600, color: '#64748B' }}>Cargando reporte...</Typography>
       </Box>
     );
   }
 
   if (!user || !isAllowed) {
     return (
-      <Box sx={{ p: 4, textAlign: 'center' }}>
+      <Box sx={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', height: '80vh' }}>
         <CircularProgress sx={{ color: COLORS.primary }} />
-        <Typography sx={{ mt: 2 }}>Redirigiendo...</Typography>
+        <Typography sx={{ mt: 2, fontWeight: 600, color: '#64748B' }}>Redirigiendo...</Typography>
       </Box>
     );
   }
@@ -195,7 +200,7 @@ export default function TaskReportPage() {
   if (error) {
     return (
       <Box sx={{ p: 3 }}>
-        <Alert severity="error">{error}</Alert>
+        <Alert severity="error" sx={{ borderRadius: '12px' }}>{error}</Alert>
       </Box>
     );
   }
@@ -203,7 +208,7 @@ export default function TaskReportPage() {
   if (!selectedGrade) {
     return (
       <Box sx={{ p: 3 }}>
-        <Alert severity="info">
+        <Alert severity="info" sx={{ borderRadius: '12px' }}>
           No se encontró ningún grado asignado para mostrar el reporte.
         </Alert>
       </Box>
@@ -213,22 +218,29 @@ export default function TaskReportPage() {
   if (!report) {
     return (
       <Box sx={{ p: 3 }}>
-        <Alert severity="info">No hay datos para mostrar.</Alert>
+        <Alert severity="info" sx={{ borderRadius: '12px' }}>No hay datos para mostrar.</Alert>
       </Box>
     );
   }
 
   return (
-    <Box sx={{ p: 3, backgroundColor: COLORS.bg, minHeight: '100vh' }}>
+    <Box sx={{ p: { xs: 2, md: 4 }, backgroundColor: COLORS.bg, minHeight: '100vh' }}>
+      
+      {/* Tarjeta de Encabezado Institucional Dinámico */}
       <Paper
-        elevation={3}
+        elevation={0}
         sx={{
-          p: 3,
-          mb: 3,
-          borderRadius: 3,
-          borderTop: `8px solid ${COLORS.primary}`,
+          p: { xs: 3, md: 4 },
+          mb: 4,
+          borderRadius: '24px',
+          border: `1px solid ${COLORS.border}`,
+          bgcolor: '#fff',
+          position: 'relative',
+          overflow: 'hidden'
         }}
       >
+        <Box sx={{ position: 'absolute', top: 0, left: 0, width: '8px', height: '100%', background: COLORS.gradient }} />
+
         <Box
           sx={{
             display: 'flex',
@@ -239,39 +251,52 @@ export default function TaskReportPage() {
         >
           <Box
             component="img"
-            src="/logo.png"
+            src={user?.institution?.logoUrl || "/logo.png"}
             alt="Logo institucional"
             sx={{
-              width: 95,
-              height: 95,
+              width: 80,
+              height: 80,
               objectFit: 'contain',
-              borderRadius: '50%',
+              borderRadius: '20px',
+              bgcolor: '#F1F5F9',
+              p: 1
             }}
           />
 
           <Box sx={{ flex: 1 }}>
             <Typography
-              variant="h5"
+              variant="subtitle2"
               sx={{
-                fontWeight: 'bold',
+                fontWeight: 800,
                 color: COLORS.primary,
+                letterSpacing: '0.05em',
                 textTransform: 'uppercase',
+                mb: 0.5
               }}
             >
               {institutionName}
             </Typography>
 
-            <Typography variant="h6" sx={{ fontWeight: 600 }}>
-              Reporte general de tareas
+            <Typography
+              variant="h4"
+              sx={{
+                fontWeight: 900,
+                color: '#0F172A',
+                letterSpacing: '-0.02em',
+                mb: 1.5
+              }}
+            >
+              Reporte General de Tareas - KuaaPy
             </Typography>
 
-            <Box sx={{ mt: 1, display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+            <Box sx={{ mt: 1, display: 'flex', gap: 1.5, flexWrap: 'wrap', mb: 2.5 }}>
               <Chip
                 label={`Grado: ${selectedGrade}`}
                 sx={{
-                  backgroundColor: COLORS.primary,
-                  color: '#fff',
-                  fontWeight: 'bold',
+                  backgroundColor: `${COLORS.primary}12`,
+                  color: COLORS.primary,
+                  fontWeight: 800,
+                  borderRadius: '8px'
                 }}
               />
 
@@ -281,7 +306,8 @@ export default function TaskReportPage() {
                 sx={{
                   borderColor: COLORS.primary,
                   color: COLORS.primary,
-                  fontWeight: 'bold',
+                  fontWeight: 800,
+                  borderRadius: '8px'
                 }}
               />
 
@@ -291,28 +317,34 @@ export default function TaskReportPage() {
                 sx={{
                   borderColor: COLORS.primary,
                   color: COLORS.primary,
-                  fontWeight: 'bold',
+                  fontWeight: 800,
+                  borderRadius: '8px'
                 }}
               />
             </Box>
 
             <Box
               sx={{
-                mt: 2,
                 display: 'flex',
                 gap: 2,
                 flexWrap: 'wrap',
+                alignItems: 'center',
               }}
             >
-              {user?.role === 'docente' && (
+              {user?.role?.toLowerCase() === 'docente' && (
                 <Button
                   variant="contained"
                   onClick={() => router.push('/teacher/calificaciones')}
                   sx={{
-                    backgroundColor: '#1976d2',
-                    fontWeight: 'bold',
+                    backgroundColor: '#0284C7',
+                    borderRadius: '12px',
+                    fontWeight: 800,
+                    textTransform: 'none',
+                    px: 3,
+                    height: 40,
+                    boxShadow: '0 8px 20px rgba(2,132,199,0.2)',
                     '&:hover': {
-                      backgroundColor: '#1259a7',
+                      backgroundColor: '#0369A1',
                     },
                   }}
                 >
@@ -332,7 +364,12 @@ export default function TaskReportPage() {
                 }
                 sx={{
                   backgroundColor: COLORS.primary,
-                  fontWeight: 'bold',
+                  borderRadius: '12px',
+                  fontWeight: 800,
+                  textTransform: 'none',
+                  px: 3,
+                  height: 40,
+                  boxShadow: '0 8px 20px rgba(0,56,168,0.2)',
                   '&:hover': {
                     backgroundColor: COLORS.primaryDark,
                   },
@@ -345,22 +382,27 @@ export default function TaskReportPage() {
         </Box>
       </Paper>
 
+      {/* Contenedor de Filtros */}
       <Paper
+        elevation={0}
         sx={{
-          p: 2,
-          mb: 3,
-          borderRadius: 3,
+          p: 3,
+          mb: 4,
+          borderRadius: '20px',
+          border: `1px solid ${COLORS.border}`,
           display: 'grid',
           gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' },
-          gap: 2,
+          gap: 2.5,
+          bgcolor: '#fff'
         }}
       >
-        <FormControl fullWidth>
+        <FormControl fullWidth size="small">
           <InputLabel>Filtrar por grado</InputLabel>
           <Select
             value={selectedGrade}
             label="Filtrar por grado"
             onChange={(e) => setSelectedGrade(e.target.value)}
+            sx={{ borderRadius: '12px', bgcolor: '#fff' }}
           >
             {availableGrades.map(grade => (
               <MenuItem key={grade} value={grade}>
@@ -370,12 +412,13 @@ export default function TaskReportPage() {
           </Select>
         </FormControl>
 
-        <FormControl fullWidth>
+        <FormControl fullWidth size="small">
           <InputLabel>Filtrar por asignatura</InputLabel>
           <Select
             value={selectedSubject}
             label="Filtrar por asignatura"
             onChange={(e) => setSelectedSubject(e.target.value)}
+            sx={{ borderRadius: '12px', bgcolor: '#fff' }}
           >
             <MenuItem value="all">Todas las asignaturas</MenuItem>
 
@@ -389,7 +432,7 @@ export default function TaskReportPage() {
       </Paper>
 
       {Object.entries(groupedColumns).length === 0 && (
-        <Alert severity="info">
+        <Alert severity="info" sx={{ borderRadius: '12px' }}>
           No hay tareas cargadas para este grado o asignatura.
         </Alert>
       )}
@@ -397,12 +440,14 @@ export default function TaskReportPage() {
       {Object.entries(groupedColumns).map(([subject, columns]) => (
         <Paper
           key={subject}
-          elevation={2}
+          elevation={0}
           sx={{
-            p: 2,
+            p: 3,
             mb: 4,
-            borderRadius: 3,
+            borderRadius: '24px',
+            border: `1px solid ${COLORS.border}`,
             overflowX: 'auto',
+            bgcolor: '#fff'
           }}
         >
           <Box
@@ -412,14 +457,15 @@ export default function TaskReportPage() {
               alignItems: 'center',
               gap: 2,
               flexWrap: 'wrap',
-              mb: 1,
+              mb: 2,
             }}
           >
             <Typography
               variant="h6"
               sx={{
                 color: COLORS.primary,
-                fontWeight: 'bold',
+                fontWeight: 900,
+                letterSpacing: '-0.01em'
               }}
             >
               Asignatura: {subject}
@@ -440,10 +486,12 @@ export default function TaskReportPage() {
               sx={{
                 borderColor: COLORS.primary,
                 color: COLORS.primary,
-                fontWeight: 'bold',
+                borderRadius: '10px',
+                fontWeight: 800,
+                textTransform: 'none',
                 '&:hover': {
                   borderColor: COLORS.primaryDark,
-                  backgroundColor: '#fff5f5',
+                  backgroundColor: '#EFF6FF',
                 },
               }}
             >
@@ -451,7 +499,7 @@ export default function TaskReportPage() {
             </Button>
           </Box>
 
-          <Divider sx={{ mb: 2 }} />
+          <Divider sx={{ mb: 3, borderColor: '#F1F5F9' }} />
 
           <Table
             size="small"
@@ -466,8 +514,9 @@ export default function TaskReportPage() {
                   rowSpan={2}
                   sx={{
                     color: '#fff',
-                    fontWeight: 'bold',
-                    border: '1px solid #fff',
+                    fontWeight: 900,
+                    border: '1px solid rgba(255,255,255,0.2)',
+                    p: 2
                   }}
                 >
                   N°
@@ -477,8 +526,9 @@ export default function TaskReportPage() {
                   rowSpan={2}
                   sx={{
                     color: '#fff',
-                    fontWeight: 'bold',
-                    border: '1px solid #fff',
+                    fontWeight: 900,
+                    border: '1px solid rgba(255,255,255,0.2)',
+                    p: 2
                   }}
                 >
                   Estudiante
@@ -490,9 +540,10 @@ export default function TaskReportPage() {
                     align="center"
                     sx={{
                       color: '#fff',
-                      fontWeight: 'bold',
-                      border: '1px solid #fff',
+                      fontWeight: 900,
+                      border: '1px solid rgba(255,255,255,0.2)',
                       minWidth: 140,
+                      p: 2
                     }}
                   >
                     {col.topic}
@@ -503,9 +554,10 @@ export default function TaskReportPage() {
                   align="center"
                   sx={{
                     color: '#fff',
-                    fontWeight: 'bold',
-                    border: '1px solid #fff',
+                    fontWeight: 900,
+                    border: '1px solid rgba(255,255,255,0.2)',
                     minWidth: 100,
+                    p: 2
                   }}
                 >
                   Total
@@ -519,8 +571,10 @@ export default function TaskReportPage() {
                     align="center"
                     sx={{
                       color: '#fff',
-                      fontWeight: 'bold',
-                      border: '1px solid #fff',
+                      fontWeight: 800,
+                      border: '1px solid rgba(255,255,255,0.2)',
+                      fontSize: '0.8rem',
+                      py: 1.5
                     }}
                   >
                     {col.maxPoints} pts
@@ -531,8 +585,10 @@ export default function TaskReportPage() {
                   align="center"
                   sx={{
                     color: '#fff',
-                    fontWeight: 'bold',
-                    border: '1px solid #fff',
+                    fontWeight: 800,
+                    border: '1px solid rgba(255,255,255,0.2)',
+                    fontSize: '0.8rem',
+                    py: 1.5
                   }}
                 >
                   {columns.reduce((sum, col) => sum + (col.maxPoints || 0), 0)} pts
@@ -552,19 +608,21 @@ export default function TaskReportPage() {
                     hover
                     sx={{
                       '&:nth-of-type(even)': {
-                        backgroundColor: '#FAFAFA',
+                        backgroundColor: '#F8FAFC',
                       },
                     }}
                   >
-                    <TableCell sx={{ border: `1px solid ${COLORS.border}` }}>
+                    <TableCell sx={{ border: `1px solid ${COLORS.border}`, p: 2, fontWeight: 600 }}>
                       {index + 1}
                     </TableCell>
 
                     <TableCell
                       sx={{
                         border: `1px solid ${COLORS.border}`,
-                        fontWeight: 600,
+                        fontWeight: 700,
+                        color: '#0F172A',
                         whiteSpace: 'nowrap',
+                        p: 2
                       }}
                     >
                       {student.studentName}
@@ -574,7 +632,7 @@ export default function TaskReportPage() {
                       <TableCell
                         key={col.taskId}
                         align="center"
-                        sx={{ border: `1px solid ${COLORS.border}` }}
+                        sx={{ border: `1px solid ${COLORS.border}`, color: '#475569', fontWeight: 600, p: 2 }}
                       >
                         {student.scores?.[col.taskId]?.score ?? 0}
                       </TableCell>
@@ -584,8 +642,10 @@ export default function TaskReportPage() {
                       align="center"
                       sx={{
                         border: `1px solid ${COLORS.border}`,
-                        fontWeight: 'bold',
+                        fontWeight: 900,
                         color: COLORS.primary,
+                        fontSize: '0.95rem',
+                        p: 2
                       }}
                     >
                       {subjectTotal}

@@ -20,11 +20,14 @@ import {
   Button,
 } from '@mui/material';
 
+// CONSTANTES DE ESTILO KUAAPY
 const COLORS = {
-  primary: '#7D0F15',
-  primaryDark: '#5c080d',
+  primary: '#0038A8',     // Azul principal KuaaPy
+  primaryDark: '#00257A', // Azul oscuro
+  red: '#D52B1E',         // Acento rojo
   bg: '#F8FAFC',
   border: '#E2E8F0',
+  gradient: 'linear-gradient(135deg, #0038A8 0%, #00257A 100%)'
 };
 
 export default function StudentCalificacionPage() {
@@ -150,9 +153,9 @@ export default function StudentCalificacionPage() {
 
   if (loading || loadingReport) {
     return (
-      <Box sx={{ p: 4, textAlign: 'center' }}>
+      <Box sx={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', height: '80vh' }}>
         <CircularProgress sx={{ color: COLORS.primary }} />
-        <Typography sx={{ mt: 2 }}>Cargando calificaciones...</Typography>
+        <Typography sx={{ mt: 2, fontWeight: 600, color: '#64748B' }}>Cargando calificaciones...</Typography>
       </Box>
     );
   }
@@ -160,7 +163,7 @@ export default function StudentCalificacionPage() {
   if (notStudent) {
     return (
       <Box sx={{ p: 3 }}>
-        <Alert severity="warning">
+        <Alert severity="warning" sx={{ borderRadius: '12px' }}>
           No eres un estudiante. Serás redirigido al dashboard.
         </Alert>
       </Box>
@@ -170,7 +173,7 @@ export default function StudentCalificacionPage() {
   if (error) {
     return (
       <Box sx={{ p: 3 }}>
-        <Alert severity="error">{error}</Alert>
+        <Alert severity="error" sx={{ borderRadius: '12px' }}>{error}</Alert>
       </Box>
     );
   }
@@ -178,58 +181,69 @@ export default function StudentCalificacionPage() {
   if (!report) {
     return (
       <Box sx={{ p: 3 }}>
-        <Alert severity="info">No hay calificaciones para mostrar.</Alert>
+        <Alert severity="info" sx={{ borderRadius: '12px' }}>No hay calificaciones para mostrar.</Alert>
       </Box>
     );
   }
 
   return (
-    <Box sx={{ p: 3, backgroundColor: COLORS.bg, minHeight: '100vh' }}>
+    <Box sx={{ p: { xs: 2, md: 4 }, backgroundColor: COLORS.bg, minHeight: '100vh' }}>
+      
+      {/* Tarjeta de Encabezado / Perfil */}
       <Paper
-        elevation={3}
+        elevation={0}
         sx={{
-          p: 3,
-          mb: 3,
-          borderRadius: 3,
-          borderTop: `8px solid ${COLORS.primary}`,
+          p: { xs: 3, md: 4 },
+          mb: 4,
+          borderRadius: '24px',
+          border: `1px solid ${COLORS.border}`,
+          bgcolor: '#fff',
+          position: 'relative',
+          overflow: 'hidden'
         }}
       >
+        <Box sx={{ position: 'absolute', top: 0, left: 0, width: '8px', height: '100%', background: COLORS.gradient }} />
+
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 3, flexWrap: 'wrap' }}>
           <Box
             component="img"
             src="/logo.png"
             alt="Logo institucional"
             sx={{
-              width: 90,
-              height: 90,
+              width: 80,
+              height: 80,
               objectFit: 'contain',
-              borderRadius: '50%',
+              borderRadius: '20px',
+              bgcolor: '#F1F5F9',
+              p: 1
             }}
           />
 
           <Box sx={{ flex: 1 }}>
             <Typography
-              variant="h5"
+              variant="h4"
               sx={{
-                fontWeight: 'bold',
+                fontWeight: 900,
                 color: COLORS.primary,
-                textTransform: 'uppercase',
+                letterSpacing: '-0.02em',
+                mb: 0.5
               }}
             >
-              Mis calificaciones
+              Mis Calificaciones - KuaaPy
             </Typography>
 
-            <Typography sx={{ fontWeight: 600 }}>
+            <Typography variant="body1" sx={{ fontWeight: 700, color: '#0F172A', mb: 1.5 }}>
               Estudiante: {report.student?.studentName}
             </Typography>
 
-            <Box sx={{ mt: 1, display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+            <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap', mb: 2 }}>
               <Chip
                 label={`Grado: ${report.student?.grade}`}
                 sx={{
-                  backgroundColor: COLORS.primary,
-                  color: '#fff',
-                  fontWeight: 'bold',
+                  backgroundColor: `${COLORS.primary}12`,
+                  color: COLORS.primary,
+                  fontWeight: 800,
+                  borderRadius: '8px'
                 }}
               />
 
@@ -239,35 +253,40 @@ export default function StudentCalificacionPage() {
                 sx={{
                   borderColor: COLORS.primary,
                   color: COLORS.primary,
-                  fontWeight: 'bold',
+                  fontWeight: 800,
+                  borderRadius: '8px'
                 }}
               />
             </Box>
 
-            <Box sx={{ mt: 2 }}>
-              <Button
-                variant="contained"
-                onClick={() => router.push('/taskReport/taskReportStudent')}
-                sx={{
-                  backgroundColor: COLORS.primary,
-                  fontWeight: 'bold',
-                  '&:hover': {
-                    backgroundColor: COLORS.primaryDark,
-                  },
-                }}
-              >
-                Volver a mi proceso
-              </Button>
-            </Box>
+            <Button
+              variant="contained"
+              onClick={() => router.push('/taskReport/taskReportStudent')}
+              sx={{
+                backgroundColor: COLORS.primary,
+                borderRadius: '12px',
+                fontWeight: 800,
+                textTransform: 'none',
+                boxShadow: '0 8px 20px rgba(0,56,168,0.2)',
+                '&:hover': {
+                  backgroundColor: COLORS.primaryDark,
+                },
+              }}
+            >
+              Volver a mi proceso
+            </Button>
           </Box>
         </Box>
       </Paper>
 
+      {/* Tabla de Calificaciones */}
       <Paper
-        elevation={2}
+        elevation={0}
         sx={{
-          borderRadius: 3,
-          overflowX: 'auto',
+          borderRadius: '24px',
+          border: `1px solid ${COLORS.border}`,
+          overflow: 'hidden',
+          bgcolor: '#fff'
         }}
       >
         <Table
@@ -277,48 +296,52 @@ export default function StudentCalificacionPage() {
           }}
         >
           <TableHead>
-            <TableRow sx={{ backgroundColor: COLORS.primary }}>
+            <TableRow sx={{ backgroundColor: '#F8FAFC' }}>
               <TableCell
                 sx={{
-                  color: '#fff',
-                  fontWeight: 'bold',
-                  border: '1px solid #fff',
+                  color: '#0F172A',
+                  fontWeight: 900,
+                  p: 2,
+                  borderBottom: `1px solid ${COLORS.border}`
                 }}
               >
-                Asignatura
+                ASIGNATURA
               </TableCell>
 
               <TableCell
                 align="center"
                 sx={{
-                  color: '#fff',
-                  fontWeight: 'bold',
-                  border: '1px solid #fff',
+                  color: '#0F172A',
+                  fontWeight: 900,
+                  p: 2,
+                  borderBottom: `1px solid ${COLORS.border}`
                 }}
               >
-                Puntaje logrado
+                PUNTAJE LOGRADO
               </TableCell>
 
               <TableCell
                 align="center"
                 sx={{
-                  color: '#fff',
-                  fontWeight: 'bold',
-                  border: '1px solid #fff',
+                  color: '#0F172A',
+                  fontWeight: 900,
+                  p: 2,
+                  borderBottom: `1px solid ${COLORS.border}`
                 }}
               >
-                Puntaje total
+                PUNTAJE TOTAL
               </TableCell>
 
               <TableCell
                 align="center"
                 sx={{
-                  color: '#fff',
-                  fontWeight: 'bold',
-                  border: '1px solid #fff',
+                  color: '#0F172A',
+                  fontWeight: 900,
+                  p: 2,
+                  borderBottom: `1px solid ${COLORS.border}`
                 }}
               >
-                Calificación
+                CALIFICACIÓN
               </TableCell>
             </TableRow>
           </TableHead>
@@ -328,8 +351,10 @@ export default function StudentCalificacionPage() {
               <TableRow key={item.subject} hover>
                 <TableCell
                   sx={{
-                    border: `1px solid ${COLORS.border}`,
-                    fontWeight: 600,
+                    borderColor: COLORS.border,
+                    fontWeight: 700,
+                    color: '#0F172A',
+                    p: 2
                   }}
                 >
                   {item.subject}
@@ -338,7 +363,10 @@ export default function StudentCalificacionPage() {
                 <TableCell
                   align="center"
                   sx={{
-                    border: `1px solid ${COLORS.border}`,
+                    borderColor: COLORS.border,
+                    fontWeight: 600,
+                    color: '#475569',
+                    p: 2
                   }}
                 >
                   {item.obtainedPoints}
@@ -347,7 +375,10 @@ export default function StudentCalificacionPage() {
                 <TableCell
                   align="center"
                   sx={{
-                    border: `1px solid ${COLORS.border}`,
+                    borderColor: COLORS.border,
+                    fontWeight: 600,
+                    color: '#475569',
+                    p: 2
                   }}
                 >
                   {item.totalPoints}
@@ -356,16 +387,34 @@ export default function StudentCalificacionPage() {
                 <TableCell
                   align="center"
                   sx={{
-                    border: `1px solid ${COLORS.border}`,
-                    fontWeight: 'bold',
-                    color: COLORS.primary,
-                    fontSize: '1.2rem',
+                    borderColor: COLORS.border,
+                    p: 2
                   }}
                 >
-                  {item.grade}
+                  <Chip
+                    label={item.grade}
+                    sx={{
+                      fontWeight: 900,
+                      backgroundColor: `${COLORS.primary}12`,
+                      color: COLORS.primary,
+                      fontSize: '1rem',
+                      borderRadius: '8px',
+                      minWidth: 40
+                    }}
+                  />
                 </TableCell>
               </TableRow>
             ))}
+
+            {subjects.length === 0 && (
+              <TableRow>
+                <TableCell colSpan={4} align="center" sx={{ py: 6 }}>
+                  <Typography sx={{ color: '#64748B', fontWeight: 600 }}>
+                    No hay asignaturas registradas para este periodo.
+                  </Typography>
+                </TableCell>
+              </TableRow>
+            )}
           </TableBody>
         </Table>
       </Paper>

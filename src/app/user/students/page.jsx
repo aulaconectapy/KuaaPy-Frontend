@@ -17,6 +17,15 @@ import {
   BadgeRounded, BusinessRounded
 } from '@mui/icons-material';
 
+// CONSTANTES DE ESTILO KUAAPY
+const COLORS = {
+  primary: "#0038A8",     // Azul principal KuaaPy
+  primaryDark: "#00257A", // Azul oscuro
+  red: "#D52B1E",         // Acento rojo
+  bgLight: "#F8FAFC",
+  gradient: "linear-gradient(135deg, #0038A8 0%, #00257A 100%)"
+};
+
 const StudentsPage = () => {
   const router = useRouter();
   const { user: currentUser, loading: authLoading } = useAuth();
@@ -26,14 +35,6 @@ const StudentsPage = () => {
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
   const [viewStudent, setViewStudent] = useState(null);
-
-  // --- PALETA DE COLORES INSTITUCIONAL ---
-  const COLORS = {
-    primary: "#7D0F15", // Granate Logo
-    primaryLight: "#a31a20",
-    secondary: "#D4AF37", // Dorado (opcional para acentos)
-    bgLight: "#F8FAFC"
-  };
 
   const loadStudents = async () => {
     if (!currentUser) return;
@@ -100,17 +101,17 @@ const StudentsPage = () => {
     );
 
   return (
-    <Box sx={{ bgcolor: COLORS.bgLight, minHeight: '100vh', py: 6 }}>
+    <Box sx={{ bgcolor: COLORS.bgLight, minHeight: '100vh', py: { xs: 3, md: 5 } }}>
       <Container maxWidth="lg">
         
-        {/* ENCABEZADO */}
-        <Box sx={{ mb: 5, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 2 }}>
+        {/* ENCABEZADO ADAPTABLE */}
+        <Box sx={{ mb: 4, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 2 }}>
           <Box>
-            <Typography variant="h3" sx={{ fontWeight: 900, color: COLORS.primary, letterSpacing: '-1px' }}>
+            <Typography variant="h3" sx={{ fontWeight: 900, color: COLORS.primary, letterSpacing: '-0.02em', mb: 0.5 }}>
               Estudiantes
             </Typography>
-            <Typography variant="body1" color="text.secondary">
-              Listado oficial del Colegio María Auxiliadora
+            <Typography variant="body1" sx={{ color: '#64748B', fontWeight: 500 }}>
+              Listado oficial de estudiantes en KuaaPy
             </Typography>
           </Box>
 
@@ -121,10 +122,12 @@ const StudentsPage = () => {
               onClick={() => router.push('/pages/students/nuevo')}
               sx={{ 
                 bgcolor: COLORS.primary, 
-                px: 3, py: 1.5, 
-                borderRadius: 3,
-                boxShadow: `0 8px 16px ${COLORS.primary}40`,
-                '&:hover': { bgcolor: COLORS.primaryLight, transform: 'translateY(-2px)' },
+                px: 3, py: 1.2, 
+                borderRadius: '12px',
+                fontWeight: 800,
+                textTransform: 'none',
+                boxShadow: '0 8px 20px rgba(0,56,168,0.2)',
+                '&:hover': { bgcolor: COLORS.primaryDark, transform: 'translateY(-2px)' },
                 transition: '0.3s'
               }}
             >
@@ -137,14 +140,15 @@ const StudentsPage = () => {
         <Paper
           elevation={0}
           sx={{
-            p: '10px 20px',
-            mb: 5,
+            p: '8px 20px',
+            mb: 4,
             display: 'flex',
             alignItems: 'center',
-            borderRadius: 4,
-            border: '2px solid #E2E8F0',
+            borderRadius: '16px',
+            border: '1px solid #E2E8F0',
+            bgcolor: '#fff',
             transition: '0.3s',
-            '&:focus-within': { borderColor: COLORS.primary, boxShadow: '0 0 0 4px rgba(125, 15, 21, 0.1)' }
+            '&:focus-within': { borderColor: COLORS.primary, boxShadow: '0 0 0 4px rgba(0, 56, 168, 0.08)' }
           }}
         >
           <SearchRounded sx={{ color: COLORS.primary, mr: 2 }} />
@@ -154,47 +158,55 @@ const StudentsPage = () => {
             placeholder="Buscar por nombre, cédula o grado..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            InputProps={{ disableUnderline: true, sx: { fontSize: '1.1rem', fontWeight: 500 } }}
+            InputProps={{ disableUnderline: true, sx: { fontSize: '1rem', fontWeight: 500 } }}
           />
-          <Chip label={`${filteredStudents.length} resultados`} size="small" sx={{ fontWeight: 700, bgcolor: '#EDF2F7' }} />
+          <Chip label={`${filteredStudents.length} resultados`} size="small" sx={{ fontWeight: 700, bgcolor: '#F1F5F9', borderRadius: '8px' }} />
         </Paper>
 
         {/* GRILLA DE TARJETAS */}
         <Grid container spacing={3}>
           {filteredStudents.map((student, index) => (
             <Grid item xs={12} sm={6} md={4} key={student._id}>
-              <Zoom in style={{ transitionDelay: `${index * 40}ms` }}>
+              <Zoom in style={{ transitionDelay: `${index * 30}ms` }}>
                 <Paper
+                  elevation={0}
                   sx={{
                     p: 0,
-                    borderRadius: 5,
+                    borderRadius: '20px',
                     overflow: 'hidden',
                     border: '1px solid #E2E8F0',
-                    transition: '0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+                    bgcolor: '#fff',
+                    transition: '0.3s ease',
                     '&:hover': {
-                      boxShadow: '0 20px 40px rgba(0,0,0,0.08)',
-                      transform: 'translateY(-8px)',
+                      boxShadow: '0 15px 35px rgba(0,56,168,0.08)',
+                      transform: 'translateY(-4px)',
                       borderColor: COLORS.primary
                     }
                   }}
                 >
                   {/* Banner superior de color */}
-                  <Box sx={{ height: 10, bgcolor: COLORS.primary }} />
+                  <Box sx={{ height: 10, background: COLORS.gradient }} />
                   
                   <Box sx={{ p: 3, position: 'relative' }}>
                     {/* Botones de acción rápidos */}
-                    <Stack direction="row" sx={{ position: 'absolute', top: 15, right: 15 }}>
-                      <IconButton size="small" onClick={() => setViewStudent(student)} sx={{ color: 'text.secondary', '&:hover': { color: COLORS.primary } }}>
-                        <VisibilityRounded fontSize="small" />
-                      </IconButton>
+                    <Stack direction="row" sx={{ position: 'absolute', top: 15, right: 15 }} spacing={0.5}>
+                      <Tooltip title="Ver detalles">
+                        <IconButton size="small" onClick={() => setViewStudent(student)} sx={{ color: COLORS.primary, bgcolor: '#EFF6FF', p: 1, borderRadius: '10px' }}>
+                          <VisibilityRounded fontSize="small" />
+                        </IconButton>
+                      </Tooltip>
                       {(['administrador', 'director/a', 'secretario/a'].includes(currentUser.role?.toLowerCase())) && (
                         <>
-                          <IconButton size="small" onClick={() => router.push(`/user/students/${student._id}`)} sx={{ '&:hover': { color: '#2563EB' } }}>
-                            <EditRounded fontSize="small" />
-                          </IconButton>
-                          <IconButton size="small" onClick={() => handleDelete(student._id)} sx={{ '&:hover': { color: '#DC2626' } }}>
-                            <DeleteRounded fontSize="small" />
-                          </IconButton>
+                          <Tooltip title="Editar">
+                            <IconButton size="small" onClick={() => router.push(`/user/students/${student._id}`)} sx={{ color: '#475569', bgcolor: '#F1F5F9', p: 1, borderRadius: '10px' }}>
+                              <EditRounded fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
+                          <Tooltip title="Eliminar">
+                            <IconButton size="small" onClick={() => handleDelete(student._id)} sx={{ color: COLORS.red, bgcolor: '#FEF2F2', p: 1, borderRadius: '10px' }}>
+                              <DeleteRounded fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
                         </>
                       )}
                     </Stack>
@@ -202,17 +214,18 @@ const StudentsPage = () => {
                     <Stack alignItems="center" spacing={1.5}>
                       <Avatar
                         sx={{
-                          width: 80, height: 80,
-                          bgcolor: COLORS.primary,
-                          fontSize: '2rem', fontWeight: 900,
-                          boxShadow: `0 8px 20px rgba(125, 15, 21, 0.2)`
+                          width: 72, height: 72,
+                          background: COLORS.gradient,
+                          fontSize: '1.8rem', fontWeight: 900,
+                          boxShadow: '0 8px 16px rgba(0,56,168,0.2)',
+                          borderRadius: '18px'
                         }}
                       >
                         {student.firstName?.charAt(0)}
                       </Avatar>
 
-                      <Box textAlign="center">
-                        <Typography variant="h6" sx={{ fontWeight: 800, color: '#1E293B', lineHeight: 1.2 }}>
+                      <Box textAlign="center" sx={{ width: '100%', mt: 0.5 }}>
+                        <Typography variant="h6" sx={{ fontWeight: 800, color: '#0F172A', lineHeight: 1.2 }}>
                           {student.firstName} {student.lastName}
                         </Typography>
                         <Typography variant="body2" sx={{ color: COLORS.primary, fontWeight: 700, mt: 0.5 }}>
@@ -220,21 +233,20 @@ const StudentsPage = () => {
                         </Typography>
                       </Box>
 
-                      <Divider sx={{ width: '100%', my: 1 }} />
+                      <Divider sx={{ width: '100%', my: 1, borderColor: '#F1F5F9' }} />
 
                       <Stack direction="row" spacing={1} justifyContent="center" flexWrap="wrap" useFlexGap>
                         <Chip 
-                          icon={<SchoolRounded sx={{ fontSize: '1rem !important' }} />} 
+                          icon={<SchoolRounded sx={{ fontSize: '1rem !important', color: `${COLORS.primary} !important` }} />} 
                           label={student.grade} 
                           size="small" 
-                          sx={{ fontWeight: 700, px: 1 }} 
+                          sx={{ fontWeight: 700, px: 1, bgcolor: `${COLORS.primary}12`, color: COLORS.primary, borderRadius: '6px' }} 
                         />
                         <Chip 
                           label={student.academicStatus || "Activo"} 
                           color={student.academicStatus === "Inactivo" ? "error" : "success"}
                           size="small" 
-                          variant="contained"
-                          sx={{ fontWeight: 800, fontSize: '0.7rem' }} 
+                          sx={{ fontWeight: 800, fontSize: '0.7rem', borderRadius: '6px' }} 
                         />
                       </Stack>
                     </Stack>
@@ -257,36 +269,37 @@ const StudentsPage = () => {
                 onClick={(e) => e.stopPropagation()}
                 sx={{
                   width: '90%', maxWidth: 500,
-                  borderRadius: 6,
+                  borderRadius: '24px',
                   overflow: 'hidden',
                   position: 'relative',
-                  boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)'
+                  boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)',
+                  bgcolor: '#fff'
                 }}
               >
                 {/* Cabecera del Modal */}
-                <Box sx={{ bgcolor: COLORS.primary, p: 3, color: '#fff', textAlign: 'center' }}>
-                  <Avatar sx={{ width: 80, height: 80, mx: 'auto', mb: 2, bgcolor: '#fff', color: COLORS.primary, fontWeight: 900, fontSize: '2rem' }}>
+                <Box sx={{ background: COLORS.gradient, p: 3, color: '#fff', textAlign: 'center' }}>
+                  <Avatar sx={{ width: 80, height: 80, mx: 'auto', mb: 2, bgcolor: '#fff', color: COLORS.primary, fontWeight: 900, fontSize: '2rem', borderRadius: '20px' }}>
                     {viewStudent.firstName?.charAt(0)}
                   </Avatar>
                   <Typography variant="h5" fontWeight={900}>{viewStudent.firstName} {viewStudent.lastName}</Typography>
-                  <Typography variant="body2" sx={{ opacity: 0.8 }}>Ficha de Estudiante</Typography>
+                  <Typography variant="body2" sx={{ opacity: 0.85, fontWeight: 500 }}>Ficha de Estudiante - KuaaPy</Typography>
                 </Box>
 
                 {/* Cuerpo del Modal */}
                 <Box sx={{ p: 4 }}>
                   <Stack spacing={2.5}>
-                    <DetailItem icon={<BadgeRounded color="action" />} label="Cédula de Identidad" value={viewStudent.cedula || 'No disponible'} />
-                    <DetailItem icon={<SchoolRounded color="action" />} label="Grado / Año" value={viewStudent.grade} />
-                    <DetailItem icon={<BusinessRounded color="action" />} label="Institución" value={viewStudent.institution?.name} />
-                    <DetailItem icon={<VisibilityRounded color="action" />} label="Sexo" value={viewStudent.sex} />
-                    <DetailItem icon={<EditRounded color="action" />} label="Fecha de Nacimiento" value={formatDate(viewStudent.birthDate)} />
+                    <DetailItem icon={<BadgeRounded sx={{ color: COLORS.primary }} />} label="Cédula de Identidad" value={viewStudent.cedula || 'No disponible'} />
+                    <DetailItem icon={<SchoolRounded sx={{ color: COLORS.primary }} />} label="Grado / Año" value={viewStudent.grade} />
+                    <DetailItem icon={<BusinessRounded sx={{ color: COLORS.primary }} />} label="Institución" value={viewStudent.institution?.name} />
+                    <DetailItem icon={<VisibilityRounded sx={{ color: COLORS.primary }} />} label="Sexo" value={viewStudent.sex} />
+                    <DetailItem icon={<EditRounded sx={{ color: COLORS.primary }} />} label="Fecha de Nacimiento" value={formatDate(viewStudent.birthDate)} />
                   </Stack>
 
                   <Button
                     fullWidth
                     variant="outlined"
                     onClick={() => setViewStudent(null)}
-                    sx={{ mt: 4, borderRadius: 3, py: 1.2, fontWeight: 700, borderColor: COLORS.primary, color: COLORS.primary, '&:hover': { bgcolor: `${COLORS.primary}05` } }}
+                    sx={{ mt: 4, borderRadius: '12px', py: 1.2, fontWeight: 800, textTransform: 'none', borderColor: COLORS.primary, color: COLORS.primary, '&:hover': { bgcolor: `${COLORS.primary}08` } }}
                   >
                     Cerrar Detalle
                   </Button>
@@ -303,10 +316,10 @@ const StudentsPage = () => {
 // Componente auxiliar para los items del detalle
 const DetailItem = ({ icon, label, value }) => (
   <Stack direction="row" spacing={2} alignItems="center">
-    <Box sx={{ bgcolor: '#F1F5F9', p: 1, borderRadius: 2, display: 'flex' }}>{icon}</Box>
+    <Box sx={{ bgcolor: '#F1F5F9', p: 1.2, borderRadius: '12px', display: 'flex' }}>{icon}</Box>
     <Box>
-      <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, textTransform: 'uppercase' }}>{label}</Typography>
-      <Typography variant="body1" sx={{ fontWeight: 700, color: '#1E293B' }}>{value}</Typography>
+      <Typography variant="caption" sx={{ color: '#64748B', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{label}</Typography>
+      <Typography variant="body1" sx={{ fontWeight: 700, color: '#0F172A' }}>{value}</Typography>
     </Box>
   </Stack>
 );

@@ -7,22 +7,23 @@ import { useRouter } from 'next/navigation';
 
 import {
   Container, Typography, TextField, MenuItem, Button, 
-  Box, Grid, CircularProgress, Paper, Divider, Stack, InputAdornment
+  Box, Grid, CircularProgress, Paper, Divider, Stack
 } from '@mui/material';
 
 import {
-  Person as PersonIcon,
   Gavel as GavelIcon,
-  Description as DescIcon,
   Save as SaveIcon,
   ArrowBack as BackIcon
 } from '@mui/icons-material';
 
+// CONSTANTES DE ESTILO KUAAPY
 const COLORS = {
-  primary: "#7D0F15",
-  primaryLight: "#a31a20",
+  primary: "#0038A8",     // Azul principal KuaaPy
+  primaryDark: "#00257A", // Azul oscuro
+  red: "#D52B1E",         // Acento rojo
   bgLight: "#F8FAFC",
-  border: "#E2E8F0"
+  border: "#E2E8F0",
+  gradient: "linear-gradient(135deg, #0038A8 0%, #00257A 100%)"
 };
 
 export default function CreateReportPage() {
@@ -96,42 +97,42 @@ export default function CreateReportPage() {
   }
 
   return (
-    <Box sx={{ bgcolor: COLORS.bgLight, minHeight: '100vh', py: 5 }}>
+    <Box sx={{ bgcolor: COLORS.bgLight, minHeight: '100vh', py: { xs: 3, md: 5 } }}>
       <Container maxWidth="md">
         
         {/* BOTÓN VOLVER */}
         <Button 
           startIcon={<BackIcon />} 
           onClick={() => router.back()}
-          sx={{ mb: 3, color: 'text.secondary', fontWeight: 700 }}
+          sx={{ mb: 3, color: '#64748B', fontWeight: 700, textTransform: 'none' }}
         >
           Volver a la lista
         </Button>
 
-        <Paper elevation={0} sx={{ p: 4, borderRadius: 5, border: `1px solid ${COLORS.border}` }}>
+        <Paper elevation={0} sx={{ p: { xs: 3, md: 5 }, borderRadius: '24px', border: `1px solid ${COLORS.border}`, bgcolor: '#fff' }}>
           
           <Stack direction="row" spacing={2} alignItems="center" mb={3}>
-            <Box sx={{ bgcolor: `${COLORS.primary}10`, p: 1.5, borderRadius: 3, color: COLORS.primary }}>
+            <Box sx={{ bgcolor: `${COLORS.primary}12`, p: 1.5, borderRadius: '14px', color: COLORS.primary, display: 'flex' }}>
               <GavelIcon fontSize="large" />
             </Box>
             <Box>
-              <Typography variant="h5" sx={{ fontWeight: 900, color: '#1E293B' }}>
+              <Typography variant="h4" sx={{ fontWeight: 900, color: '#0F172A', letterSpacing: '-0.02em', mb: 0.5 }}>
                 Nuevo Reporte Disciplinario
               </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Complete el formulario para registrar la incidencia.
+              <Typography variant="body2" sx={{ color: '#64748B', fontWeight: 500 }}>
+                Complete el formulario para registrar la incidencia en KuaaPy.
               </Typography>
             </Box>
           </Stack>
 
-          <Divider sx={{ mb: 4 }} />
+          <Divider sx={{ mb: 4, borderColor: '#F1F5F9' }} />
 
           <Box component="form" onSubmit={handleSubmit}>
             <Grid container spacing={3}>
               
               {/* SECCIÓN: ESTUDIANTE */}
               <Grid item xs={12}>
-                <Typography variant="caption" sx={{ fontWeight: 800, color: COLORS.primary, mb: 1, display: 'block', textTransform: 'uppercase' }}>
+                <Typography variant="caption" sx={{ fontWeight: 800, color: COLORS.primary, mb: 1, display: 'block', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                   Información del Alumno
                 </Typography>
                 <TextField
@@ -142,7 +143,8 @@ export default function CreateReportPage() {
                   onChange={handleChange}
                   fullWidth
                   required
-                  sx={{ '& .MuiOutlinedInput-root': { borderRadius: 3 } }}
+                  size="small"
+                  sx={{ '& .MuiOutlinedInput-root': { borderRadius: '12px' } }}
                 >
                   {students.map((student) => (
                     <MenuItem key={student._id} value={student._id}>
@@ -161,7 +163,8 @@ export default function CreateReportPage() {
                   value={form.severity}
                   onChange={handleChange}
                   fullWidth
-                  sx={{ '& .MuiOutlinedInput-root': { borderRadius: 3 } }}
+                  size="small"
+                  sx={{ '& .MuiOutlinedInput-root': { borderRadius: '12px' } }}
                 >
                   <MenuItem value="Leve">🟢 Leve</MenuItem>
                   <MenuItem value="Moderado">🟡 Moderado</MenuItem>
@@ -178,7 +181,8 @@ export default function CreateReportPage() {
                   onChange={handleChange}
                   fullWidth
                   required
-                  sx={{ '& .MuiOutlinedInput-root': { borderRadius: 3 } }}
+                  size="small"
+                  sx={{ '& .MuiOutlinedInput-root': { borderRadius: '12px' } }}
                 >
                   {[
                     "Falta de respeto al compañero", "Falta de respeto al docente",
@@ -202,7 +206,7 @@ export default function CreateReportPage() {
                   rows={3}
                   required
                   placeholder="Explique lo sucedido con objetividad..."
-                  sx={{ '& .MuiOutlinedInput-root': { borderRadius: 3 } }}
+                  sx={{ '& .MuiOutlinedInput-root': { borderRadius: '12px' } }}
                 />
               </Grid>
 
@@ -213,8 +217,9 @@ export default function CreateReportPage() {
                   value={form.actionTaken}
                   onChange={handleChange}
                   fullWidth
+                  size="small"
                   placeholder="Ej: Llamada de atención, retiro de material..."
-                  sx={{ '& .MuiOutlinedInput-root': { borderRadius: 3 } }}
+                  sx={{ '& .MuiOutlinedInput-root': { borderRadius: '12px' } }}
                 />
               </Grid>
 
@@ -225,7 +230,8 @@ export default function CreateReportPage() {
                   value={form.observation}
                   onChange={handleChange}
                   fullWidth
-                  sx={{ '& .MuiOutlinedInput-root': { borderRadius: 3 } }}
+                  size="small"
+                  sx={{ '& .MuiOutlinedInput-root': { borderRadius: '12px' } }}
                 />
               </Grid>
 
@@ -241,10 +247,12 @@ export default function CreateReportPage() {
                     startIcon={isSubmitting ? <CircularProgress size={20} color="inherit" /> : <SaveIcon />}
                     sx={{ 
                       bgcolor: COLORS.primary, 
-                      borderRadius: 3, 
+                      borderRadius: '14px', 
                       py: 1.5, 
                       fontWeight: 800,
-                      '&:hover': { bgcolor: COLORS.primaryLight }
+                      textTransform: 'none',
+                      boxShadow: '0 8px 20px rgba(0,56,168,0.2)',
+                      '&:hover': { bgcolor: COLORS.primaryDark }
                     }}
                   >
                     {isSubmitting ? 'Guardando...' : 'Registrar Reporte Oficial'}

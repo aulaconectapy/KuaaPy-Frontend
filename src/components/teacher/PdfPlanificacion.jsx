@@ -1,6 +1,29 @@
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
+const PRIMARY_COLOR = [0, 56, 168]; // Azul institucional KuaaPy (#0038A8)
+
+// Función auxiliar para cargar el logo institucional de forma dinámica
+const loadImage = (url) => {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.src = url;
+    img.crossOrigin = 'Anonymous';
+    img.onload = () => resolve(img);
+    img.onerror = () => resolve(null);
+  });
+};
+
+const formatDate = (date) => {
+  if (!date) return 'N/A';
+  const d = new Date(date);
+  if (isNaN(d.getTime())) return date;
+  const day = String(d.getUTCDate()).padStart(2, "0");
+  const month = String(d.getUTCMonth() + 1).padStart(2, "0");
+  const year = d.getUTCFullYear();
+  return `${day}/${month}/${year}`;
+};
+
 // --- FUNCIÓN 1: PARA DESCARGAR UNA SOLA SEMANA ---
 export const generatePlanificacionPDF = async (plan, user) => {
   const doc = new jsPDF({
@@ -9,21 +32,11 @@ export const generatePlanificacionPDF = async (plan, user) => {
     format: 'a4'
   });
 
-  const PRIMARY_COLOR = [125, 15, 21];
   const now = new Date().toLocaleString();
-  const generadoPor = `${user?.firstName || ''} ${user?.lastName || ''}`;
-
-  const loadImage = (url) => {
-    return new Promise((resolve) => {
-      const img = new Image();
-      img.src = url;
-      img.crossOrigin = "Anonymous";
-      img.onload = () => resolve(img);
-      img.onerror = () => resolve(null);
-    });
-  };
-
-  const logo = await loadImage('/logo.png');
+  const generadoPor = `${user?.firstName || ''} ${user?.lastName || ''}`.trim();
+  const institutionName = user?.institution?.name || plan?.institution?.name || 'KuaaPy Institución';
+  const logoUrl = user?.institution?.logoUrl || plan?.institution?.logoUrl || '/logo.png';
+  const logo = await loadImage(logoUrl);
 
   // Metadatos arriba a la derecha
   doc.setFontSize(6);
@@ -40,11 +53,11 @@ export const generatePlanificacionPDF = async (plan, user) => {
     theme: 'plain',
     body: [
       [
-        { content: '', rowSpan: 3, styles: { cellWidth: 22 } },
+        { content: '', rowSpan: 3, styles: { cellWidth: 24 } },
         {
-          content: (user?.institution?.name || 'INSTITUCIÓN EDUCATIVA').toUpperCase(),
+          content: institutionName.toUpperCase(),
           styles: {
-            fontSize: 12,
+            fontSize: 13,
             fontStyle: 'bold',
             textColor: PRIMARY_COLOR
           }
@@ -61,14 +74,14 @@ export const generatePlanificacionPDF = async (plan, user) => {
       ],
       [
         {
-          content: `Docente: ${plan.profesor?.firstName || user?.firstName} ${plan.profesor?.lastName || user?.lastName}  |  Grado: ${plan.grado}`,
+          content: `Docente: ${plan.profesor?.firstName || user?.firstName || ''} ${plan.profesor?.lastName || user?.lastName || ''}  |  Grado: ${plan.grado || 'N/A'}`,
           styles: { fontSize: 8 }
         }
       ]
     ],
     didDrawCell: (data) => {
       if (data.column.index === 0 && logo) {
-        doc.addImage(logo, 'PNG', data.cell.x, data.cell.y, 18, 18);
+        doc.addImage(logo, 'PNG', data.cell.x, data.cell.y, 20, 20);
       }
     }
   });
@@ -76,67 +89,80 @@ export const generatePlanificacionPDF = async (plan, user) => {
   doc.setFontSize(9);
   doc.setTextColor(50, 50, 50);
 
-  const fechaStr = `Periodo: ${new Date(plan.fechaInicio).toLocaleDateString()} al ${new Date(plan.fechaFin).toLocaleDateString()}`;
+  const fechaStr = `Periodo: ${formatDate(plan.fechaInicio)} al ${formatDate(plan.fechaFin)}`;
+  doc.text(fechaStr, 14, doc.lastAutoTable.finalY + 6);
 
-  doc.text(fechaStr, 14, doc.lastAutoTable.finalY + 5);
+  let currentY = doc.lastAutoTable.finalY + 12;
 
-  let currentY = doc.lastAutoTable.finalY + 10;
+  (plan.dias || []).forEach((dia) => {
+    if (!dia.materias || dia.materias.length === 0) return;
 
-  plan.dias.forEach((dia) => {
-    if (dia.materias.length === 0) return;
-
-    if (currentY > 240) {
+    if (currentY > 235) {
       doc.addPage();
       currentY = 20;
     }
 
-    // 🔹 FECHA DEL DÍA
-    const fechaDia = dia.fecha
-      ? new Date(dia.fecha).toLocaleDateString('es-ES')
-      : '';
+    const fechaDia = dia.fecha ? formatDate(dia.fecha) : '';
 
-    doc.setFontSize(10);
-    doc.setFont(undefined, 'bold');
-    doc.setTextColor(
-      PRIMARY_COLOR[0],
-      PRIMARY_COLOR[1],
-      PRIMARY_COLOR[2]
-    );
+    // Cabecera del Día
+    doc.setFillColor(241, 245, 249);
+    doc.rect(14, currentY, 182, 7, 'F');
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(PRIMARY_COLOR[0], PRIMARY_COLOR[1], PRIMARY_COLOR[2]);
+    doc.text(`${dia.nombreDia.toUpperCase()}  (${fechaDia})`, 18, currentY + 5);
 
-    doc.text(
-      `${dia.nombreDia.toUpperCase()} ${fechaDia}`,
-      14,
-      currentY
-    );
+    currentY += 10;
 
-    const tableData = dia.materias.map(m => [
-      m.asignatura,
-      m.unidadTematica || '-',
-      m.tema,
-      m.guiaDocente || '-',
-      m.cuadernilloEstudiante || '-',
-      m.instrumentoEvaluacion
-    ]);
+    const tableData = dia.materias.map(m => {
+      const indicadoresTexto = m.indicadores && m.indicadores.length > 0
+        ? m.indicadores.map((ind, idx) => `${idx + 1}. ${ind.descripcion} (${ind.puntos}p)`).join('\n')
+        : '-';
+
+      const contenidoTemaCapacidad = `Tema: ${m.tema || '-'}\nCapacidad: ${m.capacidad || '-'}`;
+      const momentosEInd = `Momentos:\n${m.momentosDidacticos || '-'}\n\nIndicadores:\n${indicadoresTexto}`;
+      const paginas = `Guía: ${m.guiaDocente || '-'}\nCuad: ${m.cuadernilloEstudiante || '-'}`;
+
+      return [
+        m.asignatura || 'N/A',
+        m.unidadTematica || '-',
+        contenidoTemaCapacidad,
+        momentosEInd,
+        paginas,
+        m.instrumentoEvaluacion || 'Lista de cotejo'
+      ];
+    });
 
     autoTable(doc, {
-      startY: currentY + 2,
+      startY: currentY,
       head: [[
         'ASIGNATURA',
         'U. TEMÁTICA',
-        'TEMA',
-        'GUÍA',
-        'CUAD.',
+        'TEMA / CAPACIDAD',
+        'MOMENTOS / INDICADORES',
+        'PÁGS.',
         'EVALUACIÓN'
       ]],
       body: tableData,
       theme: 'grid',
       styles: {
         fontSize: 7,
-        cellPadding: 1.5
+        cellPadding: 1.5,
+        valign: 'top'
       },
       headStyles: {
-        fillColor: [80, 80, 80],
-        halign: 'center'
+        fillColor: PRIMARY_COLOR,
+        halign: 'center',
+        textColor: [255, 255, 255],
+        fontStyle: 'bold'
+      },
+      columnStyles: {
+        0: { cellWidth: 26, fontStyle: 'bold' },
+        1: { cellWidth: 28 },
+        2: { cellWidth: 45 },
+        3: { cellWidth: 45 },
+        4: { cellWidth: 18, halign: 'center' },
+        5: { cellWidth: 20, halign: 'center' }
       },
       margin: {
         left: 14,
@@ -148,7 +174,6 @@ export const generatePlanificacionPDF = async (plan, user) => {
   });
 
   const pageHeight = doc.internal.pageSize.height;
-
   if (currentY + 35 > pageHeight) {
     doc.addPage();
     currentY = 25;
@@ -157,22 +182,13 @@ export const generatePlanificacionPDF = async (plan, user) => {
   doc.line(30, currentY + 15, 85, currentY + 15);
   doc.line(125, currentY + 15, 180, currentY + 15);
 
-  doc.text(
-    "Firma del Docente",
-    57.5,
-    currentY + 20,
-    { align: "center" }
-  );
-
-  doc.text(
-    "Dirección Académica",
-    152.5,
-    currentY + 20,
-    { align: "center" }
-  );
+  doc.setFontSize(8);
+  doc.setTextColor(0, 0, 0);
+  doc.text("Firma del Docente", 57.5, currentY + 20, { align: "center" });
+  doc.text("Dirección Académica", 152.5, currentY + 20, { align: "center" });
 
   doc.save(
-    `Planificacion_${plan.grado.replace(/\s+/g, '_')}_${new Date(plan.fechaInicio).toLocaleDateString().replace(/\//g, '-')}.pdf`
+    `Planificacion_${(plan.grado || 'grado').replace(/\s+/g, '_')}_${formatDate(plan.fechaInicio).replace(/\//g, '-')}.pdf`
   );
 };
 
@@ -183,41 +199,25 @@ export const generateMassivePlanificacionPDF = async (
   user,
   rangoTexto = ""
 ) => {
-
   const doc = new jsPDF({
     orientation: 'portrait',
     unit: 'mm',
     format: 'a4'
   });
 
-  const PRIMARY_COLOR = [125, 15, 21];
-
   const now = new Date().toLocaleString();
-
-  const generadoPor = `${user?.firstName || ''} ${user?.lastName || ''}`;
-
-  const loadImage = (url) => {
-    return new Promise((resolve) => {
-      const img = new Image();
-      img.src = url;
-      img.crossOrigin = "Anonymous";
-
-      img.onload = () => resolve(img);
-      img.onerror = () => resolve(null);
-    });
-  };
-
-  const logo = await loadImage('/logo.png');
+  const generadoPor = `${user?.firstName || ''} ${user?.lastName || ''}`.trim();
+  const institutionName = user?.institution?.name || 'KuaaPy Institución';
+  const logoUrl = user?.institution?.logoUrl || '/logo.png';
+  const logo = await loadImage(logoUrl);
 
   for (let i = 0; i < planificaciones.length; i++) {
-
     const plan = planificaciones[i];
 
     if (i > 0) doc.addPage();
 
     doc.setFontSize(6);
     doc.setTextColor(150);
-
     doc.text(
       `Generado el: ${now} | Por: ${generadoPor} | Pág: ${doc.internal.getNumberOfPages()}`,
       doc.internal.pageSize.width - 14,
@@ -230,11 +230,11 @@ export const generateMassivePlanificacionPDF = async (
       theme: 'plain',
       body: [
         [
-          { content: '', rowSpan: 3, styles: { cellWidth: 22 } },
+          { content: '', rowSpan: 3, styles: { cellWidth: 24 } },
           {
-            content: (user?.institution?.name || 'INSTITUCIÓN EDUCATIVA').toUpperCase(),
+            content: institutionName.toUpperCase(),
             styles: {
-              fontSize: 12,
+              fontSize: 13,
               fontStyle: 'bold',
               textColor: PRIMARY_COLOR
             }
@@ -251,91 +251,89 @@ export const generateMassivePlanificacionPDF = async (
         ],
         [
           {
-            content: `Docente: ${user?.firstName} ${user?.lastName} | Grado: ${plan.grado} | Rango: ${rangoTexto}`,
+            content: `Docente: ${generadoPor} | Grado: ${plan.grado || 'N/A'} | Rango: ${rangoTexto}`,
             styles: { fontSize: 8 }
           }
         ]
       ],
-
       didDrawCell: (data) => {
         if (data.column.index === 0 && logo) {
-          doc.addImage(
-            logo,
-            'PNG',
-            data.cell.x,
-            data.cell.y,
-            18,
-            18
-          );
+          doc.addImage(logo, 'PNG', data.cell.x, data.cell.y, 20, 20);
         }
       }
     });
 
-    let currentY = doc.lastAutoTable.finalY + 10;
+    let currentY = doc.lastAutoTable.finalY + 12;
 
-    plan.dias.forEach((dia) => {
+    (plan.dias || []).forEach((dia) => {
+      if (!dia.materias || dia.materias.length === 0) return;
 
-      if (dia.materias.length === 0) return;
-
-      if (currentY > 240) {
+      if (currentY > 235) {
         doc.addPage();
         currentY = 20;
       }
 
-      // 🔹 FECHA DEL DÍA
-      const fechaDia = dia.fecha
-        ? new Date(dia.fecha).toLocaleDateString('es-ES')
-        : '';
+      const fechaDia = dia.fecha ? formatDate(dia.fecha) : '';
 
-      doc.setFontSize(10);
-      doc.setFont(undefined, 'bold');
+      doc.setFillColor(241, 245, 249);
+      doc.rect(14, currentY, 182, 7, 'F');
+      doc.setFontSize(9);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(PRIMARY_COLOR[0], PRIMARY_COLOR[1], PRIMARY_COLOR[2]);
+      doc.text(`${dia.nombreDia.toUpperCase()}  (${fechaDia})`, 18, currentY + 5);
 
-      doc.setTextColor(
-        PRIMARY_COLOR[0],
-        PRIMARY_COLOR[1],
-        PRIMARY_COLOR[2]
-      );
+      currentY += 10;
 
-      doc.text(
-        `${dia.nombreDia.toUpperCase()} ${fechaDia}`,
-        14,
-        currentY
-      );
+      const tableData = dia.materias.map(m => {
+        const indicadoresTexto = m.indicadores && m.indicadores.length > 0
+          ? m.indicadores.map((ind, idx) => `${idx + 1}. ${ind.descripcion} (${ind.puntos}p)`).join('\n')
+          : '-';
 
-      const tableData = dia.materias.map(m => [
-        m.asignatura,
-        m.unidadTematica || '-',
-        m.tema,
-        m.guiaDocente || '-',
-        m.cuadernilloEstudiante || '-',
-        m.instrumentoEvaluacion
-      ]);
+        const contenidoTemaCapacidad = `Tema: ${m.tema || '-'}\nCapacidad: ${m.capacidad || '-'}`;
+        const momentosEInd = `Momentos:\n${m.momentosDidacticos || '-'}\n\nIndicadores:\n${indicadoresTexto}`;
+        const paginas = `Guía: ${m.guiaDocente || '-'}\nCuad: ${m.cuadernilloEstudiante || '-'}`;
+
+        return [
+          m.asignatura || 'N/A',
+          m.unidadTematica || '-',
+          contenidoTemaCapacidad,
+          momentosEInd,
+          paginas,
+          m.instrumentoEvaluacion || 'Lista de cotejo'
+        ];
+      });
 
       autoTable(doc, {
-        startY: currentY + 2,
+        startY: currentY,
         head: [[
           'ASIGNATURA',
           'U. TEMÁTICA',
-          'TEMA',
-          'GUÍA',
-          'CUAD.',
+          'TEMA / CAPACIDAD',
+          'MOMENTOS / INDICADORES',
+          'PÁGS.',
           'EVALUACIÓN'
         ]],
-
         body: tableData,
-
         theme: 'grid',
-
         styles: {
           fontSize: 7,
-          cellPadding: 1.5
+          cellPadding: 1.5,
+          valign: 'top'
         },
-
         headStyles: {
-          fillColor: [80, 80, 80],
-          halign: 'center'
+          fillColor: PRIMARY_COLOR,
+          halign: 'center',
+          textColor: [255, 255, 255],
+          fontStyle: 'bold'
         },
-
+        columnStyles: {
+          0: { cellWidth: 26, fontStyle: 'bold' },
+          1: { cellWidth: 28 },
+          2: { cellWidth: 45 },
+          3: { cellWidth: 45 },
+          4: { cellWidth: 18, halign: 'center' },
+          5: { cellWidth: 20, halign: 'center' }
+        },
         margin: {
           left: 14,
           right: 14
@@ -345,29 +343,18 @@ export const generateMassivePlanificacionPDF = async (
       currentY = doc.lastAutoTable.finalY + 10;
     });
 
-    if (currentY + 30 > 280) {
+    if (currentY + 35 > 280) {
       doc.addPage();
-      currentY = 20;
+      currentY = 25;
     }
 
     doc.line(30, currentY + 15, 85, currentY + 15);
     doc.line(125, currentY + 15, 180, currentY + 15);
 
-    doc.setFontSize(7);
-
-    doc.text(
-      "Firma del Docente",
-      57.5,
-      currentY + 20,
-      { align: "center" }
-    );
-
-    doc.text(
-      "Dirección Académica",
-      152.5,
-      currentY + 20,
-      { align: "center" }
-    );
+    doc.setFontSize(8);
+    doc.setTextColor(0, 0, 0);
+    doc.text("Firma del Docente", 57.5, currentY + 20, { align: "center" });
+    doc.text("Dirección Académica", 152.5, currentY + 20, { align: "center" });
   }
 
   doc.save(`Reporte_Acumulado_${new Date().getTime()}.pdf`);

@@ -6,7 +6,6 @@ import { getReportsByGrade, getAllDisciplineReports } from '@/services/api';
 import ReportTable from '@/components/reports/ReportTable';
 import ReportsStats from '@/components/reports/ReportsStats';
 import ReportsRanking from '@/components/reports/ReportsRanking';
-// Importamos AMBAS funciones del archivo de PDF
 import { generateGeneralPDF, generateIndividualPDF } from '@/components/reports/reportStudent';
 
 import {
@@ -19,10 +18,14 @@ import PrintIcon from '@mui/icons-material/Print';
 import SearchIcon from '@mui/icons-material/Search';
 import { useRouter } from 'next/navigation';
 
+// CONSTANTES DE ESTILO KUAAPY
 const COLORS = {
-  primary: "#7D0F15",
-  primaryLight: "#a31a20",
-  bgLight: "#F8FAFC"
+  primary: "#0038A8",     // Azul principal KuaaPy
+  primaryDark: "#00257A", // Azul oscuro
+  red: "#D52B1E",         // Acento rojo
+  bgLight: "#F8FAFC",
+  border: "#E2E8F0",
+  gradient: "linear-gradient(135deg, #0038A8 0%, #00257A 100%)"
 };
 
 export default function ReportsPage() {
@@ -57,9 +60,9 @@ export default function ReportsPage() {
       let data = [];
       const role = user.role?.toLowerCase();
 
-if (role === 'docente') {
-  data = await getReportsByGrade();
-}
+      if (role === 'docente') {
+        data = await getReportsByGrade();
+      }
       else if (role === 'director/a' || role === 'secretario/a') {
         data = await getAllDisciplineReports();
       }
@@ -77,9 +80,6 @@ if (role === 'docente') {
     setSnackbar({ open: true, message: 'Reporte eliminado correctamente', severity: 'success' });
   };
 
-  // ============================================================
-  // ESTE BOTÓN GENERA EL PDF FILTRADO (TABLA DE HISTORIAL)
-  // ============================================================
   const handlePrintFiltered = () => {
     const filtered = reports.filter(r => {
       const studentFullName = `${r.student?.firstName || ''} ${r.student?.lastName || ''}`.toLowerCase();
@@ -95,7 +95,6 @@ if (role === 'docente') {
       return;
     }
 
-    // Llama a la función de tabla landscape (general o por alumno)
     generateGeneralPDF(filtered, user, printFilter);
   };
 
@@ -111,28 +110,28 @@ if (role === 'docente') {
   if (!['director/a', 'secretario/a', 'docente'].includes(role)) return null;
 
   return (
-    <Box sx={{ bgcolor: COLORS.bgLight, minHeight: '100vh', py: 5 }}>
+    <Box sx={{ bgcolor: COLORS.bgLight, minHeight: '100vh', py: { xs: 3, md: 5 } }}>
       <Container maxWidth="lg">
         
-        <Paper elevation={0} sx={{ p: 4, mb: 4, borderRadius: 5, border: '1px solid #E2E8F0', bgcolor: 'white' }}>
-          <Stack direction={{ xs: 'column', md: 'row' }} justifyContent="space-between" alignItems="center" spacing={2}>
+        {/* Cabecera / Panel Principal */}
+        <Paper elevation={0} sx={{ p: { xs: 3, md: 4 }, mb: 4, borderRadius: '24px', border: `1px solid ${COLORS.border}`, bgcolor: 'white' }}>
+          <Stack direction={{ xs: 'column', md: 'row' }} justifyContent="space-between" alignItems="center" spacing={2.5}>
             <Stack direction="row" spacing={2} alignItems="center">
-              <Box sx={{ bgcolor: `${COLORS.primary}10`, p: 1.5, borderRadius: 3, color: COLORS.primary, display: 'flex' }}>
+              <Box sx={{ bgcolor: `${COLORS.primary}12`, p: 1.5, borderRadius: '14px', color: COLORS.primary, display: 'flex' }}>
                 <HistoryEduIcon fontSize="large" />
               </Box>
               <Box>
-                <Typography variant="h4" sx={{ fontWeight: 900, color: '#1E293B', letterSpacing: '-1px' }}>
+                <Typography variant="h4" sx={{ fontWeight: 900, color: '#0F172A', letterSpacing: '-0.02em', mb: 0.5 }}>
                   Gestión Disciplinaria
                 </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Panel de {user.role} - Reportes Institucionales.
+                <Typography variant="body2" sx={{ color: '#64748B', fontWeight: 500 }}>
+                  Panel de {user.role} • Reportes Institucionales en KuaaPy
                 </Typography>
               </Box>
             </Stack>
 
-            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} sx={{ width: { xs: '100%', md: 'auto' } }}>
+            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5} sx={{ width: { xs: '100%', md: 'auto' } }} alignItems="center">
               
-              {/* BUSCADOR: Aquí es donde escribes el nombre del alumno */}
               <TextField 
                 size="small"
                 placeholder="Filtrar por alumno..."
@@ -146,14 +145,13 @@ if (role === 'docente') {
                   )
                 }}
                 sx={{ 
-                  bgcolor: '#F1F5F9', 
-                  borderRadius: 2, 
-                  width: { xs: '100%', sm: '200px' },
-                  '& fieldset': { border: 'none' } 
+                  bgcolor: '#F8FAFC', 
+                  borderRadius: '12px', 
+                  width: { xs: '100%', sm: '220px' },
+                  '& .MuiOutlinedInput-root': { borderRadius: '12px' } 
                 }}
               />
               
-              {/* BOTÓN: Genera el PDF con los resultados de la búsqueda de arriba */}
               <Button
                 variant="outlined"
                 startIcon={<PrintIcon />}
@@ -161,9 +159,12 @@ if (role === 'docente') {
                 sx={{ 
                   borderColor: COLORS.primary, 
                   color: COLORS.primary, 
-                  borderRadius: 3, 
+                  borderRadius: '12px', 
                   fontWeight: 800,
-                  '&:hover': { borderColor: COLORS.primaryLight, bgcolor: `${COLORS.primary}05` }
+                  textTransform: 'none',
+                  height: 40,
+                  width: { xs: '100%', sm: 'auto' },
+                  '&:hover': { borderColor: COLORS.primaryDark, bgcolor: `${COLORS.primary}08` }
                 }}
               >
                 Imprimir Historial
@@ -175,9 +176,15 @@ if (role === 'docente') {
                   startIcon={<AddIcon />}
                   onClick={() => router.push('/reportes/crear')}
                   sx={{ 
-                    bgcolor: COLORS.primary, borderRadius: 3, px: 3, py: 1.2, fontWeight: 800,
-                    boxShadow: `0 4px 14px 0 rgba(125, 15, 21, 0.39)`,
-                    '&:hover': { bgcolor: COLORS.primaryLight }
+                    bgcolor: COLORS.primary, 
+                    borderRadius: '12px', 
+                    px: 3, 
+                    height: 40, 
+                    fontWeight: 800,
+                    textTransform: 'none',
+                    boxShadow: '0 8px 20px rgba(0,56,168,0.2)',
+                    width: { xs: '100%', sm: 'auto' },
+                    '&:hover': { bgcolor: COLORS.primaryDark }
                   }}
                 >
                   Nuevo
@@ -188,10 +195,7 @@ if (role === 'docente') {
         </Paper>
 
         <Stack spacing={4}>
-          <Paper elevation={0} sx={{ p: 3, borderRadius: 5, border: '1px solid #E2E8F0' }}>
-            {/* IMPORTANTE: Tu componente ReportTable debe tener un botón para 
-               llamar a generateIndividualPDF(reporte) para imprimir cada acta.
-            */}
+          <Paper elevation={0} sx={{ p: 3, borderRadius: '24px', border: `1px solid ${COLORS.border}`, bgcolor: '#fff' }}>
             <ReportTable 
               reports={reports} 
               onDelete={handleDelete} 
@@ -210,7 +214,7 @@ if (role === 'docente') {
           autoHideDuration={3000}
           onClose={() => setSnackbar({ ...snackbar, open: false })}
         >
-          <Alert severity={snackbar.severity} variant="filled" sx={{ borderRadius: 3 }}>
+          <Alert severity={snackbar.severity} variant="filled" sx={{ borderRadius: '12px', fontWeight: 700 }}>
             {snackbar.message}
           </Alert>
         </Snackbar>
