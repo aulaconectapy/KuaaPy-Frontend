@@ -19,6 +19,9 @@ import {
   Container,
   Divider,
   Alert,
+  List,
+  ListItem,
+  ListItemText,
 } from '@mui/material';
 import {
   School,
@@ -42,7 +45,10 @@ const InstitutionForm = ({ existingInstitution }) => {
   const [secretary, setSecretary] = useState('');
   const [grades, setGrades] = useState([]);
   const [logoUrl, setLogoUrl] = useState('');
+  
+  // Cambiamos 'error' para que pueda manejar un string o una lista de errores
   const [error, setError] = useState(null);
+  const [errorDetails, setErrorDetails] = useState([]);
   const [validationError, setValidationError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
 
@@ -75,6 +81,7 @@ const InstitutionForm = ({ existingInstitution }) => {
 
     setValidationError('');
     setError(null);
+    setErrorDetails([]);
 
     const institutionData = {
       name,
@@ -97,7 +104,19 @@ const InstitutionForm = ({ existingInstitution }) => {
       setSuccessMessage('Institución guardada con éxito.');
       setTimeout(() => router.push('/Institution/seeInstitution'), 1800);
     } catch (err) {
-      setError(err.response ? err.response.data.message : 'Hubo un error al guardar la institución.');
+      if (err.response && err.response.data) {
+        setError(err.response.data.message || 'Hubo un error al guardar la institución.');
+        // Si el backend envía un array de errores específicos, los guardamos
+        if (err.response.data.errors && Array.isArray(err.response.data.errors)) {
+          setErrorDetails(err.response.data.errors);
+        } else if (err.response.data.details) {
+          // Si envía el objeto de Mongoose { field: { message: '...' } }
+          const formattedDetails = Object.values(err.response.data.details).map(d => d.message);
+          setErrorDetails(formattedDetails);
+        }
+      } else {
+        setError('Hubo un error de conexión con el servidor.');
+      }
     }
   };
 
@@ -118,18 +137,9 @@ const InstitutionForm = ({ existingInstitution }) => {
   };
 
   const gradesList = [
-    '1° grado',
-    '2° grado',
-    '3° grado',
-    '4° grado',
-    '5° grado',
-    '6° grado',
-    '7° grado',
-    '8° grado',
-    '9° grado',
-    '1er año',
-    '2do año',
-    '3er año',
+    '1° grado', '2° grado', '3° grado', '4° grado', '5° grado',
+    '6° grado', '7° grado', '8° grado', '9° grado', '1er año', 
+    '2do año', '3er año',
   ];
 
   return (
@@ -180,15 +190,10 @@ const InstitutionForm = ({ existingInstitution }) => {
                 <Box>
                   <Typography
                     variant="h4"
-                    sx={{
-                      fontWeight: 900,
-                      color: '#102A43',
-                      lineHeight: 1.1,
-                    }}
+                    sx={{ fontWeight: 900, color: '#102A43', lineHeight: 1.1 }}
                   >
                     {existingInstitution ? 'Editar Institución' : 'Crear Institución'}
                   </Typography>
-
                   <Typography variant="body2" sx={{ color: '#64748B', mt: 0.5 }}>
                     Registro de datos institucionales del centro educativo.
                   </Typography>
@@ -198,12 +203,7 @@ const InstitutionForm = ({ existingInstitution }) => {
               <Button
                 startIcon={<ArrowBack />}
                 onClick={() => router.push('/Institution/seeInstitution')}
-                sx={{
-                  borderRadius: 3,
-                  textTransform: 'none',
-                  fontWeight: 800,
-                  color: '#0038A8',
-                }}
+                sx={{ borderRadius: 3, textTransform: 'none', fontWeight: 800, color: '#0038A8' }}
               >
                 Volver
               </Button>
@@ -211,9 +211,21 @@ const InstitutionForm = ({ existingInstitution }) => {
 
             <Divider sx={{ mb: 3, borderStyle: 'dashed' }} />
 
+            {/* Alerta de Error Principal y Detalles Específicos */}
             {error && (
               <Alert severity="error" sx={{ mb: 2, borderRadius: 3 }}>
-                {error}
+                <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
+                  {error}
+                </Typography>
+                {errorDetails.length > 0 && (
+                  <List dense sx={{ mt: 1, pl: 2 }}>
+                    {errorDetails.map((detail, index) => (
+                      <ListItem key={index} sx={{ listStyleType: 'disc', display: 'list-item', p: 0 }}>
+                        <ListItemText primary={<Typography variant="body2">{detail}</Typography>} />
+                      </ListItem>
+                    ))}
+                  </List>
+                )}
               </Alert>
             )}
 
@@ -231,7 +243,6 @@ const InstitutionForm = ({ existingInstitution }) => {
                   onChange={(e) => setName(e.target.value)}
                   fullWidth
                   required
-                  error={!name && !!validationError}
                   sx={inputStyle}
                   InputProps={{
                     startAdornment: <School sx={{ color: '#0038A8', mr: 1 }} />,
@@ -244,7 +255,6 @@ const InstitutionForm = ({ existingInstitution }) => {
                   onChange={(e) => setNumber(e.target.value)}
                   fullWidth
                   required
-                  error={!number && !!validationError}
                   sx={inputStyle}
                   InputProps={{
                     startAdornment: <Badge sx={{ color: '#D90429', mr: 1 }} />,
@@ -257,7 +267,6 @@ const InstitutionForm = ({ existingInstitution }) => {
                   onChange={(e) => setAddress(e.target.value)}
                   fullWidth
                   required
-                  error={!address && !!validationError}
                   sx={inputStyle}
                   InputProps={{
                     startAdornment: <LocationOn sx={{ color: '#0038A8', mr: 1 }} />,
@@ -297,9 +306,8 @@ const InstitutionForm = ({ existingInstitution }) => {
                   }}
                 />
 
-                <FormControl fullWidth error={grades.length === 0 && !!validationError}>
+                <FormControl fullWidth>
                   <InputLabel>Grados habilitados</InputLabel>
-
                   <Select
                     multiple
                     value={grades}
@@ -308,12 +316,6 @@ const InstitutionForm = ({ existingInstitution }) => {
                     sx={{
                       borderRadius: 3,
                       backgroundColor: '#FFFFFF',
-                      '&:hover .MuiOutlinedInput-notchedOutline': {
-                        borderColor: '#0038A8',
-                      },
-                      '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                        borderColor: '#0038A8',
-                      },
                     }}
                     renderValue={(selected) => (
                       <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.7 }}>
@@ -353,11 +355,9 @@ const InstitutionForm = ({ existingInstitution }) => {
                   <Typography sx={{ fontWeight: 800, color: '#334155', mb: 1 }}>
                     Logo institucional
                   </Typography>
-
                   <Typography variant="body2" sx={{ color: '#64748B', mb: 2 }}>
                     Podés subir el escudo o logo de la institución.
                   </Typography>
-
                   <FileUploader onUpload={handleLogoUpload} existingImageUrl={logoUrl} />
                 </Paper>
 
@@ -398,4 +398,4 @@ const InstitutionForm = ({ existingInstitution }) => {
   );
 };
 
-export default InstitutionForm;
+export_default = InstitutionForm; // Mantén tu export default habitual
