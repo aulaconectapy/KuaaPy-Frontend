@@ -6,7 +6,7 @@ import { useState, useEffect } from "react";
 import {
   Container, Typography, Box, Grid, Paper,
   Avatar, CircularProgress, Stack, Chip, Divider, Dialog,
-  useMediaQuery, useTheme, IconButton, Button
+  useMediaQuery, useTheme, IconButton
 } from '@mui/material';
 
 import {
@@ -19,7 +19,6 @@ import {
 
 import StudentProfileForm from "@/components/StudentProfileForm";
 import UserForm from "@/components/UserForm";
-import HorarioExamenDialog from "@/app/Institution/horarioDeExamen/page";
 import {
   getMyDisciplineReports,
   getReportsByGrade,
@@ -33,7 +32,6 @@ const Dashboard = ({ docentesList }) => {
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
   const [profileOpen, setProfileOpen] = useState(false);
-  const [examsOpen, setExamsOpen] = useState(false); 
   const [reports, setReports] = useState([]);
   const [loadingReports, setLoadingReports] = useState(false);
 
@@ -41,7 +39,7 @@ const Dashboard = ({ docentesList }) => {
   const COLORS = {
     primary: "#0038A8", // Azul principal KuaaPy
     primaryDark: "#00257A",
-    red: "#D52B1E",     // Acento rojo
+    red: "#D52B1E",    // Acento rojo
     secondary: "#F59E0B", // Ámbar / Dorado de contraste
     textMain: "#0F172A",
     textSecondary: "#475569",
@@ -53,13 +51,6 @@ const Dashboard = ({ docentesList }) => {
       router.replace('/auth/login');
     }
   }, [loading, initialized, user, router]);
-
-  // ELEGIR AUTO-APERTURA SI ES ESTUDIANTE
-  useEffect(() => {
-    if (initialized && user && user.role?.toLowerCase() === 'estudiante') {
-      setExamsOpen(true);
-    }
-  }, [initialized, user]);
 
   useEffect(() => {
     if (!initialized || !user) return;
@@ -269,57 +260,6 @@ const Dashboard = ({ docentesList }) => {
             </Typography>
           </Box>
 
-          {/* BANNER EN FORMA DE ALERTA EXCLUSIVO PARA ESTUDIANTES */}
-          {currentRole === 'estudiante' && (
-            <Paper 
-              elevation={0}
-              sx={{
-                p: 3,
-                mb: 4,
-                borderRadius: '24px',
-                display: 'flex',
-                flexDirection: isMobile ? 'column' : 'row',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                gap: 2,
-                background: `linear-gradient(90deg, #EFF6FF 0%, #DBEAFE 100%)`,
-                border: `2px dashed ${COLORS.primary}`,
-                boxShadow: '0 4px 12px rgba(0, 56, 168, 0.08)'
-              }}
-            >
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, textAlign: isMobile ? 'center' : 'left', flexDirection: isMobile ? 'column' : 'row' }}>
-                <Avatar sx={{ bgcolor: COLORS.primary, color: '#fff', width: 48, height: 48, borderRadius: '14px' }}>
-                  <EventNote />
-                </Avatar>
-                <Box>
-                  <Typography fontWeight={900} variant="h6" sx={{ color: COLORS.primaryDark }}>
-                    ¡Atención! Cronograma de Exámenes
-                  </Typography>
-                  <Typography variant="body2" sx={{ color: COLORS.textSecondary, fontWeight: 500 }}>
-                    Ya se encuentran disponibles las fechas oficiales de evaluación.
-                  </Typography>
-                </Box>
-              </Box>
-              <Button 
-                variant="contained" 
-                onClick={() => setExamsOpen(true)}
-                sx={{
-                  bgcolor: COLORS.primary,
-                  color: '#fff',
-                  fontWeight: 800,
-                  px: 3,
-                  py: 1.2,
-                  borderRadius: '12px',
-                  textTransform: 'none',
-                  boxShadow: '0 4px 10px rgba(0, 56, 168, 0.25)',
-                  '&:hover': { bgcolor: COLORS.primaryDark }
-                }}
-              >
-                Ver Mi Horario
-              </Button>
-            </Paper>
-          )}
-
           <Grid container spacing={3}>
             <DashCard
               title="Mi Perfil"
@@ -379,13 +319,6 @@ const Dashboard = ({ docentesList }) => {
                   icon={EventNote}
                   color="#059669"
                   href="/teacher/planificacion"
-                />
-                <DashCard
-                  title="Horario de Exámenes"
-                  desc="Consultar cronograma institucional"
-                  icon={EventNote}
-                  color="#F59E0B"
-                  onClick={() => setExamsOpen(true)}
                 />
                 <DashCard
                   title="Ver Estudiantes"
@@ -493,13 +426,6 @@ const Dashboard = ({ docentesList }) => {
           }
         </Box>
       </Dialog>
-
-      {/* DIÁLOGO FLOTANTE PARA EL HORARIO DE EXÁMENES */}
-      <HorarioExamenDialog 
-        open={examsOpen} 
-        onClose={() => setExamsOpen(false)} 
-      />
-
     </Container>
   );
 };
