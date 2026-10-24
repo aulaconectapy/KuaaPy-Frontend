@@ -19,7 +19,8 @@ import {
   AssignmentLate as PendingIcon,
   AccountCircle as StudentIcon,
   PictureAsPdf as PdfIcon,
-  Visibility as ViewIcon
+  Visibility as ViewIcon,
+  School as SchoolIcon
 } from '@mui/icons-material';
 
 // CONSTANTES DE ESTILO KUAAPY
@@ -77,7 +78,8 @@ export default function AcademicSummaryPage() {
       setLoading(true);
       try {
         const institutionId = user?.institution?._id || user?.institution;
-        const data = await getStudentsSummary(filterGrade, institutionId);
+        // Al enviar "all" o vacío, obtenemos todos los estudiantes para extraer los grados dinámicamente
+        const data = await getStudentsSummary("all", institutionId);
         setSummary(Array.isArray(data) ? data : []);
       } catch (error) {
         console.error("Error al cargar resumen:", error);
@@ -87,7 +89,13 @@ export default function AcademicSummaryPage() {
     };
 
     if (user && !authLoading) loadData();
-  }, [user, filterGrade, authLoading]);
+  }, [user, authLoading]);
+
+  // 🔹 Extraer todos los grados únicos presentes en los datos de los estudiantes
+  const availableGrades = useMemo(() => {
+    const gradesSet = new Set(summary.map(s => s.grade).filter(Boolean));
+    return Array.from(gradesSet).sort();
+  }, [summary]);
 
   // Filtrar estudiantes
   const filteredData = useMemo(() => {
@@ -108,17 +116,17 @@ export default function AcademicSummaryPage() {
     });
   }, [summary, search, user, filterGrade]);
 
-  // Estadísticas
+  // Estadísticas basadas en los datos filtrados o generales
   const stats = useMemo(() => {
-    if (summary.length === 0) return { corrected: 0, pend: 0, totalStudents: 0 };
-    const corrected = summary.reduce((acc, curr) => acc + (curr.corregidas || 0), 0);
-    const pends = summary.reduce((acc, curr) => acc + (curr.pendientes || 0), 0);
+    if (filteredData.length === 0) return { corrected: 0, pend: 0, totalStudents: 0 };
+    const corrected = filteredData.reduce((acc, curr) => acc + (curr.corregidas || 0), 0);
+    const pends = filteredData.reduce((acc, curr) => acc + (curr.pendientes || 0), 0);
     return {
       corrected,
       pend: pends,
-      totalStudents: summary.length
+      totalStudents: filteredData.length
     };
-  }, [summary]);
+  }, [filteredData]);
 
   const handleExportPDF = () => {
     generateSummaryPDF(filteredData, user, filterGrade);
@@ -183,18 +191,18 @@ export default function AcademicSummaryPage() {
             </Button>
 
             {canSeeAll && (
-              <FormControl size="small" sx={{ minWidth: 180, width: { xs: '100%', sm: 'auto' } }}>
-                <InputLabel>Grado</InputLabel>
+              <FormControl size="small" sx={{ minWidth: 200, width: { xs: '100%', sm: 'auto' } }}>
+                <InputLabel>Filtrar por Grado</InputLabel>
                 <Select
                   value={filterGrade}
-                  label="Grado"
+                  label="Filtrar por Grado"
                   onChange={(e) => setFilterGrade(e.target.value)}
                   sx={{ bgcolor: 'white', borderRadius: '12px' }}
                 >
                   <MenuItem value="all">Todos los Grados</MenuItem>
-                  <MenuItem value="1° Grado">1° Grado</MenuItem>
-                  <MenuItem value="2° Grado">2° Grado</MenuItem>
-                  <MenuItem value="3° Grado">3° Grado</MenuItem>
+                  {availableGrades.map((grade) => (
+                    <MenuItem key={grade} value={grade}>{grade}</MenuItem>
+                  ))}
                 </Select>
               </FormControl>
             )}
@@ -277,6 +285,7 @@ export default function AcademicSummaryPage() {
               <TableHead sx={{ bgcolor: '#F8FAFC' }}>
                 <TableRow>
                   <TableCell sx={{ fontWeight: 900, color: '#0F172A' }}>ESTUDIANTE</TableCell>
+                  <TableCell sx={{ fontWeight: 900, color: '#0F172A' }}>GRADO</TableCell>
                   <TableCell align="center" sx={{ fontWeight: 900, color: '#0F172A' }}>ENTREGAS (C/P)</TableCell>
                   <TableCell align="center" sx={{ fontWeight: 900, color: '#0F172A' }}>L. COTEJO</TableCell>
                   <TableCell align="center" sx={{ fontWeight: 900, color: '#0F172A' }}>RÚBRICA</TableCell>
@@ -291,6 +300,17 @@ export default function AcademicSummaryPage() {
                   <TableRow key={row._id} hover sx={{ '&:last-child td': { border: 0 } }}>
                     <TableCell sx={{ fontWeight: 700, color: '#0F172A' }}>
                       {row.lastName?.toUpperCase()}, {row.firstName}
+                    </TableCell>
+
+                    {/* 🔹 Columna del Grado del Estudiante */}
+                    <TableCell>
+                      <Chip 
+                        icon={<SchoolIcon style={{ fontSize: 13, color: '#0038A8' }} />} 
+                        label={row.grade || 'N/A'} 
+                        size="small" 
+                        variant="outlined" 
+                        sx={{ fontSize: '0.75rem', fontWeight: 800, borderRadius: '8px', borderColor: COLORS.primary, color: COLORS.primary, bgcolor: `${COLORS.primary}06` }} 
+                      />
                     </TableCell>
 
                     <TableCell align="center">
@@ -349,7 +369,7 @@ export default function AcademicSummaryPage() {
 
                 {filteredData.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={7} align="center" sx={{ py: 8 }}>
+                    <TableCell colSpan={8} align="center" sx={{ py: 8 }}>
                       <Typography sx={{ color: '#64748B', fontWeight: 600 }}>
                         No se encontraron registros de estudiantes.
                       </Typography>
