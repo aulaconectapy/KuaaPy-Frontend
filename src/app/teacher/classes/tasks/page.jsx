@@ -37,9 +37,9 @@ export default function TasksPage() {
 
   // PALETA INSTITUCIONAL KUAAPY
   const COLORS = {
-    primary: "#0038A8",     // Azul principal KuaaPy
+    primary: "#0038A8",    // Azul principal KuaaPy
     primaryDark: "#00257A",
-    red: "#D52B1E",         // Acento rojo
+    red: "#D52B1E",        // Acento rojo
     bgLight: "#F8FAFC",
     border: "#E2E8F0"
   };
@@ -363,7 +363,7 @@ export default function TasksPage() {
                           variant="contained"
                           size="small"
                           endIcon={<ChevronRightIcon />}
-                          onClick={() => router.push(`/teacher/classes/tasks/${task._id}`)}
+                          onClick={() => window.open(`/teacher/classes/tasks/${task._id}`, '_blank')}
                           sx={{ 
                             bgcolor: '#EFF6FF', color: COLORS.primary, 
                             textTransform: 'none', fontWeight: 800, borderRadius: '10px',
