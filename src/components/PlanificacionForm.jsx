@@ -4,7 +4,8 @@ import { useAuth } from "@/context/AuthContext";
 import { 
   TextField, Button, Paper, Typography, Grid, Box, 
   IconButton, MenuItem, Select, Card, CardContent, Stack, 
-  FormControl, Divider, InputLabel, Avatar, Checkbox, ListItemText, OutlinedInput
+  FormControl, Divider, InputLabel, Avatar, Checkbox, ListItemText, OutlinedInput,
+  Alert, AlertTitle
 } from "@mui/material";
 import { 
   AddCircle, Delete, EventNote, School, 
@@ -30,7 +31,7 @@ const UNIDADES_TEMATICAS_CICLO1 = {
   "Educación Artística": ["Música", "Artes Plásticas", "Danza Paraguaya", "Expresión Corporal"]
 };
 
-// 🔹 Unidades Temáticas de 4.º a 6.º Grado (Ciclo 2 - Actualizado con las que proporcionaste)
+// 🔹 Unidades Temáticas de 4.º a 6.º Grado (Ciclo 2)
 const UNIDADES_TEMATICAS_CICLO2 = {
   "Trabajo y Tecnología": [
     "Técnicas y Tecnologías del Hogar",
@@ -98,6 +99,9 @@ const PlanificacionForm = ({ initialData, onSubmit, loading, isReadOnly = false 
     dias: DIAS.map(nombre => ({ nombreDia: nombre, materias: [] }))
   });
 
+  // Estado para capturar y mostrar los errores específicos del servidor
+  const [erroresServidor, setErroresServidor] = useState([]);
+
   const gradoDocente = useMemo(() => {
     if (initialData?.grado) return initialData.grado;
     if (user?.grades && user.grades.length > 0) return user.grades[0];
@@ -115,7 +119,6 @@ const PlanificacionForm = ({ initialData, onSubmit, loading, isReadOnly = false 
     return ASIGNATURAS_POR_CICLO.ciclo1;
   }, [numGrado]);
 
-  // Selección de diccionario de unidades según el ciclo del grado
   const unidadesTematicasDiccionario = useMemo(() => {
     if (numGrado >= 1 && numGrado <= 3) return UNIDADES_TEMATICAS_CICLO1;
     return UNIDADES_TEMATICAS_CICLO2;
@@ -131,7 +134,6 @@ const PlanificacionForm = ({ initialData, onSubmit, loading, isReadOnly = false 
           ...d,
           materias: d.materias.map(m => ({
             ...m,
-            // Aseguramos que unidadTematica sea siempre un arreglo para la selección múltiple
             unidadTematica: Array.isArray(m.unidadTematica) ? m.unidadTematica : (m.unidadTematica ? [m.unidadTematica] : [])
           }))
         })) : DIAS.map(nombre => ({ nombreDia: nombre, materias: [] }))
@@ -146,7 +148,7 @@ const PlanificacionForm = ({ initialData, onSubmit, loading, isReadOnly = false 
     const newDias = [...form.dias];
     newDias[diaIndex].materias.push({
       asignatura: "", 
-      unidadTematica: [], // 🔹 Inicializado como arreglo para múltiple selección
+      unidadTematica: [],
       tema: "", 
       capacidad: "",
       momentosDidacticos: "",
@@ -170,14 +172,13 @@ const PlanificacionForm = ({ initialData, onSubmit, loading, isReadOnly = false 
     const newDias = [...form.dias];
     
     if (field === 'asignatura') {
-      newDias[diaIndex].materias[matIndex].unidadTematica = []; // Limpiamos al cambiar de asignatura
+      newDias[diaIndex].materias[matIndex].unidadTematica = [];
     }
 
     newDias[diaIndex].materias[matIndex][field] = value;
     setForm({ ...form, dias: newDias });
   };
 
-  // --- GESTIÓN DE INDICADORES DENTRO DE CADA MATERIA ---
   const handleIndicatorChange = (diaIndex, matIndex, indIndex, field, value) => {
     if (isReadOnly || isDirectivo) return;
     const newDias = [...form.dias];
@@ -199,7 +200,9 @@ const PlanificacionForm = ({ initialData, onSubmit, loading, isReadOnly = false 
     setForm({ ...form, dias: newDias });
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
+    setErroresServidor([]);
+
     if (!form.fechaInicio || !form.fechaFin) {
       alert("Por favor, seleccione la fecha de inicio y de fin de la semana.");
       return;
@@ -211,13 +214,27 @@ const PlanificacionForm = ({ initialData, onSubmit, loading, isReadOnly = false 
     }
 
     const formToSubmit = JSON.parse(JSON.stringify(form));
-    onSubmit(formToSubmit);
+    
+    try {
+      await onSubmit(formToSubmit);
+    } catch (err) {
+      // Extrae la lista detallada provista por el backend
+      const data = err.response?.data || err;
+      if (data?.detalles && Array.isArray(data.detalles) && data.detalles.length > 0) {
+        setErroresServidor(data.detalles);
+      } else if (data?.message) {
+        setErroresServidor([data.message]);
+      } else {
+        setErroresServidor(["Ocurrió un error inesperado al intentar guardar."]);
+      }
+      window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+    }
   };
 
   const showActions = !isReadOnly && !isDirectivo;
 
   return (
-    <Box sx={{ pb: showActions ? 12 : 2, bgcolor: COLORS.bgLight, minHeight: '100vh', p: { xs: 1, md: 3 } }}>
+    <Box sx={{ pb: showActions ? 16 : 2, bgcolor: COLORS.bgLight, minHeight: '100vh', p: { xs: 1, md: 3 } }}>
       
       {/* HEADER DATOS SEMANA */}
       <Paper elevation={0} sx={{ p: 3, mb: 4, borderRadius: '24px', border: `1px solid ${COLORS.border}`, bgcolor: '#fff' }}>
@@ -376,16 +393,16 @@ const PlanificacionForm = ({ initialData, onSubmit, loading, isReadOnly = false 
                               placeholder={`Indicador ${iIdx + 1}`}
                               value={ind.descripcion} 
                               onChange={(e) => handleIndicatorChange(dIdx, mIdx, iIdx, 'descripcion', e.target.value)} 
-                              disabled={isReadOnly || isDirectivo}
+                              disabled={isReadOnly || isDirectivo} 
                               sx={{ '& .MuiOutlinedInput-root': { borderRadius: '10px', bgcolor: '#fff' } }}
                             />
                             <TextField 
                               type="number" 
-                              size="small"
+                              size="small" 
                               label="Pts" 
                               value={ind.puntos} 
                               onChange={(e) => handleIndicatorChange(dIdx, mIdx, iIdx, 'puntos', e.target.value)} 
-                              disabled={isReadOnly || isDirectivo}
+                              disabled={isReadOnly || isDirectivo} 
                               sx={{ width: 90, '& .MuiOutlinedInput-root': { borderRadius: '10px', bgcolor: '#fff' } }} 
                             />
                             {showActions && (
@@ -438,13 +455,27 @@ const PlanificacionForm = ({ initialData, onSubmit, loading, isReadOnly = false 
         </Box>
       ))}
 
-      {/* FOOTER ACCIÓN GUARDAR */}
+      {/* FOOTER ACCIÓN GUARDAR CON REPORTE DE ERRORES */}
       {showActions && (
         <Box sx={{ 
           position: 'fixed', bottom: 0, left: 0, right: 0, 
-          p: 2.5, bgcolor: 'rgba(255,255,255,0.9)', backdropFilter: 'blur(8px)', 
+          p: 2, bgcolor: 'rgba(255,255,255,0.95)', backdropFilter: 'blur(8px)', 
           borderTop: `1px solid ${COLORS.border}`, zIndex: 1000, textAlign: 'center' 
         }}>
+          {/* CUADRO VISUAL DE ERRORES ESPECÍFICOS */}
+          {erroresServidor.length > 0 && (
+            <Box sx={{ maxWidth: '650px', mx: 'auto', mb: 1.5, textAlign: 'left' }}>
+              <Alert severity="error" onClose={() => setErroresServidor([])} sx={{ borderRadius: '12px' }}>
+                <AlertTitle sx={{ fontWeight: 800 }}>No se pudo guardar la planificación:</AlertTitle>
+                <ul style={{ margin: 0, paddingLeft: 20 }}>
+                  {erroresServidor.map((err, i) => (
+                    <li key={i}><strong>{err}</strong></li>
+                  ))}
+                </ul>
+              </Alert>
+            </Box>
+          )}
+
           <Button 
             variant="contained" fullWidth size="large" 
             onClick={handleSubmit} 

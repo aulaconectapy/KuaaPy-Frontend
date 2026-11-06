@@ -276,7 +276,7 @@ export default function TasksPage() {
           </Grid>
         </Paper>
 
-        {/* LISTADO DE TAREAS OPTIMIZADO PARA MÓVIL */}
+        {/* LISTADO DE TAREAS */}
         <Stack spacing={2}>
           {filteredTasks.length > 0 ? (
             filteredTasks.map(task => (
@@ -322,7 +322,7 @@ export default function TasksPage() {
                       </Stack>
                     </Grid>
 
-                    {/* Acciones adaptadas para móviles */}
+                    {/* Acciones */}
                     <Grid item xs={12} sm={6} md={4}>
                       <Stack 
                         direction="row" 
@@ -359,15 +359,20 @@ export default function TasksPage() {
                           </Tooltip>
                         </Stack>
 
+                        {/* Botón Corregir en nueva pestaña */}
                         <Button
+                          component="a"
+                          href={`/teacher/classes/tasks/${task._id}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
                           variant="contained"
                           size="small"
                           endIcon={<ChevronRightIcon />}
-                          onClick={() => window.open(`/teacher/classes/tasks/${task._id}`, '_blank')}
                           sx={{ 
                             bgcolor: '#EFF6FF', color: COLORS.primary, 
                             textTransform: 'none', fontWeight: 800, borderRadius: '10px',
                             px: 2, py: 1, boxShadow: 'none',
+                            textDecoration: 'none',
                             '&:hover': { bgcolor: '#DBEAFE', boxShadow: 'none' }
                           }}
                         >

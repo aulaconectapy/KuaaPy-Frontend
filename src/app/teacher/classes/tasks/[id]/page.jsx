@@ -14,7 +14,7 @@ import {
 } from "@mui/material";
 
 import {
-  ArrowBack as ArrowBackIcon,
+  FormatListBulleted as ListTasksIcon,
   CheckCircle as CheckIcon,
   RadioButtonUnchecked as UncheckedIcon,
   School as SchoolIcon,
@@ -355,12 +355,24 @@ export default function TaskSubmissionsPage() {
 
         {/* ENCABEZADO Y BARRA DE ACCIONES */}
         <Stack direction={{ xs: 'column', md: 'row' }} justifyContent="space-between" alignItems={{ xs: 'stretch', md: 'center' }} spacing={2} sx={{ mb: 4 }}>
+          {/* Botón directo a /teacher/classes/tasks */}
           <Button
-            startIcon={<ArrowBackIcon />}
-            onClick={() => router.back()}
-            sx={{ color: '#64748B', fontWeight: 700, textTransform: 'none', justifyContent: 'flex-start', width: 'fit-content' }}
+            startIcon={<ListTasksIcon />}
+            onClick={() => router.push("/teacher/classes/tasks")}
+            sx={{ 
+              color: COLORS.primary, 
+              bgcolor: '#EFF6FF', 
+              px: 2, 
+              py: 1, 
+              borderRadius: '12px', 
+              fontWeight: 800, 
+              textTransform: 'none', 
+              justifyContent: 'flex-start', 
+              width: 'fit-content',
+              '&:hover': { bgcolor: '#DBEAFE' }
+            }}
           >
-            Volver
+            Ir a Tareas
           </Button>
 
           <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5} alignItems="center">
