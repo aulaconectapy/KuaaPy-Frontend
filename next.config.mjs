@@ -1,8 +1,14 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-    images: {
-      domains: ['www.pngwing.com'], // Asegúrate de agregar este dominio
-    },
-  }
-  
+  images: {
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'www.pngwing.com',
+        pathname: '/**',
+      },
+    ],
+  },
+};
+
 export default nextConfig;
