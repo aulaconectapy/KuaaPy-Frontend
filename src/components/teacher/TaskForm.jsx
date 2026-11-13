@@ -207,6 +207,7 @@ export default function TaskForm({ task = null }) {
       "Matemática",
       "Trabajo y Tecnología",
       "Educación Artística",
+      "Educación Física",
     ],
   };
 
