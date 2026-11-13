@@ -398,4 +398,4 @@ const InstitutionForm = ({ existingInstitution }) => {
   );
 };
 
-export_default = InstitutionForm; // Mantén tu export default habitual
+export default InstitutionForm;
