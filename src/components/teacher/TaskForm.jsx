@@ -12,7 +12,8 @@ import {
   Assignment as AssignmentIcon, 
   Checklist as ChecklistIcon,
   Quiz as QuizIcon,
-  ContentCopy as CopyIcon
+  ContentCopy as CopyIcon,
+  AutoFixHigh as AutoFixHighIcon
 } from "@mui/icons-material";
 import { createTask, updateTask } from "@/services/api";
 import { useRouter } from "next/navigation";
@@ -45,6 +46,10 @@ export default function TaskForm({ task = null }) {
     indicators: [{ description: "", points: 1 }],
     rubricCriteria: [{ criterion: "", levels: [{ level: "", descriptor: "", points: 1 }] }],
   });
+
+  // Estados para la Carga Rápida de Indicadores
+  const [showBulkInput, setShowBulkInput] = useState(false);
+  const [bulkText, setBulkText] = useState("");
 
   useEffect(() => {
     if (user && user.grades?.length === 1 && !task) {
@@ -96,7 +101,6 @@ export default function TaskForm({ task = null }) {
 
   const addIndicator = () => setFormData({ ...formData, indicators: [...formData.indicators, { description: "", points: 1 }] });
   
-  // FUNCIÓN PARA DUPLICAR INDICADOR
   const duplicateIndicator = (index) => {
     const target = formData.indicators[index];
     const duplicated = { description: target.description, points: target.points };
@@ -106,6 +110,47 @@ export default function TaskForm({ task = null }) {
   };
 
   const removeIndicator = index => setFormData({ ...formData, indicators: formData.indicators.filter((_, i) => i !== index) });
+
+  // --- Carga Rápida de Texto (IA) ---
+  const handleBulkTextParse = () => {
+    if (!bulkText.trim()) return;
+
+    const lines = bulkText.split('\n');
+    const parsedIndicators = [];
+    let detectedTopic = formData.topic;
+
+    lines.forEach(line => {
+      const trimmed = line.trim();
+      
+      // Intentar detectar el Tema (ej. "Tema: Jasykuéra...")
+      if (trimmed.toLowerCase().startsWith('tema:')) {
+        const match = trimmed.match(/Tema:\s*(.*?)(?:\s*—|$)/i);
+        if (match && match[1]) {
+          detectedTopic = match[1].trim();
+        }
+      }
+      
+      // Detectar indicadores (líneas que empiezan con -, * o •)
+      const indicatorMatch = trimmed.match(/^[-*•]\s*(.*)$/);
+      if (indicatorMatch && indicatorMatch[1]) {
+        parsedIndicators.push({ description: indicatorMatch[1], points: 1 });
+      }
+    });
+
+    if (parsedIndicators.length > 0) {
+      setFormData(prev => ({
+        ...prev,
+        topic: detectedTopic,
+        indicators: prev.indicators.length === 1 && prev.indicators[0].description === "" 
+          ? parsedIndicators 
+          : [...prev.indicators, ...parsedIndicators]
+      }));
+      setBulkText("");
+      setShowBulkInput(false);
+    } else {
+      alert("No se detectaron indicadores. Asegúrese de que cada indicador empiece con un guión (-).");
+    }
+  };
 
   // --- Rúbrica ---
   const handleRubricCriterionChange = (index, field, value) => {
@@ -358,6 +403,54 @@ export default function TaskForm({ task = null }) {
               {(formData.instrumentType === "lista_cotejo" || formData.instrumentType === "rsa") && (
                 <Box>
                   <SectionTitle icon={ChecklistIcon} title="Indicadores de Evaluación" />
+                  
+                  {/* --- BLOQUE DE CARGA RÁPIDA --- */}
+                  <Box sx={{ mb: 3 }}>
+                    <Button 
+                      startIcon={<AutoFixHighIcon />} 
+                      onClick={() => setShowBulkInput(!showBulkInput)}
+                      sx={{ color: COLORS.primary, fontWeight: 700, textTransform: 'none', mb: 1, bgcolor: '#EFF6FF', borderRadius: '10px' }}
+                    >
+                      Carga Rápida (Pegar texto de IA)
+                    </Button>
+
+                    {showBulkInput && (
+                      <Box sx={{ p: 2, mt: 1, bgcolor: '#F8FAFC', borderRadius: '12px', border: `1px dashed ${COLORS.primary}` }}>
+                        <Typography variant="caption" sx={{ color: '#64748B', display: 'block', mb: 1.5 }}>
+                          Pegue aquí el texto. Detectará el <b>Tema</b> automáticamente y creará un indicador por cada línea que empiece con un <b>guión (-)</b>.
+                        </Typography>
+                        <TextField
+                          fullWidth
+                          multiline
+                          rows={5}
+                          size="small"
+                          placeholder="Ejemplo:&#10;Tema: Jasykuéra (Los meses del año)&#10;- Identifica correctamente los doce meses...&#10;- Escribe sin errores ortográficos..."
+                          value={bulkText}
+                          onChange={(e) => setBulkText(e.target.value)}
+                          sx={{ bgcolor: '#fff', '& .MuiOutlinedInput-root': { borderRadius: '10px' }, mb: 2 }}
+                        />
+                        <Stack direction="row" spacing={2}>
+                          <Button 
+                            variant="contained" 
+                            size="small" 
+                            onClick={handleBulkTextParse}
+                            sx={{ bgcolor: COLORS.primary, borderRadius: '8px', textTransform: 'none', fontWeight: 700 }}
+                          >
+                            Procesar e Insertar
+                          </Button>
+                          <Button 
+                            size="small" 
+                            onClick={() => { setBulkText(""); setShowBulkInput(false); }}
+                            sx={{ color: '#64748B', textTransform: 'none', fontWeight: 700 }}
+                          >
+                            Cancelar
+                          </Button>
+                        </Stack>
+                      </Box>
+                    )}
+                  </Box>
+                  {/* --- FIN BLOQUE CARGA RÁPIDA --- */}
+
                   <Stack spacing={2}>
                     {formData.indicators.map((ind, index) => (
                       <Stack 
