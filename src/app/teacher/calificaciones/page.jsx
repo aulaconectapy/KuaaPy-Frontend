@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useEffect, useMemo, useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { getGeneralTaskReport } from '@/services/api';
 
@@ -40,6 +39,12 @@ const COLORS = {
   gradient: 'linear-gradient(135deg, #0038A8 0%, #00257A 100%)'
 };
 
+// Evita imprecisiones de punto flotante en JavaScript (ej. 14.399999999999999 -> 14.4)
+const roundDecimal = (value, decimals = 2) => {
+  const factor = Math.pow(10, decimals);
+  return Math.round((Number(value || 0) + Number.EPSILON) * factor) / factor;
+};
+
 export default function CalificacionesPage() {
   const { user, loading } = useAuth();
 
@@ -48,17 +53,16 @@ export default function CalificacionesPage() {
   const [error, setError] = useState('');
   const [selectedGrade, setSelectedGrade] = useState('');
 
-  const userGrades =
-    user?.grades ||
-    user?.assignedGrade ||
-    user?.docente?.grades ||
-    '';
+  const availableGrades = useMemo(() => {
+    const userGrades =
+      user?.grades ||
+      user?.assignedGrade ||
+      user?.docente?.grades ||
+      '';
 
-  const availableGrades = Array.isArray(userGrades)
-    ? userGrades
-    : userGrades
-      ? [userGrades]
-      : [];
+    if (Array.isArray(userGrades)) return userGrades;
+    return userGrades ? [userGrades] : [];
+  }, [user]);
 
   useEffect(() => {
     if (availableGrades.length > 0 && !selectedGrade) {
@@ -86,7 +90,6 @@ export default function CalificacionesPage() {
         );
 
         setReport(data);
-
       } catch (err) {
         console.error(err);
         setError('Error al cargar calificaciones');
@@ -114,36 +117,29 @@ export default function CalificacionesPage() {
     }, {});
   }, [report]);
 
+  /**
+   * Equivalente exacto a la fórmula de Excel:
+   * =SI(K15<70;"1";SI(K15<77,5;"2";SI(K15<85,5;"3";SI(K15<93,5;"4";"5"))))
+   *
+   * Si en tu planilla de Excel K15 redondea el porcentaje (ej. REDONDEAR(K15; 1)),
+   * puedes descomentar la línea de percentage redondeado más abajo.
+   */
   const calculateGrade = (obtained, total) => {
     if (!total || total <= 0) return 1;
 
-    const minimumPass = Math.floor(total * 0.7);
+    const cleanObtained = roundDecimal(obtained, 2);
+    const cleanTotal = roundDecimal(total, 2);
 
-    if (obtained < minimumPass) return 1;
-    if (obtained === minimumPass) return 2;
+    // Porcentaje exacto (0 a 100), igual que en Excel
+    const percentage = (cleanObtained / cleanTotal) * 100;
 
-    const start = minimumPass + 1;
-    const upperLimit = total;
+    // Si en tu Excel K15 usa REDONDEAR(porcentaje; 1), usa esta línea en su lugar:
+    // const percentage = Math.round(((cleanObtained / cleanTotal) * 100) * 10) / 10;
 
-    const range = upperLimit - start + 1;
-    const baseInterval = Math.floor(range / 3);
-    const remainder = range % 3;
-
-    let currentStart = start;
-
-    for (let grade = 3; grade <= 5; grade++) {
-      const extra = grade > 5 - remainder ? 1 : 0;
-
-      const intervalSize = baseInterval + extra;
-      const currentEnd = currentStart + intervalSize - 1;
-
-      if (obtained >= currentStart && obtained <= currentEnd) {
-        return grade;
-      }
-
-      currentStart = currentEnd + 1;
-    }
-
+    if (percentage < 70) return 1;
+    if (percentage < 77.5) return 2;
+    if (percentage < 85.5) return 3;
+    if (percentage < 93.5) return 4;
     return 5;
   };
 
@@ -389,10 +385,12 @@ export default function CalificacionesPage() {
             >
               {Object.entries(groupedSubjects).map(
                 ([subject, cols]) => {
-                  const totalPoints = cols.reduce(
-                    (sum, col) =>
-                      sum + (col.maxPoints || 0),
-                    0
+                  const totalPoints = roundDecimal(
+                    cols.reduce(
+                      (sum, col) =>
+                        sum + Number(col.maxPoints || 0),
+                      0
+                    )
                   );
 
                   return (
@@ -446,29 +444,30 @@ export default function CalificacionesPage() {
 
                 {Object.entries(groupedSubjects).map(
                   ([subject, cols]) => {
-                    const obtainedPoints =
+                    const obtainedPoints = roundDecimal(
                       cols.reduce((sum, col) => {
                         return (
                           sum +
-                          (student.scores?.[
-                            col.taskId
-                          ]?.score || 0)
+                          Number(
+                            student.scores?.[col.taskId]?.score || 0
+                          )
                         );
-                      }, 0);
+                      }, 0)
+                    );
 
-                    const totalPoints =
+                    const totalPoints = roundDecimal(
                       cols.reduce((sum, col) => {
                         return (
                           sum +
-                          (col.maxPoints || 0)
+                          Number(col.maxPoints || 0)
                         );
-                      }, 0);
+                      }, 0)
+                    );
 
-                    const grade =
-                      calculateGrade(
-                        obtainedPoints,
-                        totalPoints
-                      );
+                    const grade = calculateGrade(
+                      obtainedPoints,
+                      totalPoints
+                    );
 
                     return (
                       <React.Fragment
@@ -491,7 +490,7 @@ export default function CalificacionesPage() {
                           sx={{
                             border: `1px solid ${COLORS.border}`,
                             fontWeight: 900,
-                            color: COLORS.primary,
+                            color: grade === 1 ? COLORS.red : COLORS.primary,
                             fontSize: '1rem',
                             p: 2
                           }}
